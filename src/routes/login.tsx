@@ -11,7 +11,7 @@ import { safeRedirect, validateRedirectSearch } from '@/lib/redirect'
 
 export const Route = createFileRoute('/login')({
   validateSearch: validateRedirectSearch,
-  head: () => ({ meta: [{ title: 'Sign in · PowDB' }] }),
+  head: () => ({ meta: [{ title: 'Sign in · PowDBs' }] }),
   component: LoginPage,
 })
 
@@ -41,8 +41,8 @@ function LoginPage() {
 
   return (
     <AuthCard
-      description="Enter the admin username and password you chose when you set up PowDB."
-      title="Sign in to PowDB"
+      description="Enter the admin username and password you chose when you set up PowDBs."
+      title="Sign in to PowDBs"
     >
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <Field>

@@ -1,4 +1,4 @@
-# Contributing to PowDB
+# Contributing to PowDBs
 
 Thanks for helping. Bug reports, ideas, and pull requests are all welcome.
 
@@ -27,4 +27,4 @@ bun check && bun run lint && bun fmt --check && bun test
 
 ## License
 
-PowDB is licensed under the [Apache License 2.0](LICENSE). By sending a contribution, you agree that it is licensed under the same terms.
+PowDBs is licensed under the [Apache License 2.0](LICENSE). By sending a contribution, you agree that it is licensed under the same terms.

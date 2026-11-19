@@ -2,9 +2,9 @@
 // and the tests. The CLI bundle does not use this module.
 
 /** Set at build time from package.json (vite.config.ts). Tests run without the build, so they get a dev version. */
-export const APP_VERSION: string = typeof __POWDB_VERSION__ === 'string' ? __POWDB_VERSION__ : '0.0.0-dev'
+export const APP_VERSION: string = typeof __POWDBS_VERSION__ === 'string' ? __POWDBS_VERSION__ : '0.0.0-dev'
 
-/** How PowDB was installed. Set by the environment: POWDB_INSTALL=docker (the image), npm (the launcher), or unset. */
+/** How PowDBs was installed. Set by the environment: POWDBS_INSTALL=docker (the image), npm (the launcher), or unset. */
 export type InstallMethod = 'docker' | 'npm' | 'source'
 
 export interface ReleaseInfo {

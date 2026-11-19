@@ -22,7 +22,7 @@ describe('redactSecrets', () => {
   })
 
   test('does not touch password_env names', () => {
-    expect(redactSecrets('password_env: POWDB_PROD_PW')).toBe('password_env: POWDB_PROD_PW')
+    expect(redactSecrets('password_env: POWDBS_PROD_PW')).toBe('password_env: POWDBS_PROD_PW')
   })
 
   test('hides known secret values wherever they appear', () => {

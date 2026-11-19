@@ -10,7 +10,7 @@ How to export data, back up a database, restore a backup from the app or the CLI
 
 - The file is streamed from the server in batches, so big tables are fine.
 - Only signed-in users and the local key can export a whole table. API tokens and AI agents get 403.
-- From a terminal, use `powdb export`. See [powdb CLI](ai-and-api.md#powdb-cli).
+- From a terminal, use `powdbs export`. See [powdbs CLI](ai-and-api.md#powdbs-cli).
 
 ## Database backup
 
@@ -22,16 +22,16 @@ Open **Backup** in the sidebar footer, or use the command palette (Ctrl/⌘+K, t
 
 A backup does not include `CREATE DATABASE`. Create the target database before you restore.
 
-**pg_dump**: the Docker image includes pg_dump 18. From source, install the PostgreSQL 18 client, or point `POWDB_PG_DUMP` to another pg_dump. pg_dump cannot dump a server that is newer than itself. In that case the backup fails, and the error from pg_dump is shown. The backup dialog also shows the pg_dump version in use.
+**pg_dump**: the Docker image includes pg_dump 18. From source, install the PostgreSQL 18 client, or point `POWDBS_PG_DUMP` to another pg_dump. pg_dump cannot dump a server that is newer than itself. In that case the backup fails, and the error from pg_dump is shown. The backup dialog also shows the pg_dump version in use.
 
 From a terminal:
 
 ```bash
-docker exec powdb powdb dump Shop --output - > shop.sql
-docker exec powdb powdb dump Shop --schema public --format custom --output - > public.dump
+docker exec powdbs powdbs dump Shop --output - > shop.sql
+docker exec powdbs powdbs dump Shop --schema public --format custom --output - > public.dump
 ```
 
-All options are in [powdb CLI](ai-and-api.md#powdb-cli). CLI backups use the local key, and API tokens are refused.
+All options are in [powdbs CLI](ai-and-api.md#powdbs-cli). CLI backups use the local key, and API tokens are refused.
 
 ## Restore
 
@@ -48,20 +48,20 @@ Open **Restore** in the sidebar footer, or use the command palette (Ctrl/⌘+K, 
 From a terminal:
 
 ```bash
-powdb restore shop shop-20261117-1138.sql
-powdb restore shop shop-20261117-1138.dump --clean
-powdb restore shop shop-20261117-1138.sql.gz --keep-going
+powdbs restore shop shop-20261117-1138.sql
+powdbs restore shop shop-20261117-1138.dump --clean
+powdbs restore shop shop-20261117-1138.sql.gz --keep-going
 ```
 
 - The format is detected from the file's content. `--keep-going` turns off all-or-nothing. The CLI then exits with code 1 if there were errors.
 - `--clean` works only with `.dump` files.
-- In Docker, copy the file into the container first: `docker cp shop.sql powdb:/tmp/shop.sql`, then run `docker exec powdb powdb restore shop /tmp/shop.sql`.
+- In Docker, copy the file into the container first: `docker cp shop.sql powdbs:/tmp/shop.sql`, then run `docker exec powdbs powdbs restore shop /tmp/shop.sql`.
 
-Restore needs `psql` and `pg_restore` on the server. The Docker image includes both. From source, install the PostgreSQL 18 client, or set `POWDB_PG_BIN` to the folder that holds both. The file size limit is `POWDB_MAX_RESTORE_MB` (default 2048 MB).
+Restore needs `psql` and `pg_restore` on the server. The Docker image includes both. From source, install the PostgreSQL 18 client, or set `POWDBS_PG_BIN` to the folder that holds both. The file size limit is `POWDBS_MAX_RESTORE_MB` (default 2048 MB).
 
-## Restore a backup outside PowDB
+## Restore a backup outside PowDBs
 
-Use these commands to restore a backup without PowDB, for example on another server:
+Use these commands to restore a backup without PowDBs, for example on another server:
 
 ```bash
 # .sql: plain SQL, run with psql
@@ -86,6 +86,6 @@ pg_restore --no-owner -d "postgresql://user:pass@host:5432/target_db" shop-20261
 - Each table column is matched to a CSV column by name. Case does not matter, and `_`, `-`, and spaces are ignored. You can change any match, or skip a column to use its default.
 - `ALWAYS` identity columns and generated columns are filled by the database, so they cannot be matched. A NOT NULL column with no default must be matched.
 - All rows go in one transaction. If one row fails (for example, a value of the wrong type, or a broken constraint), no rows are saved. The error names the CSV row, or the range of rows for a batch.
-- The file size limit is 200 MB. Change it with `POWDB_MAX_IMPORT_MB`.
+- The file size limit is 200 MB. Change it with `POWDBS_MAX_IMPORT_MB`.
 - Only signed-in users and the local key can import. API tokens and AI agents get 403.
 - On a production connection, the import asks you to confirm first. See [Production mode](configuration.md#production-mode).

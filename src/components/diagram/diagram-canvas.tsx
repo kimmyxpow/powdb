@@ -74,7 +74,7 @@ function zoomAround(v: View, factor: number, px: number, py: number): View {
 }
 
 const diagramLayoutKey = (connectionId: string, database: string, schema: string) =>
-  `powdb.diagram-layout:${connectionId}:${database}:${schema}`
+  `powdbs.diagram-layout:${connectionId}:${database}:${schema}`
 
 /** Saved card positions, or null. Anything malformed is ignored. */
 function readPositions(key: string): Positions | null {

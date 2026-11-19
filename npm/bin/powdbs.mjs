@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Entry point of the `powdb` command. Works with Node.js 18 or newer and with Bun.
+// Entry point of the `powdbs` command. Works with Node.js 18 or newer and with Bun.
 // All the logic is in ../lib/launcher.mjs.
 import { main } from '../lib/launcher.mjs'
 

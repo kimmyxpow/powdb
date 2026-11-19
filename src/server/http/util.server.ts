@@ -90,7 +90,7 @@ export function errorToResponse(err: unknown): Response {
   }
   const message = err instanceof Error ? err.message : 'Unexpected error.'
   if (message === MANAGED_ERROR) return errorResponse(409, 'managed', MANAGED_ERROR)
-  console.error('[powdb] request failed:', redactSecrets(message))
+  console.error('[powdbs] request failed:', redactSecrets(message))
   // the message stays useful (e.g. a PostgreSQL error), but never carries a password or token
   return errorResponse(500, 'internal', redactSecrets(message))
 }
@@ -173,9 +173,9 @@ export function readCookie(request: Request, name: string): string | null {
   return null
 }
 
-/** POWDB_SECURE_COOKIES: true and false are forced; auto means Secure when the request is https. */
+/** POWDBS_SECURE_COOKIES: true and false are forced; auto means Secure when the request is https. */
 function secureCookies(request: Request): boolean {
-  const setting = (process.env.POWDB_SECURE_COOKIES ?? 'auto').trim().toLowerCase()
+  const setting = (process.env.POWDBS_SECURE_COOKIES ?? 'auto').trim().toLowerCase()
   if (setting === 'true') return true
   if (setting === 'false') return false
   const forwarded = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase()
@@ -224,13 +224,13 @@ export function guardMutation(request: Request): void {
   }
 }
 
-/** POWDB_TRUST_PROXY=true: the server sits behind a reverse proxy that sets X-Forwarded-For. */
+/** POWDBS_TRUST_PROXY=true: the server sits behind a reverse proxy that sets X-Forwarded-For. */
 function trustProxy(): boolean {
-  return (process.env.POWDB_TRUST_PROXY ?? '').trim().toLowerCase() === 'true'
+  return (process.env.POWDBS_TRUST_PROXY ?? '').trim().toLowerCase() === 'true'
 }
 
 /**
- * The client address for the login rate limit. With POWDB_TRUST_PROXY=true, the first address
+ * The client address for the login rate limit. With POWDBS_TRUST_PROXY=true, the first address
  * in X-Forwarded-For wins (then X-Real-IP). Otherwise, or when the headers are missing, the
  * socket address is used. Without a socket address the result is 'unknown'.
  */
@@ -246,7 +246,7 @@ export function clientIpFrom(request: Request, socketAddress: string | undefined
 
 /** The client's address for this request. Used only for the login rate limit. */
 export async function clientIp(request: Request): Promise<string> {
-  // xForwardedFor is off: the header is read only when POWDB_TRUST_PROXY allows it.
+  // xForwardedFor is off: the header is read only when POWDBS_TRUST_PROXY allows it.
   const { getRequestIP } = await import('@tanstack/react-start/server')
   return clientIpFrom(request, getRequestIP({ xForwardedFor: false }) ?? undefined)
 }

@@ -231,7 +231,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'powdb-state',
+      name: 'powdbs-state',
     },
   ),
 )

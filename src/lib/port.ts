@@ -1,4 +1,4 @@
-/** The port PowDB listens on when PORT is not set. */
+/** The port PowDBs listens on when PORT is not set. */
 export const DEFAULT_PORT = 3333
 
 /**

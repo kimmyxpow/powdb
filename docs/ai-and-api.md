@@ -1,14 +1,14 @@
 # AI and API
 
-How to connect AI agents over MCP, create and revoke API tokens, use the REST API, and run the `powdb` CLI.
+How to connect AI agents over MCP, create and revoke API tokens, use the REST API, and run the `powdbs` CLI.
 
 The access rules, field details, and error codes are in [access-spec.md](access-spec.md), the contributor reference.
 
 ## AI agents over MCP
 
-AI agents (such as Claude Code, Cursor, and Claude Desktop) never see database passwords. An agent names a connection, and PowDB runs the query with the saved credentials.
+AI agents (such as Claude Code, Cursor, and Claude Desktop) never see database passwords. An agent names a connection, and PowDBs runs the query with the saved credentials.
 
-Access is limited by default. A new connection has AI access `read`, so agents can only read. Set **AI and API access** for each connection to `off`, `read`, or `write`. Use the connection dialog, or `powdb conn edit --ai`.
+Access is limited by default. A new connection has AI access `read`, so agents can only read. Set **AI and API access** for each connection to `off`, `read`, or `write`. Use the connection dialog, or `powdbs conn edit --ai`.
 
 A write runs only when all four of these are true:
 
@@ -22,23 +22,23 @@ The agent must also pass `write: true` for each write (`run_query`). Without it,
 Set up Claude Code over HTTP, with a token:
 
 ```bash
-claude mcp add --transport http powdb http://127.0.0.1:3333/mcp --header "Authorization: Bearer <token>"
+claude mcp add --transport http powdbs http://127.0.0.1:3333/mcp --header "Authorization: Bearer <token>"
 ```
 
 Set up Claude Code through the container. No token is needed, because it uses the local key inside Docker:
 
 ```bash
-claude mcp add powdb -- docker exec -i powdb powdb mcp
+claude mcp add powdbs -- docker exec -i powdbs powdbs mcp
 ```
 
-Add `--write` at the end to allow writes (`... powdb mcp --write`). This only opens write access at the agent level. The connection must still have AI access `write`.
+Add `--write` at the end to allow writes (`... powdbs mcp --write`). This only opens write access at the agent level. The connection must still have AI access `write`.
 
 For Cursor or Claude Desktop, add this to the MCP config file. Over HTTP:
 
 ```json
 {
   "mcpServers": {
-    "powdb": {
+    "powdbs": {
       "url": "http://127.0.0.1:3333/mcp",
       "headers": { "Authorization": "Bearer <token>" }
     }
@@ -51,9 +51,9 @@ Through the container:
 ```json
 {
   "mcpServers": {
-    "powdb": {
+    "powdbs": {
       "command": "docker",
-      "args": ["exec", "-i", "powdb", "powdb", "mcp"]
+      "args": ["exec", "-i", "powdbs", "powdbs", "mcp"]
     }
   }
 }
@@ -76,16 +76,16 @@ Keep the token in the MCP config file like any other secret. Do not commit it to
 
 ## API tokens
 
-Tokens let agents and scripts call PowDB from outside the browser. Create one in the command palette (Ctrl/⌘+K, then **AI access**), or with `powdb token create`.
+Tokens let agents and scripts call PowDBs from outside the browser. Create one in the command palette (Ctrl/⌘+K, then **AI access**), or with `powdbs token create`.
 
 - **Scope**: `read`, `write`, or `admin`. An `admin` token can also create, change, and delete connections. Even then, an agent cannot raise a connection's AI access, give it AI write access, or make a read-only connection writable. Only the signed-in admin can do those. An agent never reads the audit log, whatever its scope.
 - **Connections**: `--conn id,id` limits a token to some connections, by id or exact name. Without it, the token can use every connection that allows AI access, within its scope.
 - **Lifetime**: 90 days by default. `--expires` takes `30d`, `90d`, `1y`, `never`, or `<n>d` (1 to 3650 days).
-- **Shown once**: copy the token when it is created. PowDB keeps only a hash of it.
-- **Expired tokens** are refused, but stay in the list until you revoke them. Revoke with `powdb token revoke <id>`, or in **AI access**.
+- **Shown once**: copy the token when it is created. PowDBs keeps only a hash of it.
+- **Expired tokens** are refused, but stay in the list until you revoke them. Revoke with `powdbs token revoke <id>`, or in **AI access**.
 - **Limits**: tokens cannot export a whole table, import CSV, back up a database, or restore one. Those requests get 403. Only the signed-in admin, or the local key, can do them.
 
-Give agents a database role with limited rights, for example one that can only `SELECT` from the tables they need. The read-only check in PowDB is an extra safety net, not the only protection.
+Give agents a database role with limited rights, for example one that can only `SELECT` from the tables they need. The read-only check in PowDBs is an extra safety net, not the only protection.
 
 ## REST API
 
@@ -109,52 +109,52 @@ The REST API is under `/api/v1`. It takes and returns JSON. Send `Authorization:
 
 Errors use the form `{ "error": { "code": "...", "message": "..." } }`. Every query, through REST or MCP, is written to the audit log. Field details and error codes are in [access-spec.md](access-spec.md).
 
-## powdb CLI
+## powdbs CLI
 
-`powdb` is already installed in the Docker image. Inside the container, the CLI reads the local key from `/data/auth.json` by itself, so this is enough:
+`powdbs` is already installed in the Docker image. Inside the container, the CLI reads the local key from `/data/auth.json` by itself, so this is enough:
 
 ```bash
-docker exec powdb powdb conn list
+docker exec powdbs powdbs conn list
 ```
 
 Outside Docker, build first and then run from `dist`:
 
 ```bash
 bun run build
-bun dist/cli/powdb.js conn list
+bun dist/cli/powdbs.js conn list
 ```
 
-Outside the container, set `POWDB_URL` (default `http://127.0.0.1:3333`) and `POWDB_TOKEN` to use a token. Without `POWDB_TOKEN`, the CLI uses the local key from `POWDB_DATA_DIR/auth.json` (default `./.data`). Tokens are meant for remote use. Export, dump, restore, and password reset always use the local key. Run them where `POWDB_DATA_DIR` points to the data folder, or through `docker exec`.
+Outside the container, set `POWDBS_URL` (default `http://127.0.0.1:3333`) and `POWDBS_TOKEN` to use a token. Without `POWDBS_TOKEN`, the CLI uses the local key from `POWDBS_DATA_DIR/auth.json` (default `./.data`). Tokens are meant for remote use. Export, dump, restore, and password reset always use the local key. Run them where `POWDBS_DATA_DIR` points to the data folder, or through `docker exec`.
 
-| Command                                                                                                                                                                                                                          | What it does                                                                                                                 |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `powdb status [--json]`                                                                                                                                                                                                          | Shows the server URL, whether login is set up, and whether the CLI can connect.                                              |
-| `powdb conn list [--json]`                                                                                                                                                                                                       | Lists connections and your access to each one.                                                                               |
-| `powdb conn add <url> [--name N] [--read-only] [--production] [--ai off\|read\|write] [--color C] [--password-stdin] [--json]` `[--ssh user@host[:port] (--ssh-key FILE \| --ssh-password-stdin)]`                               | Adds a connection from a URL. `--password-stdin` reads the password from stdin. `--production` marks it as production.       |
-| `powdb conn edit <id\|name> [--name N] [--url U] [--read-only \| --writable] [--production \| --not-production] [--ai off\|read\|write] [--json]` `[--ssh user@host[:port]] [--ssh-key FILE \| --ssh-password-stdin] [--no-ssh]` | Changes a connection. Only the flags you pass are changed. `--no-ssh` removes the SSH tunnel.                                |
-| `powdb conn remove <id\|name> [--yes]`                                                                                                                                                                                           | Removes a connection. Asks first unless `--yes` is given.                                                                    |
-| `powdb conn test <id\|name>`                                                                                                                                                                                                     | Checks that PowDB can reach the database.                                                                                    |
-| `powdb tables <conn> [--schema S] [--json]`                                                                                                                                                                                      | Lists tables, views, and other relations.                                                                                    |
-| `powdb describe <conn> <table> [--schema S] [--json]`                                                                                                                                                                            | Shows the columns, keys, and indexes of a table. Accepts `schema.table`.                                                     |
-| `powdb query <conn> "<sql>" [--write] [--json] [--max-rows N]`                                                                                                                                                                   | Runs SQL. Read-only unless `--write` is given.                                                                               |
-| `powdb export <conn> <table> [--schema S] [--format csv\|json\|ndjson\|sql] [--where "<condition>"] [--output FILE]`                                                                                                             | Exports a whole table, or the rows matching `--where`, to a file. Default `<table>.<format>`. `--output -` writes to stdout. |
-| `powdb dump <conn> [--database D] [--content all\|schema\|data] [--format sql\|sql-gz\|custom] [--schema S]... [--table schema.table]... [--output FILE]`                                                                        | Backs up a database with pg_dump. Default `<database>-<YYYYMMDD-HHmm>.sql` (`.sql.gz` or `.dump` for those formats).         |
-| `powdb restore <conn> <file> [--database D] [--keep-going] [--clean]`                                                                                                                                                            | Runs a `.sql`, `.sql.gz`, or `.dump` file into a database. See [Restore](backup-restore.md#restore).                         |
-| `powdb token create <name> [--scope read\|write\|admin] [--conn id,id] [--expires 30d\|90d\|1y\|never\|<n>d] [--json]`                                                                                                           | Creates an API token, shown once. Lasts 90 days unless `--expires` is given.                                                 |
-| `powdb token list [--json]`                                                                                                                                                                                                      | Lists tokens, with their expiry. Secrets are never shown.                                                                    |
-| `powdb token revoke <id>`                                                                                                                                                                                                        | Revokes an API token.                                                                                                        |
-| `powdb audit [--limit N] [--json]`                                                                                                                                                                                               | Shows recent queries and who ran them. Default 20 entries.                                                                   |
-| `powdb admin reset-password [--password-stdin]`                                                                                                                                                                                  | Sets a new admin password.                                                                                                   |
-| `powdb mcp [--write]`                                                                                                                                                                                                            | Runs the MCP bridge over stdio for agents (Claude Code, Cursor, and similar tools).                                          |
-| `powdb help`                                                                                                                                                                                                                     | Shows help.                                                                                                                  |
+| Command                                                                                                                                                                                                                           | What it does                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `powdbs status [--json]`                                                                                                                                                                                                          | Shows the server URL, whether login is set up, and whether the CLI can connect.                                              |
+| `powdbs conn list [--json]`                                                                                                                                                                                                       | Lists connections and your access to each one.                                                                               |
+| `powdbs conn add <url> [--name N] [--read-only] [--production] [--ai off\|read\|write] [--color C] [--password-stdin] [--json]` `[--ssh user@host[:port] (--ssh-key FILE \| --ssh-password-stdin)]`                               | Adds a connection from a URL. `--password-stdin` reads the password from stdin. `--production` marks it as production.       |
+| `powdbs conn edit <id\|name> [--name N] [--url U] [--read-only \| --writable] [--production \| --not-production] [--ai off\|read\|write] [--json]` `[--ssh user@host[:port]] [--ssh-key FILE \| --ssh-password-stdin] [--no-ssh]` | Changes a connection. Only the flags you pass are changed. `--no-ssh` removes the SSH tunnel.                                |
+| `powdbs conn remove <id\|name> [--yes]`                                                                                                                                                                                           | Removes a connection. Asks first unless `--yes` is given.                                                                    |
+| `powdbs conn test <id\|name>`                                                                                                                                                                                                     | Checks that PowDBs can reach the database.                                                                                   |
+| `powdbs tables <conn> [--schema S] [--json]`                                                                                                                                                                                      | Lists tables, views, and other relations.                                                                                    |
+| `powdbs describe <conn> <table> [--schema S] [--json]`                                                                                                                                                                            | Shows the columns, keys, and indexes of a table. Accepts `schema.table`.                                                     |
+| `powdbs query <conn> "<sql>" [--write] [--json] [--max-rows N]`                                                                                                                                                                   | Runs SQL. Read-only unless `--write` is given.                                                                               |
+| `powdbs export <conn> <table> [--schema S] [--format csv\|json\|ndjson\|sql] [--where "<condition>"] [--output FILE]`                                                                                                             | Exports a whole table, or the rows matching `--where`, to a file. Default `<table>.<format>`. `--output -` writes to stdout. |
+| `powdbs dump <conn> [--database D] [--content all\|schema\|data] [--format sql\|sql-gz\|custom] [--schema S]... [--table schema.table]... [--output FILE]`                                                                        | Backs up a database with pg_dump. Default `<database>-<YYYYMMDD-HHmm>.sql` (`.sql.gz` or `.dump` for those formats).         |
+| `powdbs restore <conn> <file> [--database D] [--keep-going] [--clean]`                                                                                                                                                            | Runs a `.sql`, `.sql.gz`, or `.dump` file into a database. See [Restore](backup-restore.md#restore).                         |
+| `powdbs token create <name> [--scope read\|write\|admin] [--conn id,id] [--expires 30d\|90d\|1y\|never\|<n>d] [--json]`                                                                                                           | Creates an API token, shown once. Lasts 90 days unless `--expires` is given.                                                 |
+| `powdbs token list [--json]`                                                                                                                                                                                                      | Lists tokens, with their expiry. Secrets are never shown.                                                                    |
+| `powdbs token revoke <id>`                                                                                                                                                                                                        | Revokes an API token.                                                                                                        |
+| `powdbs audit [--limit N] [--json]`                                                                                                                                                                                               | Shows recent queries and who ran them. Default 20 entries.                                                                   |
+| `powdbs admin reset-password [--password-stdin]`                                                                                                                                                                                  | Sets a new admin password.                                                                                                   |
+| `powdbs mcp [--write]`                                                                                                                                                                                                            | Runs the MCP bridge over stdio for agents (Claude Code, Cursor, and similar tools).                                          |
+| `powdbs help`                                                                                                                                                                                                                     | Shows help.                                                                                                                  |
 
 Examples:
 
 ```bash
-docker exec powdb powdb conn add "postgresql://app:secret@db:5432/shop" --name Shop --read-only
-docker exec powdb powdb query Shop "select count(*) from orders"
-docker exec powdb powdb token create claude --scope read --conn Shop
-docker exec -it powdb powdb admin reset-password
+docker exec powdbs powdbs conn add "postgresql://app:secret@db:5432/shop" --name Shop --read-only
+docker exec powdbs powdbs query Shop "select count(*) from orders"
+docker exec powdbs powdbs token create claude --scope read --conn Shop
+docker exec -it powdbs powdbs admin reset-password
 ```
 
 The default output is a table. Use `--json` in scripts. Errors go to stderr, with exit code 1.
@@ -162,15 +162,15 @@ The default output is a table. Use `--json` in scripts. Errors go to stderr, wit
 Export examples. Inside the container, write to stdout and redirect the output to a file on your machine (backup examples are in [Backup and restore](backup-restore.md#database-backup)):
 
 ```bash
-docker exec powdb powdb export Shop orders --where "status = 'paid'" --format ndjson --output - > paid.ndjson
-docker exec powdb powdb export Shop analytics.page_views --output - > page_views.csv
+docker exec powdbs powdbs export Shop orders --where "status = 'paid'" --format ndjson --output - > paid.ndjson
+docker exec powdbs powdbs export Shop analytics.page_views --output - > page_views.csv
 ```
 
 Without `--output`, the file is saved in the working folder with the default name. API tokens are refused for export and dump.
 
 ## Audit log
 
-Every query an agent runs, through MCP or REST, is written to `POWDB_DATA_DIR/audit.jsonl` (mode `0600`). It has one JSON line per query, including `run_query` and `explain`. When the file reaches 5 MB, it is moved to `audit.1.jsonl`, which replaces the previous rotated file.
+Every query an agent runs, through MCP or REST, is written to `POWDBS_DATA_DIR/audit.jsonl` (mode `0600`). It has one JSON line per query, including `run_query` and `explain`. When the file reaches 5 MB, it is moved to `audit.1.jsonl`, which replaces the previous rotated file.
 
-- See the log in the **AI access** dialog (command palette, then the Activity tab), or with `powdb audit`.
+- See the log in the **AI access** dialog (command palette, then the Activity tab), or with `powdbs audit`.
 - Only the signed-in admin can read the log through REST. API tokens cannot.

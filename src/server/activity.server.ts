@@ -18,8 +18,8 @@ export interface ActivityRow {
   /** ms since query_start for active sessions, otherwise since state_change */
   durationMs: number | null
   blockedBy: number[]
-  /** PowDB's own pool connections */
-  isPowdb: boolean
+  /** PowDBs's own pool connections */
+  isPowdbs: boolean
 }
 
 const toIso = (v: unknown): string | null => {
@@ -95,7 +95,7 @@ export async function listActivity(
     query: r.query ?? '',
     durationMs: r.duration_ms == null ? null : Number(r.duration_ms),
     blockedBy: r.blocked_by.map(Number),
-    isPowdb: r.application_name === 'powdb',
+    isPowdbs: r.application_name === 'powdbs',
   }))
 }
 

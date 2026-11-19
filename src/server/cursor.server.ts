@@ -32,7 +32,7 @@ interface StatementRows {
   rowCount: number | null
 }
 
-const CURSOR_PREFIX = 'powdb_cur_'
+const CURSOR_PREFIX = 'powdbs_cur_'
 
 /** A unique, safe cursor name: 42 characters, well under Postgres' 63 byte identifier limit. */
 export function newCursorName(hex: string = randomBytes(16).toString('hex')): string {

@@ -1,5 +1,5 @@
 {
-  "name": "powdb",
+  "name": "powdbs",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && bun scripts/precompress.ts && bun run build:cli",
-    "build:cli": "bun build cli/powdb.ts --target bun --minify --outfile dist/cli/powdb.js",
+    "build:cli": "bun build cli/powdbs.ts --target bun --minify --outfile dist/cli/powdbs.js",
     "build:npm": "bun run build && bun build server.ts --target bun --minify --outfile start.js && bun scripts/pack-npm.ts",
     "pack:npm": "bun scripts/pack-npm.ts",
     "start": "bun run server.ts",

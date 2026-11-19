@@ -6,7 +6,7 @@ import { rememberHostKey } from './store.server'
 import { formatHostKeyFingerprint, tunnelKey, type ResolvedSsh } from './ssh-settings'
 
 /**
- * SSH tunnels. PowDB opens an SSH connection to a bastion and forwards a local port to
+ * SSH tunnels. PowDBs opens an SSH connection to a bastion and forwards a local port to
  * PostgreSQL through it: pg connects to 127.0.0.1:<port>, the bastion connects to the database.
  * One tunnel per connection. Settings are compared with a fingerprint, so a change starts a new one.
  */
@@ -43,8 +43,8 @@ interface Slot {
   ready: Promise<Tunnel>
 }
 
-const globalTunnels = globalThis as unknown as { __powdbTunnels?: Map<string, Slot> }
-const slots = (globalTunnels.__powdbTunnels ??= new Map())
+const globalTunnels = globalThis as unknown as { __powdbsTunnels?: Map<string, Slot> }
+const slots = (globalTunnels.__powdbsTunnels ??= new Map())
 
 // ---------------------------------------------------------------------------
 // Secrets
@@ -172,7 +172,7 @@ function connectSsh(t: Tunnel): Promise<Client> {
         ssh.hostKey = pendingHostKey
         if (t.connectionId) {
           rememberHostKey(t.connectionId, pendingHostKey).catch((err: Error) =>
-            console.warn(`[powdb] could not remember the SSH host key for ${t.name}: ${err.message}`),
+            console.warn(`[powdbs] could not remember the SSH host key for ${t.name}: ${err.message}`),
           )
         }
       }
@@ -211,7 +211,7 @@ function connectSsh(t: Tunnel): Promise<Client> {
 function lost(t: Tunnel, client: Client, reason: string) {
   if (t.client !== client) return
   t.client = null
-  if (!t.closed) console.warn(`[powdb] ssh tunnel for ${t.name} closed: ${reason}`)
+  if (!t.closed) console.warn(`[powdbs] ssh tunnel for ${t.name} closed: ${reason}`)
   for (const socket of t.sockets) socket.destroy()
   t.sockets.clear()
 }
@@ -246,7 +246,7 @@ function handleSocket(t: Tunnel, sock: net.Socket) {
     .then((client) => {
       client.forwardOut('127.0.0.1', sock.remotePort ?? 0, t.dbHost, t.dbPort, (err, stream) => {
         if (err) {
-          console.warn(`[powdb] ${forwardMessage(t.dbHost, t.dbPort)} (${t.name})`)
+          console.warn(`[powdbs] ${forwardMessage(t.dbHost, t.dbPort)} (${t.name})`)
           sock.destroy()
           return
         }
@@ -258,7 +258,7 @@ function handleSocket(t: Tunnel, sock: net.Socket) {
       })
     })
     .catch((err: Error) => {
-      console.warn(`[powdb] ssh tunnel for ${t.name}: ${err.message}`)
+      console.warn(`[powdbs] ssh tunnel for ${t.name}: ${err.message}`)
       sock.destroy()
     })
 }
@@ -337,7 +337,7 @@ export async function ensureTunnel(conn: ConnectionConfig): Promise<TunnelEndpoi
       ssh: resolved,
       dbHost: conn.host,
       dbPort: conn.port,
-      // managed connections come from powdb.yaml and are never changed by PowDB
+      // managed connections come from powdbs.yaml and are never changed by PowDBs
       connectionId: conn.managed ? undefined : conn.id,
       // check the database is reachable from the SSH server once, so a wrong host or port
       // gives a clear message instead of pg's "Connection terminated unexpectedly"

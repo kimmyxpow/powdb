@@ -1,12 +1,12 @@
 # Development
 
-For contributors: how to run PowDB from source, build and release it, check the code, and find your way around the project. For what PowDB does for users, see the [README](../README.md). The access layer's internal contract is in [access-spec.md](access-spec.md).
+For contributors: how to run PowDBs from source, build and release it, check the code, and find your way around the project. For what PowDBs does for users, see the [README](../README.md). The access layer's internal contract is in [access-spec.md](access-spec.md).
 
 ## Prerequisites
 
 - [Bun](https://bun.sh) 1.4.4, the same version as the Docker image.
 - A PostgreSQL database you can reach, or Docker for the demo database.
-- For backup and restore from source, the PostgreSQL 18 client tools (`psql`, `pg_dump`, `pg_restore`), or point `POWDB_PG_DUMP` and `POWDB_PG_BIN` to binaries you already have. See [Backup and restore](backup-restore.md).
+- For backup and restore from source, the PostgreSQL 18 client tools (`psql`, `pg_dump`, `pg_restore`), or point `POWDBS_PG_DUMP` and `POWDBS_PG_BIN` to binaries you already have. See [Backup and restore](backup-restore.md).
 
 ## Run from source
 
@@ -17,7 +17,7 @@ bun run dev          # http://localhost:3333
 
 The first time you open it, create an admin account. See [Login and admin account](configuration.md#login-and-admin-account).
 
-`bun install` runs a `postinstall` script that deletes the native builds of `ssh2` and `cpu-features`. PowDB does not use them. It uses the pure JavaScript code path instead.
+`bun install` runs a `postinstall` script that deletes the native builds of `ssh2` and `cpu-features`. PowDBs does not use them. It uses the pure JavaScript code path instead.
 
 ## Demo database
 
@@ -47,7 +47,7 @@ In `public`, `customers.country_code` is a foreign key to `countries`. `orders.i
 To run the built app with the demo database in Docker:
 
 ```bash
-docker compose up -d --build   # PowDB on http://localhost:3333, with the "Demo shop" connection
+docker compose up -d --build   # PowDBs on http://localhost:3333, with the "Demo shop" connection
 docker compose logs -f app     # show app logs (Ctrl+C to stop)
 docker compose down            # add -v to also delete connections, accounts, and demo data
 ```
@@ -61,7 +61,7 @@ bun run build
 bun run start        # http://127.0.0.1:3333
 ```
 
-- `bun run build` runs the Vite build, compresses the assets (`scripts/precompress.ts`), and builds the CLI to `dist/cli/powdb.js`.
+- `bun run build` runs the Vite build, compresses the assets (`scripts/precompress.ts`), and builds the CLI to `dist/cli/powdbs.js`.
 - `bun run start` runs `server.ts`. It listens on `HOST` (default `127.0.0.1`) and `PORT` (default `3333`). All variables are in [Configuration](configuration.md#environment-variables).
 
 ## Docker image
@@ -72,52 +72,52 @@ The `Dockerfile` has three stages:
 2. **PostgreSQL client** (`debian:trixie-slim`): installs `postgresql-client-18` from the PostgreSQL repository, and checks the signing key by its fingerprint. Only `pg_dump`, `pg_restore`, and `psql`, with the libraries they need, are copied into the runtime image.
 3. **Runtime** (`oven/bun:1.4.4-distroless`): no shell and no package manager. It runs as `1000:1000`, has a `/data` volume, and has a healthcheck that requests `/` every 30 seconds.
 
-Defaults set in the image: `NODE_ENV=production`, `HOST=0.0.0.0`, `PORT=3333`, `POWDB_DATA_DIR=/data`, and `POWDB_PG_DUMP=/usr/lib/postgresql/18/bin/pg_dump`. The `powdb` CLI is at `/usr/local/bin/powdb`.
+Defaults set in the image: `NODE_ENV=production`, `HOST=0.0.0.0`, `PORT=3333`, `POWDBS_DATA_DIR=/data`, and `POWDBS_PG_DUMP=/usr/lib/postgresql/18/bin/pg_dump`. The `powdbs` CLI is at `/usr/local/bin/powdbs`.
 
-`docker-compose.yml` (the development stack) runs two services. `app` is built from source and creates the "Demo shop" connection with `POWDB_CONNECTIONS`. `postgres` comes from `demo/docker-compose.yml`. `compose.example.yml` is the user-facing file, which pulls the published image.
+`docker-compose.yml` (the development stack) runs two services. `app` is built from source and creates the "Demo shop" connection with `POWDBS_CONNECTIONS`. `postgres` comes from `demo/docker-compose.yml`. `compose.example.yml` is the user-facing file, which pulls the published image.
 
 ### Build the image yourself
 
 ```bash
-docker build -t powdb .
+docker build -t powdbs .
 ```
 
-Run it with the `docker run` command in [Install and update](install.md#run-with-docker), using `powdb` as the image name.
+Run it with the `docker run` command in [Install and update](install.md#run-with-docker), using `powdbs` as the image name.
 
 To build both CPU types at once, use buildx:
 
 ```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/powroom/powdb:test .
+docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/powroom/powdbs:test .
 ```
 
-A multi-platform build cannot be loaded into the local image store. Add `--push` to push it to a registry, or build one platform with `--load`, for example `docker buildx build --platform linux/arm64 --load -t powdb .`. Building arm64 on an x86 machine uses emulation. Docker Desktop has it built in. On Linux, the publish workflow installs it with `docker/setup-qemu-action`.
+A multi-platform build cannot be loaded into the local image store. Add `--push` to push it to a registry, or build one platform with `--load`, for example `docker buildx build --platform linux/arm64 --load -t powdbs .`. Building arm64 on an x86 machine uses emulation. Docker Desktop has it built in. On Linux, the publish workflow installs it with `docker/setup-qemu-action`.
 
 ### Published image
 
-`.github/workflows/publish-image.yml` runs the checks, builds amd64 and arm64, and pushes `ghcr.io/powroom/powdb` when a version tag (`v*.*.*`) is pushed. A manual run from a branch (**Actions > Publish image > Run workflow**) pushes only a `sha-...` tag. The workflow does not check that the tag matches `package.json`, so keep them the same.
+`.github/workflows/publish-image.yml` runs the checks, builds amd64 and arm64, and pushes `ghcr.io/powroom/powdbs` when a version tag (`v*.*.*`) is pushed. A manual run from a branch (**Actions > Publish image > Run workflow**) pushes only a `sha-...` tag. The workflow does not check that the tag matches `package.json`, so keep them the same.
 
 ## npm package
 
-The `powdb` npm package runs the same build without Docker. The server still runs on Bun, so the package starts Bun for the user. For what users see, see [Install and update](install.md#run-with-npx).
+The `powdbs` npm package runs the same build without Docker. The server still runs on Bun, so the package starts Bun for the user. For what users see, see [Install and update](install.md#run-with-npx).
 
 - `scripts/pack-npm.ts` assembles `npm-package/` from the build outputs. It copies only the files it lists, and writes a `package.json` with no dependencies and no scripts. `npm-package/` is in `.gitignore` and `.dockerignore`.
-- `npm/bin/powdb.mjs` is the entry point, and `npm/lib/launcher.mjs` holds the logic. Both are plain JavaScript that runs on Node 18 or newer, and on Bun. `npm/launcher.test.ts` tests the helpers (argument parsing, Bun version check, data folder, Bun lookup, notices). It uses no network.
+- `npm/bin/powdbs.mjs` is the entry point, and `npm/lib/launcher.mjs` holds the logic. Both are plain JavaScript that runs on Node 18 or newer, and on Bun. `npm/launcher.test.ts` tests the helpers (argument parsing, Bun version check, data folder, Bun lookup, notices). It uses no network.
 - `bun run build:npm` runs the build, bundles `start.js` as the Dockerfile does, and packs the result. `bun run pack:npm` packs existing build outputs only.
 
 Build and try the package locally. Nothing is installed globally:
 
 ```bash
 bun run build:npm                                          # build, bundle start.js, assemble npm-package/
-npm pack ./npm-package --pack-destination ~/powdb-test     # a tarball with exactly what users get
-cd ~/powdb-test && npx ./powdb-0.1.0.tgz                   # run it the way users do
+npm pack ./npm-package --pack-destination ~/powdbs-test     # a tarball with exactly what users get
+cd ~/powdbs-test && npx ./powdbs-0.1.0.tgz                   # run it the way users do
 ```
 
-The first run asks before it installs Bun. Add `--yes` to test the install path without a prompt. To test the notices without Bun, run the launcher with a `PATH` that has no `bun` in it, and a temporary `HOME`, so your real `~/.powdb` is not touched.
+The first run asks before it installs Bun. Add `--yes` to test the install path without a prompt. To test the notices without Bun, run the launcher with a `PATH` that has no `bun` in it, and a temporary `HOME`, so your real `~/.powdbs` is not touched.
 
 Publishing:
 
 - Releases are published by `.github/workflows/publish-npm.yml` when a version tag is pushed. It uses npm trusted publishing: no npm token is stored in GitHub, and the package gets a provenance statement.
-- Trusted publishing is set up once on npmjs.com: package `powdb`, Settings, Trusted publishing, GitHub Actions, with organization `powroom`, repository `powdb`, and workflow `publish-npm.yml`. npm drops the setting when it is not used for a successful publish within 2 days, so add it on the day of a release.
+- Trusted publishing is set up once on npmjs.com: package `powdbs`, Settings, Trusted publishing, GitHub Actions, with organization `powroom`, repository `powdbs`, and workflow `publish-npm.yml`. npm drops the setting when it is not used for a successful publish within 2 days, so add it on the day of a release.
 - The very first version has to be published by hand, because trusted publishing can only be set up for a package that exists: `npm login`, then `bun run build:npm` and `npm publish ./npm-package --access public`.
 - The workflow skips a version that is already on npm, so pushing the tag for a version published by hand still builds the image and the GitHub Release.
 
@@ -129,11 +129,11 @@ Publishing:
 
 The publish workflows run the same checks again. If one fails, nothing is published. Otherwise the image is built for amd64 and arm64, and published as `0.1.1`, `0.1`, and `latest`. Every build also gets a `sha-...` tag.
 
-The publish image workflow then creates the GitHub Release for the tag, titled `PowDB 0.1.1`, with notes generated from the merged pull requests and commits. If that release already exists, the job leaves it as it is. PowDB reads this release to show its update notice.
+The publish image workflow then creates the GitHub Release for the tag, titled `PowDBs 0.1.1`, with notes generated from the merged pull requests and commits. If that release already exists, the job leaves it as it is. PowDBs reads this release to show its update notice.
 
-To test the update notice without a real release, run a small local server that answers with release JSON (`tag_name`, `html_url`, `published_at`, `body`), and start PowDB with `POWDB_UPDATE_URL` set to that address. This variable is for local testing only. The build version comes from `package.json`, so the notice only appears when the test release has a higher version.
+To test the update notice without a real release, run a small local server that answers with release JSON (`tag_name`, `html_url`, `published_at`, `body`), and start PowDBs with `POWDBS_UPDATE_URL` set to that address. This variable is for local testing only. The build version comes from `package.json`, so the notice only appears when the test release has a higher version.
 
-After the first release only, make the package public. On GitHub, open **Packages > powdb > Package settings** and set the visibility to **Public**. New packages are private, so nobody can pull them until you do this.
+After the first release only, make the package public. On GitHub, open **Packages > powdbs > Package settings** and set the visibility to **Public**. New packages are private, so nobody can pull them until you do this.
 
 ## Checks and guardrails
 
@@ -181,7 +181,7 @@ src/
   lib/              shared types, SQL helpers, React Query queries, small stores, export, dialog logic
   routes/           file-based routing with TanStack Router (including /mcp and /api/*)
   start.ts          server middleware: same-origin checks and the sign-in gate for server functions
-cli/                powdb CLI (powdb.ts), built to dist/cli/powdb.js
+cli/                powdbs CLI (powdbs.ts), built to dist/cli/powdbs.js
 demo/               docker compose file and sample data (init/01-03 SQL)
 npm/                npm launcher (bin and lib) and its tests
 scripts/            precompress.ts, pack-npm.ts, guardrails.test.ts

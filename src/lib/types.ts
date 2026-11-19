@@ -24,7 +24,7 @@ export interface SshSettings {
   privateKey?: string
   /** encrypted when stored */
   passphrase?: string
-  /** SHA256 host key fingerprint, e.g. "SHA256:abc...". Remembered on first use, or pinned in powdb.yaml. */
+  /** SHA256 host key fingerprint, e.g. "SHA256:abc...". Remembered on first use, or pinned in powdbs.yaml. */
   hostKey?: string
   /** managed only: environment variables and files, read at connect time (never stored) */
   passwordEnv?: string
@@ -49,9 +49,9 @@ export interface ConnectionConfig {
   /** Production connections show a marker and ask before every change. */
   production: boolean
   aiAccess: AiAccess
-  /** SSH tunnel: PowDB connects to this server and reaches host:port from there */
+  /** SSH tunnel: PowDBs connects to this server and reaches host:port from there */
   ssh?: SshSettings
-  /** true when the connection comes from powdb.yaml (read-only in the UI and API) */
+  /** true when the connection comes from powdbs.yaml (read-only in the UI and API) */
   managed?: boolean
   createdAt: string
   lastUsedAt?: string
@@ -113,7 +113,7 @@ export interface ConnectionInput {
 export interface ApiTokenInfo {
   id: string // 8 chars
   name: string
-  prefix: string // first 12 chars of the token, e.g. "powdb_a1B2c3"
+  prefix: string // first 12 chars of the token, e.g. "powdbs_a1B2c3"
   scope: TokenScope
   connections: 'all' | string[]
   createdAt: string

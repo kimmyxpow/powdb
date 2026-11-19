@@ -84,7 +84,7 @@ export function pgClientEnv(target: DumpTarget): Record<string, string> {
     PATH: childPath(),
     PGSSLMODE: target.ssl,
     PGCONNECT_TIMEOUT: '10',
-    PGAPPNAME: 'powdb',
+    PGAPPNAME: 'powdbs',
   }
   if (target.password) env.PGPASSWORD = target.password
   return env
@@ -126,9 +126,9 @@ export function buildDumpPlan(
 // Locating pg_dump
 // ---------------------------------------------------------------------------
 
-/** POWDB_PG_DUMP when set (a path or a command name), else pg_dump on PATH. Null when missing. */
+/** POWDBS_PG_DUMP when set (a path or a command name), else pg_dump on PATH. Null when missing. */
 export function locatePgDump(): string | null {
-  const configured = process.env.POWDB_PG_DUMP?.trim()
+  const configured = process.env.POWDBS_PG_DUMP?.trim()
   if (configured) return Bun.which(configured)
   return Bun.which('pg_dump')
 }
@@ -365,7 +365,7 @@ async function streamDump(
           const code = await proc.exited
           if (code !== 0 && !cancelled) {
             console.error(
-              `[powdb] database export failed after the download started (pg_dump exit ${code}):\n${lastLines(await stderr, [plan.env.PGPASSWORD])}`,
+              `[powdbs] database export failed after the download started (pg_dump exit ${code}):\n${lastLines(await stderr, [plan.env.PGPASSWORD])}`,
             )
           }
           send(() => controller.close())
@@ -373,7 +373,7 @@ async function streamDump(
         }
         send(() => controller.enqueue(next.value))
       } catch (err) {
-        console.error('[powdb] database export stream failed:', err)
+        console.error('[powdbs] database export stream failed:', err)
         kill()
         send(() => controller.close())
       }

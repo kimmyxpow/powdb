@@ -15,7 +15,7 @@ const SUPPORTED_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']
 const LATEST_VERSION = '2025-06-18'
 
 const INSTRUCTIONS =
-  'PowDB gives you access to PostgreSQL connections. Call list_connections first, then list_schemas, ' +
+  'PowDBs gives you access to PostgreSQL connections. Call list_connections first, then list_schemas, ' +
   'list_tables and describe_table to learn the schema, and run_query for SQL. Queries are read-only ' +
   'unless the token and the connection allow writes and you pass write: true. Connections are named by id ' +
   'or exact name. Results are capped by max_rows.'
@@ -39,7 +39,7 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     }
     const principal = await authenticate(request, { mcp: true })
     if (!principal) {
-      return errorResponse(401, 'unauthenticated', 'Send a PowDB API token or the local key.', {
+      return errorResponse(401, 'unauthenticated', 'Send a PowDBs API token or the local key.', {
         'WWW-Authenticate': 'Bearer',
       })
     }
@@ -66,7 +66,7 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
   } catch (err) {
     // Request-level problems (such as an oversized body) keep their HTTP status.
     if (err instanceof HttpError) return errorToResponse(err)
-    console.error('[powdb] MCP request failed:', describeError(err))
+    console.error('[powdbs] MCP request failed:', describeError(err))
     return rpcJson(rpcError(null, -32603, 'Internal error.'), 500)
   }
 }
@@ -106,7 +106,7 @@ async function handleMessage(principal: Principal, message: unknown): Promise<Js
     return { jsonrpc: '2.0', id, result }
   } catch (err) {
     if (err instanceof RpcError) return rpcError(id, err.code, err.message)
-    console.error('[powdb] MCP method failed:', describeError(err))
+    console.error('[powdbs] MCP method failed:', describeError(err))
     return rpcError(id, -32603, 'Internal error.')
   }
 }
@@ -118,7 +118,7 @@ async function dispatch(principal: Principal, method: string, params: unknown): 
       return {
         protocolVersion: SUPPORTED_VERSIONS.includes(requested) ? requested : LATEST_VERSION,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'powdb', version: SERVER_VERSION },
+        serverInfo: { name: 'powdbs', version: SERVER_VERSION },
         instructions: INSTRUCTIONS,
       }
     }

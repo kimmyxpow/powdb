@@ -48,12 +48,12 @@ function fakeClient(
 }
 
 describe('cursor names and SQL', () => {
-  test('names are powdb_cur_ plus 32 hex characters, and differ between calls', () => {
+  test('names are powdbs_cur_ plus 32 hex characters, and differ between calls', () => {
     const a = newCursorName()
     const b = newCursorName()
-    expect(a).toMatch(/^powdb_cur_[0-9a-f]{32}$/)
+    expect(a).toMatch(/^powdbs_cur_[0-9a-f]{32}$/)
     expect(b).not.toBe(a)
-    expect(newCursorName('abc')).toBe('powdb_cur_abc')
+    expect(newCursorName('abc')).toBe('powdbs_cur_abc')
   })
 
   test('DECLARE drops the trailing semicolon and whitespace', () => {
@@ -113,7 +113,7 @@ describe('readInBatches', () => {
     }
     expect(batches).toEqual([[[1], [2]], [[3]]])
     expect(sent[0]).toBe('BEGIN')
-    expect(sent[1]).toMatch(/^DECLARE powdb_cur_[0-9a-f]{32} NO SCROLL CURSOR FOR SELECT n FROM t$/)
+    expect(sent[1]).toMatch(/^DECLARE powdbs_cur_[0-9a-f]{32} NO SCROLL CURSOR FOR SELECT n FROM t$/)
     const name = sent[1]!.split(' ')[1]!
     expect(sent).toEqual(['BEGIN', sent[1]!, fetchSql(name, 2), fetchSql(name, 2), closeSql(name), 'COMMIT'])
   })
@@ -126,7 +126,7 @@ describe('readInBatches', () => {
     }
     expect(rows).toEqual([[7]])
     expect(sent.some((s) => s === 'BEGIN' || s === 'COMMIT' || s === 'ROLLBACK')).toBe(false)
-    expect(sent[sent.length - 1]).toMatch(/^CLOSE powdb_cur_/)
+    expect(sent[sent.length - 1]).toMatch(/^CLOSE powdbs_cur_/)
   })
 
   test('returning early still closes the cursor and commits the owned transaction', async () => {
@@ -138,7 +138,7 @@ describe('readInBatches', () => {
       expect(batch.rows).toHaveLength(2)
       break
     }
-    expect(sent[sent.length - 2]).toMatch(/^CLOSE powdb_cur_/)
+    expect(sent[sent.length - 2]).toMatch(/^CLOSE powdbs_cur_/)
     expect(sent[sent.length - 1]).toBe('COMMIT')
   })
 
@@ -148,7 +148,7 @@ describe('readInBatches', () => {
     await expect(async () => {
       for await (const _ of readInBatches(client, 'SELECT 1', [], 2)) void _
     }).toThrow(boom)
-    expect(sent[sent.length - 2]).toMatch(/^CLOSE powdb_cur_/)
+    expect(sent[sent.length - 2]).toMatch(/^CLOSE powdbs_cur_/)
     expect(sent[sent.length - 1]).toBe('ROLLBACK')
   })
 

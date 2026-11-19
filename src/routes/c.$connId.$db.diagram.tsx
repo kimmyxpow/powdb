@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { SchemaDiagram } from '@/components/diagram/schema-diagram'
 
 export const Route = createFileRoute('/c/$connId/$db/diagram')({
-  head: ({ params }) => ({ meta: [{ title: `Diagram · ${params.db} · PowDB` }] }),
+  head: ({ params }) => ({ meta: [{ title: `Diagram · ${params.db} · PowDBs` }] }),
   component: DiagramPage,
 })
 

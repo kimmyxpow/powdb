@@ -5,7 +5,7 @@ import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 
-// The app version is baked into the build (src/lib/version.ts reads __POWDB_VERSION__).
+// The app version is baked into the build (src/lib/version.ts reads __POWDBS_VERSION__).
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
 
 /**
@@ -14,16 +14,16 @@ const { version } = JSON.parse(readFileSync(new URL('./package.json', import.met
  * module that throws, which sends ssh2 down its JavaScript path.
  */
 function noNativeAddons(): Plugin {
-  const stub = '\0powdb-no-native-addon'
+  const stub = '\0powdbs-no-native-addon'
   return {
-    name: 'powdb-no-native-addons',
+    name: 'powdbs-no-native-addons',
     enforce: 'pre',
     resolveId(id) {
       if (id === 'cpu-features' || id.endsWith('.node')) return stub
       return null
     },
     load(id) {
-      if (id === stub) return "throw new Error('Native addons are not used in PowDB.')"
+      if (id === stub) return "throw new Error('Native addons are not used in PowDBs.')"
       return null
     },
   }
@@ -34,7 +34,7 @@ export default defineConfig({
   resolve: { tsconfigPaths: true },
   // Bundle every dependency into the server build, so the Docker image needs no node_modules.
   ssr: { noExternal: true },
-  define: { __POWDB_VERSION__: JSON.stringify(version) },
+  define: { __POWDBS_VERSION__: JSON.stringify(version) },
   // Vite leaves the server build unminified by default; minify it too, it ships in the image and the npm package.
   build: { minify: true },
   plugins: [

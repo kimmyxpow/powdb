@@ -7,10 +7,10 @@
 /** Bun's idleTimeout is in seconds and cannot exceed 255. Long streams opt out per request. */
 export const IDLE_TIMEOUT_SECONDS = 255
 
-/** Mirrors DEFAULT_MAX_IMPORT_MB in import-csv.server.ts (POWDB_MAX_IMPORT_MB). */
+/** Mirrors DEFAULT_MAX_IMPORT_MB in import-csv.server.ts (POWDBS_MAX_IMPORT_MB). */
 export const DEFAULT_MAX_IMPORT_MB = 200
 
-/** Mirrors DEFAULT_MAX_RESTORE_MB in restore.server.ts (POWDB_MAX_RESTORE_MB). */
+/** Mirrors DEFAULT_MAX_RESTORE_MB in restore.server.ts (POWDBS_MAX_RESTORE_MB). */
 export const DEFAULT_MAX_RESTORE_MB = 2048
 
 const MEGABYTE = 1024 * 1024
@@ -27,8 +27,8 @@ export function megabytesFrom(raw: string | undefined, fallback: number): number
  * Bun refuses a restore before the handler runs. Bun's own default is 128 MB.
  */
 export function requestBodyLimitBytes(env: Readonly<Record<string, string | undefined>>): number {
-  const importMb = megabytesFrom(env.POWDB_MAX_IMPORT_MB, DEFAULT_MAX_IMPORT_MB)
-  const restoreMb = megabytesFrom(env.POWDB_MAX_RESTORE_MB, DEFAULT_MAX_RESTORE_MB)
+  const importMb = megabytesFrom(env.POWDBS_MAX_IMPORT_MB, DEFAULT_MAX_IMPORT_MB)
+  const restoreMb = megabytesFrom(env.POWDBS_MAX_RESTORE_MB, DEFAULT_MAX_RESTORE_MB)
   return Math.ceil(Math.max(importMb, restoreMb) * MEGABYTE)
 }
 

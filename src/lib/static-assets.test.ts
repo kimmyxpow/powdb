@@ -236,7 +236,7 @@ describe('notFoundResponse', () => {
 describe('loadAssetTable', () => {
   let dir = ''
   const ready = (async () => {
-    dir = await mkdtemp(path.join(tmpdir(), 'powdb-assets-'))
+    dir = await mkdtemp(path.join(tmpdir(), 'powdbs-assets-'))
     await mkdir(path.join(dir, 'assets'), { recursive: true })
     await writeFile(path.join(dir, 'assets', 'app.js'), 'console.log(1)')
     await writeFile(path.join(dir, 'assets', 'app.js.br'), 'br-copy')
@@ -261,6 +261,6 @@ describe('loadAssetTable', () => {
   })
 
   test('a missing directory gives an empty table', async () => {
-    expect((await loadAssetTable(path.join(tmpdir(), 'powdb-no-such-dir-xyz'))).size).toBe(0)
+    expect((await loadAssetTable(path.join(tmpdir(), 'powdbs-no-such-dir-xyz'))).size).toBe(0)
   })
 })

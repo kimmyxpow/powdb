@@ -17,7 +17,7 @@ const EXPORT_PATH = '/api/export/database'
 export const EXPORT_STATUS_PATH = '/api/export/database/status'
 
 export const PG_DUMP_MISSING_MESSAGE =
-  'pg_dump is not installed. The PowDB Docker image includes it; when running from source, install the PostgreSQL 18 client.'
+  'pg_dump is not installed. The PowDBs Docker image includes it; when running from source, install the PostgreSQL 18 client.'
 
 /** Answer of GET /api/export/database/status. */
 export interface PgDumpStatus {

@@ -294,7 +294,7 @@ async function importRows(
       if (request.signal.aborted) throw aborted()
       if (done) break
       bytesSeen += value.byteLength
-      if (bytesSeen > limitBytes) throw fileTooLarge(limitMb, 'POWDB_MAX_IMPORT_MB')
+      if (bytesSeen > limitBytes) throw fileTooLarge(limitMb, 'POWDBS_MAX_IMPORT_MB')
       await feed(decoder.decode(value, { stream: true }), false)
     }
     await feed(decoder.decode(), true)
@@ -327,8 +327,8 @@ export async function handleCsvImport(request: Request): Promise<Response> {
     const req = parseImportParams(new URL(request.url).searchParams)
     const conn = await loadConnection(req.connection)
     if (conn.readOnly) throw new HttpError(403, 'read_only', 'This connection is read-only.')
-    const limitMb = envMegabytes('POWDB_MAX_IMPORT_MB', DEFAULT_MAX_IMPORT_MB)
-    checkDeclaredSize(request, limitMb, 'POWDB_MAX_IMPORT_MB')
+    const limitMb = envMegabytes('POWDBS_MAX_IMPORT_MB', DEFAULT_MAX_IMPORT_MB)
+    checkDeclaredSize(request, limitMb, 'POWDBS_MAX_IMPORT_MB')
     const { pool } = await poolFor(conn.id, req.database)
     const columns = await loadTableColumns(pool, req.schema, req.table)
     const plan = planMapping(columns, req.mapping)

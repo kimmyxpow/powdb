@@ -14,7 +14,7 @@ import {
 
 const PSQL = '/usr/lib/postgresql/18/bin/psql'
 const PG_RESTORE = '/usr/lib/postgresql/18/bin/pg_restore'
-const FILE = '/tmp/powdb-restore-x/dump.sql'
+const FILE = '/tmp/powdbs-restore-x/dump.sql'
 const SECRET = 'p@ss w\'o"rd\\1'
 
 function target(overrides: Partial<DumpTarget> = {}): DumpTarget {
@@ -32,10 +32,10 @@ function target(overrides: Partial<DumpTarget> = {}): DumpTarget {
 const bytes = (...values: number[]) => Uint8Array.from(values)
 const ascii = (text: string) => new TextEncoder().encode(text)
 
-const ORIGINAL_LIMIT = process.env.POWDB_MAX_RESTORE_MB
+const ORIGINAL_LIMIT = process.env.POWDBS_MAX_RESTORE_MB
 afterEach(() => {
-  if (ORIGINAL_LIMIT === undefined) delete process.env.POWDB_MAX_RESTORE_MB
-  else process.env.POWDB_MAX_RESTORE_MB = ORIGINAL_LIMIT
+  if (ORIGINAL_LIMIT === undefined) delete process.env.POWDBS_MAX_RESTORE_MB
+  else process.env.POWDBS_MAX_RESTORE_MB = ORIGINAL_LIMIT
 })
 
 describe('buildRestorePlan: SQL files (psql)', () => {
@@ -137,7 +137,7 @@ describe('buildRestorePlan: connection and environment', () => {
     )
     expect(env.PGSSLMODE).toBe('require')
     expect(env.PGCONNECT_TIMEOUT).toBe('10')
-    expect(env.PGAPPNAME).toBe('powdb')
+    expect(env.PGAPPNAME).toBe('powdbs')
   })
 })
 
@@ -190,7 +190,7 @@ describe('format detection', () => {
 describe('error counting', () => {
   test('counts psql and pg_restore error lines', () => {
     expect(isErrorLine('ERROR:  relation "t" already exists')).toBe(true)
-    expect(isErrorLine('psql:/tmp/powdb-restore-x/dump.sql:12: ERROR:  syntax error')).toBe(true)
+    expect(isErrorLine('psql:/tmp/powdbs-restore-x/dump.sql:12: ERROR:  syntax error')).toBe(true)
     expect(isErrorLine('pg_restore: error: could not execute query: ERROR:  boom')).toBe(true)
     expect(isErrorLine('psql: error: connection failed')).toBe(true)
   })
@@ -317,16 +317,16 @@ describe('parseRestoreParams', () => {
 
 describe('restoreLimitMb', () => {
   test('defaults to 2048 MB', () => {
-    delete process.env.POWDB_MAX_RESTORE_MB
+    delete process.env.POWDBS_MAX_RESTORE_MB
     expect(restoreLimitMb()).toBe(2048)
   })
 
-  test('reads POWDB_MAX_RESTORE_MB and ignores nonsense', () => {
-    process.env.POWDB_MAX_RESTORE_MB = '512'
+  test('reads POWDBS_MAX_RESTORE_MB and ignores nonsense', () => {
+    process.env.POWDBS_MAX_RESTORE_MB = '512'
     expect(restoreLimitMb()).toBe(512)
-    process.env.POWDB_MAX_RESTORE_MB = 'lots'
+    process.env.POWDBS_MAX_RESTORE_MB = 'lots'
     expect(restoreLimitMb()).toBe(2048)
-    process.env.POWDB_MAX_RESTORE_MB = '0'
+    process.env.POWDBS_MAX_RESTORE_MB = '0'
     expect(restoreLimitMb()).toBe(2048)
   })
 })
@@ -347,7 +347,7 @@ describe('restoreUrl', () => {
 describe('tidyLog', () => {
   test('replaces the temp path with the line number', async () => {
     const { tidyLog } = await import('./restore.server')
-    const f = '/tmp/powdb-restore-abc/dump.sql'
+    const f = '/tmp/powdbs-restore-abc/dump.sql'
     expect(tidyLog(`psql:${f}:26: ERROR:  schema "a" already exists`, f)).toBe(
       'line 26: ERROR:  schema "a" already exists',
     )

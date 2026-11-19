@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { SqlWorkspace } from '@/components/sql/sql-workspace'
 
 export const Route = createFileRoute('/c/$connId/$db/sql')({
-  head: ({ params }) => ({ meta: [{ title: `SQL · ${params.db} · PowDB` }] }),
+  head: ({ params }) => ({ meta: [{ title: `SQL · ${params.db} · PowDBs` }] }),
   component: SqlPage,
 })
 

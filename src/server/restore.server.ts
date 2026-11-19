@@ -85,9 +85,9 @@ export function parseRestoreParams(params: URLSearchParams): RestoreParams {
   return { connection, database, format: format as RestoreFormat, atomic, clean }
 }
 
-/** Upper limit for the upload in MB. POWDB_MAX_RESTORE_MB, default 2048. */
+/** Upper limit for the upload in MB. POWDBS_MAX_RESTORE_MB, default 2048. */
 export function restoreLimitMb(): number {
-  return envMegabytes('POWDB_MAX_RESTORE_MB', DEFAULT_MAX_RESTORE_MB)
+  return envMegabytes('POWDBS_MAX_RESTORE_MB', DEFAULT_MAX_RESTORE_MB)
 }
 
 // ---------------------------------------------------------------------------
@@ -99,11 +99,11 @@ export function toolFor(format: RestoreFormat): PgTool {
 }
 
 /**
- * Finds a PostgreSQL client program: in POWDB_PG_BIN when set, else next to the located pg_dump,
+ * Finds a PostgreSQL client program: in POWDBS_PG_BIN when set, else next to the located pg_dump,
  * else on PATH. Null when it is not there.
  */
 function locatePgTool(name: PgTool): string | null {
-  const dir = process.env.POWDB_PG_BIN?.trim()
+  const dir = process.env.POWDBS_PG_BIN?.trim()
   if (dir) {
     const candidate = join(dir, name)
     return existsSync(candidate) ? candidate : null
@@ -117,7 +117,7 @@ function locatePgTool(name: PgTool): string | null {
 }
 
 function missingToolMessage(tool: PgTool): string {
-  return `${tool} is not installed. The PowDB Docker image includes it; when running from source, install the PostgreSQL 18 client, or set POWDB_PG_BIN to the folder that holds it.`
+  return `${tool} is not installed. The PowDBs Docker image includes it; when running from source, install the PostgreSQL 18 client, or set POWDBS_PG_BIN to the folder that holds it.`
 }
 
 // ---------------------------------------------------------------------------
@@ -211,7 +211,7 @@ async function receiveUpload(request: Request, file: string, format: RestoreForm
   const guard = async function* (source: AsyncIterable<Uint8Array>) {
     for await (const chunk of source) {
       bytes += chunk.byteLength
-      if (bytes > limit) throw fileTooLarge(limitMb, 'POWDB_MAX_RESTORE_MB')
+      if (bytes > limit) throw fileTooLarge(limitMb, 'POWDBS_MAX_RESTORE_MB')
       if (!checked) {
         const need = RESTORE_SNIFF_BYTES - head.length
         head = Buffer.concat([head, chunk.subarray(0, need)])
@@ -323,13 +323,13 @@ export async function handleRestore(request: Request): Promise<Response> {
     const conn = await loadConnection(req.connection)
     if (conn.readOnly) throw new HttpError(403, 'read_only', 'This connection is read-only.')
     const limitMb = restoreLimitMb()
-    checkDeclaredSize(request, limitMb, 'POWDB_MAX_RESTORE_MB')
+    checkDeclaredSize(request, limitMb, 'POWDBS_MAX_RESTORE_MB')
     const tool = toolFor(req.format)
     const binary = locatePgTool(tool)
     if (!binary) throw new HttpError(501, 'pg_tools_missing', missingToolMessage(tool))
 
     // a fresh directory per restore: the file never has a name the client chose
-    const dir = await mkdtemp(join(tmpdir(), 'powdb-restore-'))
+    const dir = await mkdtemp(join(tmpdir(), 'powdbs-restore-'))
     try {
       const file = join(dir, req.format === 'custom' ? 'dump.dump' : 'dump.sql')
       await receiveUpload(request, file, req.format, limitMb)
@@ -347,7 +347,7 @@ export async function handleRestore(request: Request): Promise<Response> {
   }
 }
 
-/** `psql:/tmp/powdb-restore-x/dump.sql:26: ERROR: ...` becomes `line 26: ERROR: ...`. */
+/** `psql:/tmp/powdbs-restore-x/dump.sql:26: ERROR: ...` becomes `line 26: ERROR: ...`. */
 export function tidyLog(log: string, file: string): string {
   return log.split(`psql:${file}:`).join('line ').split(file).join('the file')
 }

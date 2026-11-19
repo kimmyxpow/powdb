@@ -1,8 +1,8 @@
-// Code behind the `powdb` command (npx powdb, bunx powdb). See bin/powdb.mjs.
+// Code behind the `powdbs` command (npx powdbs, bunx powdbs). See bin/powdbs.mjs.
 //
-// Runs on Node.js 18 or newer and on Bun, with no dependencies. PowDB's server needs Bun, so the
-// launcher finds Bun 1.4.4 or newer (or offers to install it into ~/.powdb/runtime), then runs
-// start.js with it. Other commands go to the admin CLI bundle, dist/cli/powdb.js.
+// Runs on Node.js 18 or newer and on Bun, with no dependencies. PowDBs's server needs Bun, so the
+// launcher finds Bun 1.4.4 or newer (or offers to install it into ~/.powdbs/runtime), then runs
+// start.js with it. Other commands go to the admin CLI bundle, dist/cli/powdbs.js.
 // Importing this module does nothing: main() does the work.
 
 import { spawn, spawnSync } from 'node:child_process'
@@ -29,7 +29,7 @@ const BUN_CPU = new Map([
   ['arm64', 'aarch64'],
 ])
 const SERVE_VALUE_FLAGS = new Set(['--port', '--host', '--data-dir'])
-const REGISTRY_LATEST_URL = 'https://registry.npmjs.org/powdb/latest'
+const REGISTRY_LATEST_URL = 'https://registry.npmjs.org/powdbs/latest'
 const REGISTRY_TIMEOUT_MS = 3000
 
 // ---- small helpers ----------------------------------------------------------------------------
@@ -93,9 +93,9 @@ export function parsePortFlag(value) {
 /**
  * Reads the command line. Returns one of:
  *   { mode: 'serve', options }  start the server: no command, or "start" / "serve"
- *   { mode: 'cli', args }       an admin command, passed on to dist/cli/powdb.js
- *   { mode: 'help' }            powdb --help
- *   { mode: 'version' }         powdb --version
+ *   { mode: 'cli', args }       an admin command, passed on to dist/cli/powdbs.js
+ *   { mode: 'help' }            powdbs --help
+ *   { mode: 'version' }         powdbs --version
  *   { mode: 'error', message }  a bad flag or value
  */
 export function parseArgs(argv) {
@@ -136,7 +136,7 @@ function parseServeArgs(argv) {
         options.dataDir = value
       }
     } else {
-      return usageError(`Unknown option "${arg}". Run "powdb --help" to see the options.`)
+      return usageError(`Unknown option "${arg}". Run "powdbs --help" to see the options.`)
     }
   }
   if (help) return { mode: 'help' }
@@ -146,20 +146,20 @@ function parseServeArgs(argv) {
 
 // ---- folders ----------------------------------------------------------------------------------
 
-/** The data folder: --data-dir, else POWDB_DATA_DIR, else ~/.powdb. Always an absolute path. */
+/** The data folder: --data-dir, else POWDBS_DATA_DIR, else ~/.powdbs. Always an absolute path. */
 export function resolveDataDir({ flag, env, homeDir, platform }) {
   const p = pathsFor(platform)
-  const chosen = nonEmpty(flag) ?? nonEmpty(env.POWDB_DATA_DIR)
-  if (chosen === undefined) return p.join(homeDir, '.powdb')
+  const chosen = nonEmpty(flag) ?? nonEmpty(env.POWDBS_DATA_DIR)
+  if (chosen === undefined) return p.join(homeDir, '.powdbs')
   let expanded = chosen
   if (chosen === '~') expanded = homeDir
   else if (/^~[\\/]/.test(chosen)) expanded = p.join(homeDir, chosen.slice(2))
   return p.resolve(expanded)
 }
 
-/** Where a private copy of Bun is installed. It lives under ~/.powdb even when the data folder moves. */
+/** Where a private copy of Bun is installed. It lives under ~/.powdbs even when the data folder moves. */
 export function runtimeDirFor(homeDir, platform) {
-  return pathsFor(platform).join(homeDir, '.powdb', 'runtime')
+  return pathsFor(platform).join(homeDir, '.powdbs', 'runtime')
 }
 
 /** Settings for starting the server. Flags win over environment variables, which win over defaults. */
@@ -178,14 +178,14 @@ export function childEnv(baseEnv, settings) {
     ...baseEnv,
     PORT: settings.port,
     HOST: settings.host,
-    POWDB_DATA_DIR: settings.dataDir,
-    POWDB_INSTALL: 'npm',
+    POWDBS_DATA_DIR: settings.dataDir,
+    POWDBS_INSTALL: 'npm',
   }
 }
 
-/** False when POWDB_UPDATE_CHECK is off, false or 0. The update check is on otherwise. */
+/** False when POWDBS_UPDATE_CHECK is off, false or 0. The update check is on otherwise. */
 export function updateCheckOn(env) {
-  const value = String(env.POWDB_UPDATE_CHECK ?? '')
+  const value = String(env.POWDBS_UPDATE_CHECK ?? '')
     .trim()
     .toLowerCase()
   return value !== 'off' && value !== 'false' && value !== '0'
@@ -194,7 +194,7 @@ export function updateCheckOn(env) {
 /** The line to print when latest is a newer version than current, or null (also when either is not a version). */
 export function updateNotice(current, latest) {
   if (compareVersions(latest, current) !== 1) return null
-  return `PowDB ${latest} is available (you have ${current}). Stop PowDB and run: npx powdb@latest`
+  return `PowDBs ${latest} is available (you have ${current}). Stop PowDBs and run: npx powdbs@latest`
 }
 
 /**
@@ -217,7 +217,7 @@ export async function latestRegistryVersion({ env, fetchImpl = globalThis.fetch 
 }
 
 export function cliEnv(baseEnv, dataDir) {
-  return { ...baseEnv, POWDB_DATA_DIR: dataDir }
+  return { ...baseEnv, POWDBS_DATA_DIR: dataDir }
 }
 
 /** The address a browser should open for a server bound to host and port. */
@@ -265,7 +265,7 @@ export function privateBunCandidates({ runtimeDir, platform, arch }) {
 
 /**
  * Picks the Bun that runs the server. Order: the Bun running this launcher, then bun on PATH,
- * then the private copy in ~/.powdb/runtime. The first one that reports 1.4.4 or newer wins.
+ * then the private copy in ~/.powdbs/runtime. The first one that reports 1.4.4 or newer wins.
  * `probe.isFile(file)` and `probe.versionOf(bin)` (null when the file does not run) are injected.
  * Returns { bin, version, source, old }, where old lists the copies that were found but are too old
  * or do not run.
@@ -311,16 +311,16 @@ export function npmCommand({ platform, execPath, isNode, isFile }) {
 // ---- PostgreSQL client tools ------------------------------------------------------------------
 
 /**
- * The client tools that are not found. pg_dump counts as found when POWDB_PG_DUMP is set;
- * pg_restore and psql count as found when POWDB_PG_BIN is set. Otherwise they must be on PATH.
+ * The client tools that are not found. pg_dump counts as found when POWDBS_PG_DUMP is set;
+ * pg_restore and psql count as found when POWDBS_PG_BIN is set. Otherwise they must be on PATH.
  */
 export function missingPgTools({ env, platform, isFile }) {
   const pathValue = pathEnvOf(env)
   const onPath = (name) => findAllOnPath(name, { pathValue, platform, isFile }).length > 0
   const missing = []
-  if (nonEmpty(env.POWDB_PG_DUMP) === undefined && !onPath('pg_dump')) missing.push('pg_dump')
-  if (nonEmpty(env.POWDB_PG_BIN) === undefined && !onPath('pg_restore')) missing.push('pg_restore')
-  if (nonEmpty(env.POWDB_PG_BIN) === undefined && !onPath('psql')) missing.push('psql')
+  if (nonEmpty(env.POWDBS_PG_DUMP) === undefined && !onPath('pg_dump')) missing.push('pg_dump')
+  if (nonEmpty(env.POWDBS_PG_BIN) === undefined && !onPath('pg_restore')) missing.push('pg_restore')
+  if (nonEmpty(env.POWDBS_PG_BIN) === undefined && !onPath('psql')) missing.push('psql')
   return missing
 }
 
@@ -328,38 +328,38 @@ export function missingPgTools({ env, platform, isFile }) {
 
 export function helpText(version) {
   return [
-    `powdb ${version}: a web app for browsing and managing PostgreSQL databases`,
+    `powdbs ${version}: a web app for browsing and managing PostgreSQL databases`,
     '',
     'Usage:',
-    '  powdb                    start PowDB (same as "powdb start")',
-    '  powdb <command> [...]    admin commands, for example "powdb status" (see "powdb help")',
+    '  powdbs                    start PowDBs (same as "powdbs start")',
+    '  powdbs <command> [...]    admin commands, for example "powdbs status" (see "powdbs help")',
     '',
     'Start options:',
     '  --port <n>               port to listen on (default: $PORT, else 3333)',
     '  --host <address>         address to listen on (default: $HOST, else 127.0.0.1)',
-    '  --data-dir <path>        data folder (default: $POWDB_DATA_DIR, else ~/.powdb)',
+    '  --data-dir <path>        data folder (default: $POWDBS_DATA_DIR, else ~/.powdbs)',
     '  --no-open                do not open the browser',
     '  -y, --yes                install Bun without asking, when it is missing',
     '  -v, --version            print the version',
     '  -h, --help               show this help',
     '',
     'The admin commands (status, tables, query, dump, restore, ...) talk to the running server.',
-    'Run "powdb help" to see them.',
+    'Run "powdbs help" to see them.',
   ].join('\n')
 }
 
 export function bunNotice({ old, runtimeDir }) {
-  const lines = [`NOTICE: PowDB runs on the Bun runtime (version ${MIN_BUN_VERSION} or newer), not on Node.js.`]
+  const lines = [`NOTICE: PowDBs runs on the Bun runtime (version ${MIN_BUN_VERSION} or newer), not on Node.js.`]
   if (old.length === 0) lines.push('Bun is not installed on this computer.')
   for (const copy of old) {
     if (copy.version) lines.push(`Bun ${copy.version} at ${copy.bin} is too old.`)
     else lines.push(`Found ${copy.bin}, but it does not run.`)
   }
   lines.push('', 'You can:')
-  lines.push(`  1. Let powdb install Bun ${MIN_BUN_VERSION} into ${runtimeDir}.`)
+  lines.push(`  1. Let powdbs install Bun ${MIN_BUN_VERSION} into ${runtimeDir}.`)
   lines.push('     That is about 100 MB of disk space (the size depends on the platform).')
   lines.push('     Nothing else on this computer changes: no system install, no PATH or shell change.')
-  lines.push('  2. Install Bun yourself from https://bun.sh, then run powdb again.')
+  lines.push('  2. Install Bun yourself from https://bun.sh, then run powdbs again.')
   return lines.join('\n')
 }
 
@@ -373,7 +373,7 @@ export function pgToolsNotice(missing) {
     '  Debian/Ubuntu:  sudo apt install postgresql-client',
     '  Windows:        run the PostgreSQL installer from https://www.postgresql.org/download/windows/',
     '                  and select only the command line tools',
-    'Or point POWDB_PG_DUMP (pg_dump) and POWDB_PG_BIN (folder with psql and pg_restore) at them.',
+    'Or point POWDBS_PG_DUMP (pg_dump) and POWDBS_PG_BIN (folder with psql and pg_restore) at them.',
   ].join('\n')
 }
 
@@ -430,7 +430,7 @@ async function answers(url) {
 function waitForExit(child) {
   return new Promise((resolve) => {
     child.on('error', (error) => {
-      console.error(`powdb: ${error.message}`)
+      console.error(`powdbs: ${error.message}`)
       resolve(1)
     })
     // A process stopped by a signal exits with 128 + the signal number, as shells report it (130 for Ctrl+C).
@@ -510,26 +510,26 @@ async function ensureBun({ env, homeDir, platform, arch, yes, isNode }) {
   if (!yes) {
     if (!process.stdin.isTTY) {
       console.error(
-        `Not running in a terminal, so Bun was not installed. Install Bun from https://bun.sh, or run "powdb --yes" to let powdb install Bun ${MIN_BUN_VERSION}.`,
+        `Not running in a terminal, so Bun was not installed. Install Bun from https://bun.sh, or run "powdbs --yes" to let powdbs install Bun ${MIN_BUN_VERSION}.`,
       )
       return null
     }
     const answer = await ask('Install it now? [y/N] ')
     if (!/^y(es)?$/i.test(answer.trim())) {
-      console.error('Nothing was installed. Install Bun from https://bun.sh, then run powdb again.')
+      console.error('Nothing was installed. Install Bun from https://bun.sh, then run powdbs again.')
       return null
     }
   }
 
   const code = await installBun(runtimeDir, isNode, platform, realProbe.isFile)
   if (code !== 0) {
-    console.error(`powdb: installing Bun failed (npm exit code ${code}). Install Bun from https://bun.sh instead.`)
+    console.error(`powdbs: installing Bun failed (npm exit code ${code}). Install Bun from https://bun.sh instead.`)
     return null
   }
   const installed = lookup()
   if (installed.bin === null) {
     console.error(
-      `powdb: Bun ${MIN_BUN_VERSION} was installed but does not run. Install Bun from https://bun.sh instead.`,
+      `powdbs: Bun ${MIN_BUN_VERSION} was installed but does not run. Install Bun from https://bun.sh instead.`,
     )
     return null
   }
@@ -539,7 +539,7 @@ async function ensureBun({ env, homeDir, platform, arch, yes, isNode }) {
 async function serve(bun, settings, platform) {
   const startJs = path.join(PACKAGE_DIR, 'start.js')
   if (!existsSync(startJs)) {
-    console.error(`powdb: ${startJs} is missing. Reinstall the powdb package.`)
+    console.error(`powdbs: ${startJs} is missing. Reinstall the powdbs package.`)
     return 1
   }
   console.error(`Data folder: ${settings.dataDir}`)
@@ -549,10 +549,10 @@ async function serve(bun, settings, platform) {
   const url = serverUrl(settings.host, settings.port)
   const port = parsePortFlag(settings.port)
   // If something already answers there, the server will fail to bind and print the real error.
-  // Waiting for an answer would then report that other program as PowDB, so the wait is skipped.
+  // Waiting for an answer would then report that other program as PowDBs, so the wait is skipped.
   const busy = port !== null && (await answers(url))
   if (busy)
-    console.error(`Something is already answering at ${url}. If it is not PowDB, use --port to pick another port.`)
+    console.error(`Something is already answering at ${url}. If it is not PowDBs, use --port to pick another port.`)
 
   // Started now and read after the server is up, so the check never delays the start.
   const latestCheck = latestRegistryVersion({ env: process.env })
@@ -579,7 +579,7 @@ async function serve(bun, settings, platform) {
       })
     } else if (!gone) {
       console.error(
-        `PowDB has not answered at ${url} after ${SERVER_WAIT_MS / 1000} seconds. Check the messages above.`,
+        `PowDBs has not answered at ${url} after ${SERVER_WAIT_MS / 1000} seconds. Check the messages above.`,
       )
     }
   }
@@ -587,9 +587,9 @@ async function serve(bun, settings, platform) {
 }
 
 function runCli(bun, args, env) {
-  const cliJs = path.join(PACKAGE_DIR, 'dist', 'cli', 'powdb.js')
+  const cliJs = path.join(PACKAGE_DIR, 'dist', 'cli', 'powdbs.js')
   if (!existsSync(cliJs)) {
-    console.error(`powdb: ${cliJs} is missing. Reinstall the powdb package.`)
+    console.error(`powdbs: ${cliJs} is missing. Reinstall the powdbs package.`)
     return Promise.resolve(1)
   }
   const child = spawn(bun, [cliJs, ...args], { stdio: 'inherit', env, windowsHide: true })
@@ -598,12 +598,12 @@ function runCli(bun, args, env) {
 
 /**
  * Runs the command line. Resolves with the exit code. For the server it resolves when the server
- * stops. bin/powdb.mjs passes the code to process.exit.
+ * stops. bin/powdbs.mjs passes the code to process.exit.
  */
 export async function main(argv) {
   const parsed = parseArgs(argv)
   if (parsed.mode === 'error') {
-    console.error(`powdb: ${parsed.message}`)
+    console.error(`powdbs: ${parsed.message}`)
     return 2
   }
   if (parsed.mode === 'help') {

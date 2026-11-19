@@ -4,7 +4,7 @@ import type { AuditEntry } from '@/lib/types'
 import { dataDir } from './store.server'
 
 /**
- * One JSON line per agent query in $POWDB_DATA_DIR/audit.jsonl (mode 0600). When the file
+ * One JSON line per agent query in $POWDBS_DATA_DIR/audit.jsonl (mode 0600). When the file
  * reaches 5 MB it is moved to audit.1.jsonl, which replaces the previous rotation.
  */
 const MAX_BYTES = 5 * 1024 * 1024
@@ -26,7 +26,7 @@ export async function appendAudit(entry: AuditEntry): Promise<void> {
     chain = run.catch(() => {})
     await run
   } catch (err) {
-    console.warn(`[powdb] audit log write failed: ${(err as Error).message}`)
+    console.warn(`[powdbs] audit log write failed: ${(err as Error).message}`)
   }
 }
 

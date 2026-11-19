@@ -57,7 +57,7 @@ export function AiAccessDialog() {
         <DialogHeader>
           <DialogTitle>AI access</DialogTitle>
           <DialogDescription>
-            Let AI tools like Claude Code or Cursor query your databases through PowDB. They never see database
+            Let AI tools like Claude Code or Cursor query your databases through PowDBs. They never see database
             passwords. Each connection decides what AI may do; new connections are read-only for AI.
           </DialogDescription>
         </DialogHeader>
@@ -99,8 +99,8 @@ function ConnectWithoutTokenDialog({ open, onOpenChange }: { open: boolean; onOp
         <DialogHeader>
           <DialogTitle>Connect without a token</DialogTitle>
           <DialogDescription>
-            Your AI tool runs PowDB's command inside the Docker container, so no token is needed. Docker must run on the
-            same machine.
+            Your AI tool runs PowDBs's command inside the Docker container, so no token is needed. Docker must run on
+            the same machine.
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>

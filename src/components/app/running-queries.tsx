@@ -192,9 +192,9 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
                   <TableCell className="max-w-48">
                     <span className="flex min-w-0 items-center gap-1.5">
                       <span className="truncate text-muted-foreground">{r.applicationName ?? ''}</span>
-                      {r.isPowdb && (
+                      {r.isPowdbs && (
                         <Badge size="sm" variant="info">
-                          PowDB
+                          PowDBs
                         </Badge>
                       )}
                     </span>

@@ -289,7 +289,7 @@ async function streamTable(conn: ConnectionConfig, req: TableExportRequest): Pro
           // Once the status line is out, the only way to report an error is to end the body early.
           if (!cancelled)
             console.error(
-              `[powdb] export of ${req.schema}.${req.table} failed after ${written} rows: ${describeError(err)}`,
+              `[powdbs] export of ${req.schema}.${req.table} failed after ${written} rows: ${describeError(err)}`,
             )
           await finish(false)
           controller.error(err)
@@ -330,7 +330,7 @@ export async function handleExportRequest(request: Request): Promise<Response> {
       throw new HttpError(
         403,
         'forbidden',
-        'API tokens and AI agents cannot export whole tables. Sign in to PowDB, or use the local key.',
+        'API tokens and AI agents cannot export whole tables. Sign in to PowDBs, or use the local key.',
       )
     }
     const req = parseTableExportRequest(request)

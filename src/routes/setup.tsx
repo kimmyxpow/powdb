@@ -13,7 +13,7 @@ const MIN_PASSWORD = 8
 
 export const Route = createFileRoute('/setup')({
   validateSearch: validateRedirectSearch,
-  head: () => ({ meta: [{ title: 'Set up PowDB · PowDB' }] }),
+  head: () => ({ meta: [{ title: 'Set up PowDBs · PowDBs' }] }),
   component: SetupPage,
 })
 
@@ -45,7 +45,10 @@ function SetupPage() {
   }
 
   return (
-    <AuthCard description="This account protects every connection you save in PowDB." title="Create your admin account">
+    <AuthCard
+      description="This account protects every connection you save in PowDBs."
+      title="Create your admin account"
+    >
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <Field>
           <FieldLabel htmlFor="setup-username">Username</FieldLabel>

@@ -54,10 +54,10 @@ function checkWriteStatements(statements: StatementRange[]): void {
   if (statements.length === 0) throw new Error('No statement to run.')
   for (const s of statements) {
     const keyword = firstKeyword(s.text)
-    // PowDB owns the transaction, so statements that would end or nest it are refused.
+    // PowDBs owns the transaction, so statements that would end or nest it are refused.
     if (keyword && TRANSACTION_KEYWORDS.has(keyword)) {
       throw new Error(
-        'Transaction statements (BEGIN, COMMIT, ROLLBACK, SAVEPOINT, ...) are not allowed. PowDB wraps the request in one transaction.',
+        'Transaction statements (BEGIN, COMMIT, ROLLBACK, SAVEPOINT, ...) are not allowed. PowDBs wraps the request in one transaction.',
       )
     }
     // COPY needs the copy sub-protocol, which this query path does not speak.

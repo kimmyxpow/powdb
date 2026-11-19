@@ -4,22 +4,22 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { decryptSecret, deriveKeyFromSecret, encryptSecret, isEncrypted } from './secret.server'
 
-const SAVED = { dir: process.env.POWDB_DATA_DIR, secret: process.env.POWDB_SECRET }
+const SAVED = { dir: process.env.POWDBS_DATA_DIR, secret: process.env.POWDBS_SECRET }
 const TAMPERED =
-  'This saved password cannot be decrypted. If POWDB_SECRET changed, set it back or enter the password again.'
+  'This saved password cannot be decrypted. If POWDBS_SECRET changed, set it back or enter the password again.'
 let dir: string
 
 beforeEach(() => {
-  dir = mkdtempSync(path.join(tmpdir(), 'powdb-secret-'))
-  process.env.POWDB_DATA_DIR = dir
-  delete process.env.POWDB_SECRET
+  dir = mkdtempSync(path.join(tmpdir(), 'powdbs-secret-'))
+  process.env.POWDBS_DATA_DIR = dir
+  delete process.env.POWDBS_SECRET
 })
 
 afterEach(() => {
-  if (SAVED.dir === undefined) delete process.env.POWDB_DATA_DIR
-  else process.env.POWDB_DATA_DIR = SAVED.dir
-  if (SAVED.secret === undefined) delete process.env.POWDB_SECRET
-  else process.env.POWDB_SECRET = SAVED.secret
+  if (SAVED.dir === undefined) delete process.env.POWDBS_DATA_DIR
+  else process.env.POWDBS_DATA_DIR = SAVED.dir
+  if (SAVED.secret === undefined) delete process.env.POWDBS_SECRET
+  else process.env.POWDBS_SECRET = SAVED.secret
   rmSync(dir, { recursive: true, force: true })
 })
 
@@ -65,21 +65,21 @@ describe('saved password encryption', () => {
     expect(readdirSync(dir).sort()).toEqual(['encryption.key'])
   })
 
-  test('the POWDB_SECRET key differs from the file key and is needed to read its values', () => {
+  test('the POWDBS_SECRET key differs from the file key and is needed to read its values', () => {
     const secret = 'a long enough secret'
     encryptSecret('warm up file key')
     expect(deriveKeyFromSecret(secret).equals(fileKey())).toBe(false)
 
-    process.env.POWDB_SECRET = secret
+    process.env.POWDBS_SECRET = secret
     const stored = encryptSecret('kept outside the volume')
     expect(decryptSecret(stored)).toBe('kept outside the volume')
 
-    delete process.env.POWDB_SECRET
+    delete process.env.POWDBS_SECRET
     expect(() => decryptSecret(stored)).toThrow(TAMPERED)
   })
 
-  test('a POWDB_SECRET shorter than 16 characters refuses to encrypt', () => {
-    process.env.POWDB_SECRET = 'too-short'
+  test('a POWDBS_SECRET shorter than 16 characters refuses to encrypt', () => {
+    process.env.POWDBS_SECRET = 'too-short'
     expect(() => encryptSecret('pw')).toThrow('at least 16 characters')
   })
 })

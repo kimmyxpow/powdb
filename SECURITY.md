@@ -1,13 +1,13 @@
 # Security policy
 
-PowDB can read and change your databases, so security reports are taken seriously.
+PowDBs can read and change your databases, so security reports are taken seriously.
 
 ## Report a vulnerability
 
 Please do not open a public issue. Report it privately through
-[GitHub security advisories](https://github.com/powroom/powdb/security/advisories/new).
+[GitHub security advisories](https://github.com/powroom/powdbs/security/advisories/new).
 
-Include what you found, how to reproduce it, and the PowDB version. You will get an answer as soon
+Include what you found, how to reproduce it, and the PowDBs version. You will get an answer as soon
 as possible, and a fix is released before the details are made public.
 
 ## Supported versions

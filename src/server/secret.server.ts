@@ -4,7 +4,7 @@ import path from 'node:path'
 import { dataDir } from './store.server'
 
 /**
- * Encryption for saved connection passwords (AES-256-GCM). The key comes from POWDB_SECRET
+ * Encryption for saved connection passwords (AES-256-GCM). The key comes from POWDBS_SECRET
  * when it is set, otherwise from encryption.key in the data folder (created on first use).
  *
  * Stored form: enc:v1:<base64 iv, 12 bytes>:<base64 ciphertext followed by the 16-byte tag>
@@ -12,19 +12,19 @@ import { dataDir } from './store.server'
 
 const PREFIX = 'enc:v1:'
 const KEY_FILE = 'encryption.key'
-const KEY_DOMAIN = 'powdb:connection-passwords:v1'
+const KEY_DOMAIN = 'powdbs:connection-passwords:v1'
 const IV_BYTES = 12
 const TAG_BYTES = 16
 const MIN_SECRET_LENGTH = 16
 
 const UNREADABLE =
-  'This saved password cannot be decrypted. If POWDB_SECRET changed, set it back or enter the password again.'
+  'This saved password cannot be decrypted. If POWDBS_SECRET changed, set it back or enter the password again.'
 
 export function isEncrypted(value: string | null | undefined): value is string {
   return typeof value === 'string' && value.startsWith(PREFIX)
 }
 
-/** The key derived from POWDB_SECRET: SHA-256 over a fixed domain string and the secret. */
+/** The key derived from POWDBS_SECRET: SHA-256 over a fixed domain string and the secret. */
 export function deriveKeyFromSecret(secret: string): Buffer {
   return Buffer.from(new Bun.CryptoHasher('sha256').update(KEY_DOMAIN).update('\0').update(secret).digest())
 }
@@ -39,7 +39,7 @@ function fileKey(create: boolean): Buffer | null {
   if (existsSync(file)) {
     const key = Buffer.from(readFileSync(file, 'utf8').trim(), 'base64')
     if (key.length !== 32) {
-      throw new Error(`The encryption key in ${file} is damaged. Restore it from a backup, or set POWDB_SECRET.`)
+      throw new Error(`The encryption key in ${file} is damaged. Restore it from a backup, or set POWDBS_SECRET.`)
     }
     return key
   }
@@ -55,11 +55,11 @@ function fileKey(create: boolean): Buffer | null {
 
 /** The active key, or null when there is none and `create` is false. */
 function activeKey(create: boolean): Buffer | null {
-  const secret = process.env.POWDB_SECRET
+  const secret = process.env.POWDBS_SECRET
   if (secret) {
     if (secret.length < MIN_SECRET_LENGTH) {
-      const message = `POWDB_SECRET must be at least ${MIN_SECRET_LENGTH} characters. Passwords cannot be encrypted until it is.`
-      console.warn(`[powdb] ${message}`)
+      const message = `POWDBS_SECRET must be at least ${MIN_SECRET_LENGTH} characters. Passwords cannot be encrypted until it is.`
+      console.warn(`[powdbs] ${message}`)
       throw new Error(message)
     }
     return deriveKeyFromSecret(secret)

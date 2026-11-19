@@ -8,20 +8,20 @@ import { parseDataFile, writeJsonFile } from './json-file.server'
 import { decryptSecret, encryptSecret, isEncrypted } from './secret.server'
 import { mergeSshInput, sshInfo } from './ssh-settings'
 
-/** Shown instead of saving when someone tries to edit or delete a powdb.yaml connection. */
-export const MANAGED_ERROR = 'Managed by powdb.yaml. Change the file and restart PowDB.'
+/** Shown instead of saving when someone tries to edit or delete a powdbs.yaml connection. */
+export const MANAGED_ERROR = 'Managed by powdbs.yaml. Change the file and restart PowDBs.'
 
 /**
- * Everything PowDB keeps on disk lives here: $POWDB_DATA_DIR, else ./.data.
+ * Everything PowDBs keeps on disk lives here: $POWDBS_DATA_DIR, else ./.data.
  * Read on every call so tests can point it elsewhere.
  */
 export function dataDir(): string {
-  const setting = process.env.POWDB_DATA_DIR
+  const setting = process.env.POWDBS_DATA_DIR
   return setting ? path.resolve(setting) : path.resolve(process.cwd(), '.data')
 }
 
 /**
- * Location: $POWDB_DATA_DIR/connections.json (default: ./.data).
+ * Location: $POWDBS_DATA_DIR/connections.json (default: ./.data).
  * Passwords in this file are encrypted (see secret.server.ts); the cache holds them encrypted too.
  */
 function connectionsFile(): string {
@@ -87,11 +87,11 @@ let loading: Promise<StoreFile> | null = null
 
 async function load(): Promise<StoreFile> {
   if (cache) return cache
-  // Concurrent first calls share one read, so the powdb.yaml reconcile runs once.
+  // Concurrent first calls share one read, so the powdbs.yaml reconcile runs once.
   loading ??= readStore()
     .then(async (data) => {
       const managed = await loadManagedConnections(dataDir())
-      // null = powdb.yaml is invalid: keep whatever is stored instead of dropping it.
+      // null = powdbs.yaml is invalid: keep whatever is stored instead of dropping it.
       if (managed && reconcileManaged(data, managed)) await persist(data)
       cache = data
       return data
@@ -123,7 +123,7 @@ function sealAtLoad(plain: string | undefined): string | undefined {
   try {
     return encryptSecret(plain)
   } catch (err) {
-    // never keep a password in clear text: fail at startup with the reason (e.g. a short POWDB_SECRET)
+    // never keep a password in clear text: fail at startup with the reason (e.g. a short POWDBS_SECRET)
     const reason = err instanceof Error ? err.message : String(err)
     throw new Error(`A connection password could not be encrypted: ${reason}`)
   }
@@ -141,7 +141,7 @@ function sameSecret(stored: string | undefined, plain: string | undefined): bool
 }
 
 /**
- * Make the managed entries in connections.json match powdb.yaml: add or update the ones in
+ * Make the managed entries in connections.json match powdbs.yaml: add or update the ones in
  * the file, drop the managed ones that are gone. Returns true when anything changed.
  * Ids are the key, so a UI connection with the same id becomes managed.
  */
@@ -170,11 +170,11 @@ function reconcileManaged(data: StoreFile, managed: ManagedConnection[]): boolea
 }
 
 /**
- * POWDB_CONNECTIONS: one connection per line (or separated by ";"), either a plain URL or
+ * POWDBS_CONNECTIONS: one connection per line (or separated by ";"), either a plain URL or
  * "Name=postgresql://user:pass@host:5432/db". Only used when no connections file exists yet.
  */
 function seedConnections(): ConnectionConfig[] {
-  const raw = process.env.POWDB_CONNECTIONS?.trim()
+  const raw = process.env.POWDBS_CONNECTIONS?.trim()
   if (!raw) return []
   const colors = CONNECTION_COLORS.filter((c) => c !== 'neutral')
   const out: ConnectionConfig[] = []
@@ -189,7 +189,7 @@ function seedConnections(): ConnectionConfig[] {
     if (!parsed) {
       // Never print the entry or any part of it: a password can contain "/" and slip past any masking.
       console.warn(
-        `[powdb] ignoring invalid connection #${index + 1} in POWDB_CONNECTIONS (passwords are not printed; check its postgres:// URL)`,
+        `[powdbs] ignoring invalid connection #${index + 1} in POWDBS_CONNECTIONS (passwords are not printed; check its postgres:// URL)`,
       )
       continue
     }
@@ -214,7 +214,7 @@ function persist(data: StoreFile): Promise<void> {
 
 /**
  * The password to connect with. Managed connections read it from an environment variable
- * at connect time, so the secret never has to live in powdb.yaml or connections.json.
+ * at connect time, so the secret never has to live in powdbs.yaml or connections.json.
  * Stored passwords are decrypted here. A stored value that is not encrypted is refused (see decryptSecret).
  */
 export function resolvePassword(conn: Pick<ConnectionConfig, 'password' | 'passwordEnv'>): string | undefined {

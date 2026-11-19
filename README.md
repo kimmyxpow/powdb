@@ -1,6 +1,6 @@
-# PowDB
+# PowDBs
 
-PowDB is a web app for browsing and managing PostgreSQL databases. Open it in your browser to see your tables, change data, run SQL queries, view how tables connect, and make backups. It is made for developers, analysts, and anyone who works with PostgreSQL data and wants a simple, fast tool.
+PowDBs is a web app for browsing and managing PostgreSQL databases. Open it in your browser to see your tables, change data, run SQL queries, view how tables connect, and make backups. It is made for developers, analysts, and anyone who works with PostgreSQL data and wants a simple, fast tool.
 
 ![Table data view](docs/screenshot-table.png) ![SQL editor](docs/screenshot-sql.png)
 
@@ -9,22 +9,22 @@ PowDB is a web app for browsing and managing PostgreSQL databases. Open it in yo
 **With npx** (needs [Node.js](https://nodejs.org) 18 or newer):
 
 ```bash
-npx powdb
+npx powdbs
 ```
 
-PowDB opens at http://127.0.0.1:3333. It runs on Bun. If Bun is missing, `powdb` asks before it installs Bun, and that copy goes only into `~/.powdb/runtime`. Flags, data folders, and updates are in [Install and update](docs/install.md).
+PowDBs opens at http://127.0.0.1:3333. It runs on Bun. If Bun is missing, `powdbs` asks before it installs Bun, and that copy goes only into `~/.powdbs/runtime`. Flags, data folders, and updates are in [Install and update](docs/install.md).
 
 **With Docker** (needs [Docker](https://docs.docker.com/get-docker/)):
 
 ```bash
-docker run -d --name powdb -p 127.0.0.1:3333:3333 -v powdb-data:/data \
-  --add-host host.docker.internal:host-gateway ghcr.io/powroom/powdb:latest
+docker run -d --name powdbs -p 127.0.0.1:3333:3333 -v powdbs-data:/data \
+  --add-host host.docker.internal:host-gateway ghcr.io/powroom/powdbs:latest
 ```
 
 **With Docker Compose:**
 
 ```bash
-curl -o compose.yml https://raw.githubusercontent.com/powroom/powdb/main/compose.example.yml
+curl -o compose.yml https://raw.githubusercontent.com/powroom/powdbs/main/compose.example.yml
 docker compose up -d
 ```
 
@@ -32,7 +32,7 @@ With either Docker command, open http://localhost:3333 in your browser.
 
 ## First login
 
-The first time you open PowDB, create an admin account. Enter a username and a password of at least 8 characters. You sign in with it after that.
+The first time you open PowDBs, create an admin account. Enter a username and a password of at least 8 characters. You sign in with it after that.
 
 ## Connect a database
 
@@ -85,7 +85,7 @@ The full list is in [docs/shortcut.md](docs/shortcut.md).
 
 ## Security
 
-- **Local only**: by default PowDB accepts connections only from this computer. For other machines, put it behind a reverse proxy with HTTPS. See [Network security](docs/configuration.md#network-security-and-proxy).
+- **Local only**: by default PowDBs accepts connections only from this computer. For other machines, put it behind a reverse proxy with HTTPS. See [Network security](docs/configuration.md#network-security-and-proxy).
 - **Login**: the app asks for an admin account. Forgot the password? See [Login and admin account](docs/configuration.md#login-and-admin-account).
 - **Safety**: read-only connections and production mode stop changes you did not mean to make. Production mode is a check in the app, not a security boundary, so also use a database account with limited rights.
 - **Secrets**: saved database passwords are encrypted and never sent back to the browser. API tokens and the data folder give full access. Keep them private, and do not commit them to git.
@@ -94,12 +94,12 @@ The full list is in [docs/shortcut.md](docs/shortcut.md).
 ## Documentation
 
 - [Install and update](docs/install.md): npx and Docker, the data folder, and updates.
-- [Configuration](docs/configuration.md): environment variables, `powdb.yaml`, SSH tunnels, login, production mode, and file size limits.
+- [Configuration](docs/configuration.md): environment variables, `powdbs.yaml`, SSH tunnels, login, production mode, and file size limits.
 - [Backup and restore](docs/backup-restore.md): backup formats, restore, and CSV import.
-- [AI and API](docs/ai-and-api.md): AI agents (MCP), API tokens, the REST API, the `powdb` CLI, and the audit log.
+- [AI and API](docs/ai-and-api.md): AI agents (MCP), API tokens, the REST API, the `powdbs` CLI, and the audit log.
 - [Shortcuts](docs/shortcut.md): every keyboard shortcut.
 - [Development](docs/development.md): running from source, the demo database, checks, and releases.
 
 ## License
 
-PowDB is open source under the [Apache License 2.0](LICENSE). You can use, change, and share it, also in commercial products, as long as you keep the copyright and license notices (see [NOTICE](NOTICE)). The license does not give permission to use the PowDB name or logo for your own product.
+PowDBs is open source under the [Apache License 2.0](LICENSE). You can use, change, and share it, also in commercial products, as long as you keep the copyright and license notices (see [NOTICE](NOTICE)). The license does not give permission to use the PowDBs name or logo for your own product.

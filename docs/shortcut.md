@@ -1,6 +1,6 @@
 # Shortcuts
 
-Every keyboard shortcut in PowDB. `Mod` means `Ctrl` on Windows and Linux, or `⌘` on macOS. Press `?` in the app to see a shorter list, with a search box.
+Every keyboard shortcut in PowDBs. `Mod` means `Ctrl` on Windows and Linux, or `⌘` on macOS. Press `?` in the app to see a shorter list, with a search box.
 
 ## General
 

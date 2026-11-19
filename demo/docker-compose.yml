@@ -1,11 +1,11 @@
-# Demo PostgreSQL with sample data for PowDB.
+# Demo PostgreSQL with sample data for PowDBs.
 #   standalone:  docker compose -f demo/docker-compose.yml up -d    (bun run demo:db)
 #   or included by ../docker-compose.yml together with the app.
 # Connection URL from your machine: postgresql://demo:demo@localhost:55432/shop
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: powdb-demo
+    container_name: powdbs-demo
     environment:
       POSTGRES_USER: demo
       POSTGRES_PASSWORD: demo

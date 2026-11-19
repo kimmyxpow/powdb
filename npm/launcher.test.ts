@@ -47,13 +47,13 @@ describe('parseArgs', () => {
   test('start and serve are the same as no command, with flags', () => {
     const expected: ParsedArgs = {
       mode: 'serve',
-      options: { port: 4000, host: '0.0.0.0', dataDir: '/srv/powdb', open: false, yes: true },
+      options: { port: 4000, host: '0.0.0.0', dataDir: '/srv/powdbs', open: false, yes: true },
     }
     expect(
-      parseArgs(['start', '--port', '4000', '--host=0.0.0.0', '--data-dir', '/srv/powdb', '--no-open', '-y']),
+      parseArgs(['start', '--port', '4000', '--host=0.0.0.0', '--data-dir', '/srv/powdbs', '--no-open', '-y']),
     ).toEqual(expected)
     expect(
-      parseArgs(['serve', '--port=4000', '--host', '0.0.0.0', '--data-dir=/srv/powdb', '--no-open', '--yes']),
+      parseArgs(['serve', '--port=4000', '--host', '0.0.0.0', '--data-dir=/srv/powdbs', '--no-open', '--yes']),
     ).toEqual(expected)
   })
 
@@ -124,21 +124,21 @@ describe('versions', () => {
 })
 
 describe('data folder and settings', () => {
-  test('defaults to ~/.powdb', () => {
-    expect(resolveDataDir({ flag: undefined, env: {}, homeDir: HOME, platform: 'linux' })).toBe('/home/tester/.powdb')
+  test('defaults to ~/.powdbs', () => {
+    expect(resolveDataDir({ flag: undefined, env: {}, homeDir: HOME, platform: 'linux' })).toBe('/home/tester/.powdbs')
   })
 
-  test('POWDB_DATA_DIR is used when no flag is given, and an empty value counts as unset', () => {
+  test('POWDBS_DATA_DIR is used when no flag is given, and an empty value counts as unset', () => {
     expect(
-      resolveDataDir({ flag: undefined, env: { POWDB_DATA_DIR: '/data' }, homeDir: HOME, platform: 'linux' }),
+      resolveDataDir({ flag: undefined, env: { POWDBS_DATA_DIR: '/data' }, homeDir: HOME, platform: 'linux' }),
     ).toBe('/data')
-    expect(resolveDataDir({ flag: undefined, env: { POWDB_DATA_DIR: '' }, homeDir: HOME, platform: 'linux' })).toBe(
-      '/home/tester/.powdb',
+    expect(resolveDataDir({ flag: undefined, env: { POWDBS_DATA_DIR: '' }, homeDir: HOME, platform: 'linux' })).toBe(
+      '/home/tester/.powdbs',
     )
   })
 
   test('the flag wins over the environment variable', () => {
-    expect(resolveDataDir({ flag: '/flag', env: { POWDB_DATA_DIR: '/data' }, homeDir: HOME, platform: 'linux' })).toBe(
+    expect(resolveDataDir({ flag: '/flag', env: { POWDBS_DATA_DIR: '/data' }, homeDir: HOME, platform: 'linux' })).toBe(
       '/flag',
     )
   })
@@ -150,13 +150,13 @@ describe('data folder and settings', () => {
 
   test('Windows paths use backslashes', () => {
     expect(resolveDataDir({ flag: undefined, env: {}, homeDir: 'C:\\Users\\Ana', platform: 'win32' })).toBe(
-      'C:\\Users\\Ana\\.powdb',
+      'C:\\Users\\Ana\\.powdbs',
     )
-    expect(runtimeDirFor('C:\\Users\\Ana', 'win32')).toBe('C:\\Users\\Ana\\.powdb\\runtime')
+    expect(runtimeDirFor('C:\\Users\\Ana', 'win32')).toBe('C:\\Users\\Ana\\.powdbs\\runtime')
   })
 
   test('flags win over environment variables, which win over defaults', () => {
-    const env = { PORT: '4000', HOST: '0.0.0.0', POWDB_DATA_DIR: '/env-data' }
+    const env = { PORT: '4000', HOST: '0.0.0.0', POWDBS_DATA_DIR: '/env-data' }
     expect(serveSettings({ options: NO_OPTIONS, env, homeDir: HOME, platform: 'linux' })).toEqual({
       port: '4000',
       host: '0.0.0.0',
@@ -175,20 +175,20 @@ describe('data folder and settings', () => {
     expect(serveSettings({ options: NO_OPTIONS, env: {}, homeDir: HOME, platform: 'linux' })).toMatchObject({
       port: '3333',
       host: '127.0.0.1',
-      dataDir: '/home/tester/.powdb',
+      dataDir: '/home/tester/.powdbs',
     })
   })
 
-  test('the child process gets PORT, HOST and POWDB_DATA_DIR, and keeps other variables', () => {
+  test('the child process gets PORT, HOST and POWDBS_DATA_DIR, and keeps other variables', () => {
     const settings = { port: '3399', host: '127.0.0.1', dataDir: '/d' }
     expect(childEnv({ PORT: '1', HOST: 'x', KEEP: 'yes' }, settings)).toEqual({
       PORT: '3399',
       HOST: '127.0.0.1',
-      POWDB_DATA_DIR: '/d',
-      POWDB_INSTALL: 'npm',
+      POWDBS_DATA_DIR: '/d',
+      POWDBS_INSTALL: 'npm',
       KEEP: 'yes',
     })
-    expect(cliEnv({ KEEP: 'yes' }, '/d')).toEqual({ KEEP: 'yes', POWDB_DATA_DIR: '/d' })
+    expect(cliEnv({ KEEP: 'yes' }, '/d')).toEqual({ KEEP: 'yes', POWDBS_DATA_DIR: '/d' })
   })
 
   test('the browser address for a bound host', () => {
@@ -199,7 +199,7 @@ describe('data folder and settings', () => {
 })
 
 describe('finding Bun', () => {
-  const runtimeBin = '/home/tester/.powdb/runtime/node_modules/@oven/bun-linux-x64/bin/bun'
+  const runtimeBin = '/home/tester/.powdbs/runtime/node_modules/@oven/bun-linux-x64/bin/bun'
 
   test('uses the Bun that runs the launcher when it is new enough', () => {
     const probe = fakeProbe({})
@@ -236,7 +236,7 @@ describe('finding Bun', () => {
     })
   })
 
-  test('uses the private copy in ~/.powdb/runtime when nothing else works', () => {
+  test('uses the private copy in ~/.powdbs/runtime when nothing else works', () => {
     const probe = fakeProbe({ [runtimeBin]: '1.4.4' })
     expect(
       findBun({
@@ -356,16 +356,16 @@ describe('PostgreSQL client tools', () => {
     ])
   })
 
-  test('POWDB_PG_DUMP and POWDB_PG_BIN count as set tools', () => {
+  test('POWDBS_PG_DUMP and POWDBS_PG_BIN count as set tools', () => {
     expect(
       missingPgTools({
-        env: { POWDB_PG_DUMP: '/opt/pg/pg_dump', POWDB_PG_BIN: '/opt/pg/bin' },
+        env: { POWDBS_PG_DUMP: '/opt/pg/pg_dump', POWDBS_PG_BIN: '/opt/pg/bin' },
         platform: 'linux',
         isFile: () => false,
       }),
     ).toEqual([])
     expect(
-      missingPgTools({ env: { POWDB_PG_DUMP: '/opt/pg/pg_dump' }, platform: 'linux', isFile: () => false }),
+      missingPgTools({ env: { POWDBS_PG_DUMP: '/opt/pg/pg_dump' }, platform: 'linux', isFile: () => false }),
     ).toEqual(['pg_restore', 'psql'])
   })
 })
@@ -373,16 +373,16 @@ describe('PostgreSQL client tools', () => {
 describe('messages', () => {
   test('help lists the start options and points to the admin commands', () => {
     const text = helpText('0.1.0')
-    expect(text.startsWith('powdb 0.1.0')).toBe(true)
+    expect(text.startsWith('powdbs 0.1.0')).toBe(true)
     for (const flag of ['--port', '--host', '--data-dir', '--no-open', '--yes']) expect(text).toContain(flag)
-    expect(text).toContain('powdb help')
+    expect(text).toContain('powdbs help')
   })
 
   test('the Bun notice explains the options and names the install location', () => {
-    const missing = bunNotice({ old: [], runtimeDir: '/home/tester/.powdb/runtime' })
+    const missing = bunNotice({ old: [], runtimeDir: '/home/tester/.powdbs/runtime' })
     expect(missing).toContain('not installed')
     expect(missing).toContain('https://bun.sh')
-    expect(missing).toContain('/home/tester/.powdb/runtime')
+    expect(missing).toContain('/home/tester/.powdbs/runtime')
     const old = bunNotice({ old: [{ bin: '/old/bun', version: '1.3.0' }], runtimeDir: '/r' })
     expect(old).toContain('Bun 1.3.0 at /old/bun is too old')
     expect(old).not.toContain('not installed')
@@ -405,7 +405,7 @@ describe('waitForServer', () => {
 describe('update notice', () => {
   test('the notice names the newer version, the current one, and the command', () => {
     expect(updateNotice('0.1.0', '0.1.1')).toBe(
-      'PowDB 0.1.1 is available (you have 0.1.0). Stop PowDB and run: npx powdb@latest',
+      'PowDBs 0.1.1 is available (you have 0.1.0). Stop PowDBs and run: npx powdbs@latest',
     )
   })
 
@@ -416,22 +416,22 @@ describe('update notice', () => {
     expect(updateNotice('0.1.0', null)).toBeNull()
   })
 
-  test('the update check is off for POWDB_UPDATE_CHECK off, false or 0', () => {
+  test('the update check is off for POWDBS_UPDATE_CHECK off, false or 0', () => {
     expect(updateCheckOn({})).toBe(true)
-    expect(updateCheckOn({ POWDB_UPDATE_CHECK: 'on' })).toBe(true)
-    expect(updateCheckOn({ POWDB_UPDATE_CHECK: 'OFF' })).toBe(false)
-    expect(updateCheckOn({ POWDB_UPDATE_CHECK: 'false' })).toBe(false)
-    expect(updateCheckOn({ POWDB_UPDATE_CHECK: ' 0 ' })).toBe(false)
+    expect(updateCheckOn({ POWDBS_UPDATE_CHECK: 'on' })).toBe(true)
+    expect(updateCheckOn({ POWDBS_UPDATE_CHECK: 'OFF' })).toBe(false)
+    expect(updateCheckOn({ POWDBS_UPDATE_CHECK: 'false' })).toBe(false)
+    expect(updateCheckOn({ POWDBS_UPDATE_CHECK: ' 0 ' })).toBe(false)
   })
 
   test('the registry is asked for the latest version, with a timeout', async () => {
     const asked: { url: string; signal: AbortSignal | undefined }[] = []
     const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
       asked.push({ url: String(url), signal: init?.signal ?? undefined })
-      return new Response(JSON.stringify({ name: 'powdb', version: '0.1.1' }), { status: 200 })
+      return new Response(JSON.stringify({ name: 'powdbs', version: '0.1.1' }), { status: 200 })
     }
     expect(await latestRegistryVersion({ env: {}, fetchImpl })).toBe('0.1.1')
-    expect(asked[0]!.url).toBe('https://registry.npmjs.org/powdb/latest')
+    expect(asked[0]!.url).toBe('https://registry.npmjs.org/powdbs/latest')
     expect(asked[0]!.signal).toBeDefined()
   })
 
@@ -441,7 +441,7 @@ describe('update notice', () => {
       asked++
       return new Response('{}', { status: 200 })
     }
-    expect(await latestRegistryVersion({ env: { POWDB_UPDATE_CHECK: 'off' }, fetchImpl })).toBeNull()
+    expect(await latestRegistryVersion({ env: { POWDBS_UPDATE_CHECK: 'off' }, fetchImpl })).toBeNull()
     expect(asked).toBe(0)
   })
 
@@ -451,7 +451,7 @@ describe('update notice', () => {
     }
     const notOk = async () => new Response('busy', { status: 503 })
     const notJson = async () => new Response('<html>', { status: 200 })
-    const noVersion = async () => new Response('{"name":"powdb"}', { status: 200 })
+    const noVersion = async () => new Response('{"name":"powdbs"}', { status: 200 })
     expect(await latestRegistryVersion({ env: {}, fetchImpl: failing })).toBeNull()
     expect(await latestRegistryVersion({ env: {}, fetchImpl: notOk })).toBeNull()
     expect(await latestRegistryVersion({ env: {}, fetchImpl: notJson })).toBeNull()

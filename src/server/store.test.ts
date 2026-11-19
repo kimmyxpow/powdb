@@ -4,18 +4,18 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { ConnectionInput } from '@/lib/types'
 
-const dir = mkdtempSync(path.join(tmpdir(), 'powdb-store-'))
+const dir = mkdtempSync(path.join(tmpdir(), 'powdbs-store-'))
 // Restored in afterAll: bun runs every test file in one process.
 const savedEnv: Record<string, string | undefined> = {
-  POWDB_DATA_DIR: process.env.POWDB_DATA_DIR,
-  POWDB_CONFIG: process.env.POWDB_CONFIG,
-  POWDB_CONNECTIONS: process.env.POWDB_CONNECTIONS,
-  POWDB_TEST_PROD_PW: process.env.POWDB_TEST_PROD_PW,
+  POWDBS_DATA_DIR: process.env.POWDBS_DATA_DIR,
+  POWDBS_CONFIG: process.env.POWDBS_CONFIG,
+  POWDBS_CONNECTIONS: process.env.POWDBS_CONNECTIONS,
+  POWDBS_TEST_PROD_PW: process.env.POWDBS_TEST_PROD_PW,
 }
-process.env.POWDB_DATA_DIR = dir
-delete process.env.POWDB_CONFIG
-delete process.env.POWDB_CONNECTIONS
-process.env.POWDB_TEST_PROD_PW = 'from-env'
+process.env.POWDBS_DATA_DIR = dir
+delete process.env.POWDBS_CONFIG
+delete process.env.POWDBS_CONNECTIONS
+process.env.POWDBS_TEST_PROD_PW = 'from-env'
 
 // A connections file with one saved connection, plus a declarative managed connection.
 writeFileSync(
@@ -41,8 +41,8 @@ writeFileSync(
   }),
 )
 writeFileSync(
-  path.join(dir, 'powdb.yaml'),
-  'connections:\n  - id: prod\n    url: postgres://app@db.invalid/app\n    password_env: POWDB_TEST_PROD_PW\n    read_only: true\n',
+  path.join(dir, 'powdbs.yaml'),
+  'connections:\n  - id: prod\n    url: postgres://app@db.invalid/app\n    password_env: POWDBS_TEST_PROD_PW\n    read_only: true\n',
 )
 
 const store = await import('./store.server')
@@ -59,8 +59,8 @@ const input: ConnectionInput = {
   aiAccess: 'write',
 }
 
-describe('store with powdb.yaml and AI access', () => {
-  test('managed connections load from powdb.yaml; saved connections keep their AI setting', async () => {
+describe('store with powdbs.yaml and AI access', () => {
+  test('managed connections load from powdbs.yaml; saved connections keep their AI setting', async () => {
     const all = await store.listConnections()
     const prod = all.find((c) => c.id === 'prod')!
     expect(prod.managed).toBe(true)
@@ -84,7 +84,7 @@ describe('store with powdb.yaml and AI access', () => {
 
   test('managed connections cannot be edited or deleted', async () => {
     await expect(store.updateConnection('prod', input)).rejects.toThrow(store.MANAGED_ERROR)
-    await expect(store.deleteConnection('prod')).rejects.toThrow('Managed by powdb.yaml')
+    await expect(store.deleteConnection('prod')).rejects.toThrow('Managed by powdbs.yaml')
   })
 
   test('UI connections default to read for AI, and the setting can change', async () => {
@@ -117,17 +117,17 @@ describe('store with powdb.yaml and AI access', () => {
 
 describe('a failed write does not block later writes', () => {
   afterEach(() => {
-    process.env.POWDB_DATA_DIR = dir
+    process.env.POWDBS_DATA_DIR = dir
   })
 
   test('after a write fails, the next write still succeeds and reaches the disk', async () => {
     // A regular file where a directory is expected: mkdir fails, so the write rejects.
     const blocker = path.join(dir, 'blocker-file')
     writeFileSync(blocker, 'not a directory')
-    process.env.POWDB_DATA_DIR = path.join(blocker, 'sub')
+    process.env.POWDBS_DATA_DIR = path.join(blocker, 'sub')
     await expect(store.createConnection({ ...input, name: 'Lost' })).rejects.toThrow()
 
-    process.env.POWDB_DATA_DIR = dir
+    process.env.POWDBS_DATA_DIR = dir
     const saved = await store.createConnection({ ...input, name: 'Saved after failure' })
     const onDisk = JSON.parse(readFileSync(path.join(dir, 'connections.json'), 'utf8')) as {
       connections: { id: string; name: string }[]
@@ -145,23 +145,23 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
-describe('POWDB_CONNECTIONS warnings', () => {
+describe('POWDBS_CONNECTIONS warnings', () => {
   let seedDir: string
   let warn: ReturnType<typeof spyOn<Console, 'warn'>> | undefined
 
   afterEach(() => {
     warn?.mockRestore()
     warn = undefined
-    process.env.POWDB_DATA_DIR = dir
-    delete process.env.POWDB_CONNECTIONS
+    process.env.POWDBS_DATA_DIR = dir
+    delete process.env.POWDBS_CONNECTIONS
     rmSync(seedDir, { recursive: true, force: true })
   })
 
   test('an invalid entry is reported by number and its password is never printed', async () => {
-    seedDir = mkdtempSync(path.join(tmpdir(), 'powdb-seed-'))
-    process.env.POWDB_DATA_DIR = seedDir
+    seedDir = mkdtempSync(path.join(tmpdir(), 'powdbs-seed-'))
+    process.env.POWDBS_DATA_DIR = seedDir
     // The port is not a number, so the entry is invalid. The "/" in the password defeats the old masking regex.
-    process.env.POWDB_CONNECTIONS = 'postgres://app:s3cret/pw@db:notaport/app'
+    process.env.POWDBS_CONNECTIONS = 'postgres://app:s3cret/pw@db:notaport/app'
     warn = spyOn(console, 'warn').mockImplementation(() => {})
 
     // A fresh module instance, so the seeding path runs again with an empty data dir.
@@ -170,7 +170,7 @@ describe('POWDB_CONNECTIONS warnings', () => {
     await fresh.listConnections()
 
     const messages = warn.mock.calls.map((args) => args.map(String).join(' '))
-    expect(messages.some((m) => m.includes('#1 in POWDB_CONNECTIONS'))).toBe(true)
+    expect(messages.some((m) => m.includes('#1 in POWDBS_CONNECTIONS'))).toBe(true)
     for (const m of messages) {
       expect(m).not.toContain('s3cret')
       expect(m).not.toContain('pw@')
@@ -180,9 +180,9 @@ describe('POWDB_CONNECTIONS warnings', () => {
 
   // A restart reads the file the first start wrote, so a seeded connection must pass the file's own validation.
   test('seeded connections load again after a restart', async () => {
-    seedDir = mkdtempSync(path.join(tmpdir(), 'powdb-seed-'))
-    process.env.POWDB_DATA_DIR = seedDir
-    process.env.POWDB_CONNECTIONS = 'Shop=postgresql://app:s3cret@db.invalid:5432/shop'
+    seedDir = mkdtempSync(path.join(tmpdir(), 'powdbs-seed-'))
+    process.env.POWDBS_DATA_DIR = seedDir
+    process.env.POWDBS_CONNECTIONS = 'Shop=postgresql://app:s3cret@db.invalid:5432/shop'
 
     const firstSpec = './store.server?seed-first-start'
     const first = (await import(firstSpec)) as typeof import('./store.server')

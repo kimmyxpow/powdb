@@ -6,12 +6,12 @@ import { parseDataFile, writeJsonFile } from './json-file.server'
 import { dataDir } from './store.server'
 
 /**
- * Login, sessions, API tokens and the local key. Everything lives in $POWDB_DATA_DIR/auth.json
+ * Login, sessions, API tokens and the local key. Everything lives in $POWDBS_DATA_DIR/auth.json
  * (mode 0600). Passwords are argon2id hashes, API tokens are stored as SHA-256 only.
  */
-export const SESSION_COOKIE = 'powdb_session'
+export const SESSION_COOKIE = 'powdbs_session'
 
-const TOKEN_PREFIX = 'powdb_'
+const TOKEN_PREFIX = 'powdbs_'
 const TOKEN_LENGTH = 32
 const BASE62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 const MIN_PASSWORD = 8
@@ -125,7 +125,7 @@ export function addLoginFailureForTest(ip: string, at: number): void {
 }
 
 export function authEnabled(): boolean {
-  return process.env.POWDB_AUTH !== 'off'
+  return process.env.POWDBS_AUTH !== 'off'
 }
 
 function authFile(): string {
@@ -174,22 +174,22 @@ async function loadAuthFile(): Promise<AuthFile> {
   return data
 }
 
-/** POWDB_ADMIN_USER / POWDB_ADMIN_PASSWORD: create the admin when none exists yet. */
+/** POWDBS_ADMIN_USER / POWDBS_ADMIN_PASSWORD: create the admin when none exists yet. */
 async function seedAdminFromEnv(data: AuthFile): Promise<void> {
-  const password = process.env.POWDB_ADMIN_PASSWORD
+  const password = process.env.POWDBS_ADMIN_PASSWORD
   if (!password || data.admin) return
   if (password.length < MIN_PASSWORD) {
-    console.warn(`[powdb] POWDB_ADMIN_PASSWORD must be at least ${MIN_PASSWORD} characters; no admin created`)
+    console.warn(`[powdbs] POWDBS_ADMIN_PASSWORD must be at least ${MIN_PASSWORD} characters; no admin created`)
     return
   }
   const username = envAdminUsername()
   data.admin = { username, passwordHash: await hashPassword(password), sessionVersion: 1 }
   await persist(data)
-  console.log(`[powdb] created admin account "${username}" from POWDB_ADMIN_PASSWORD`)
+  console.log(`[powdbs] created admin account "${username}" from POWDBS_ADMIN_PASSWORD`)
 }
 
 function envAdminUsername(): string {
-  return cleanUsername(process.env.POWDB_ADMIN_USER ?? 'admin')
+  return cleanUsername(process.env.POWDBS_ADMIN_USER ?? 'admin')
 }
 
 function persist(data: AuthFile): Promise<void> {
@@ -267,7 +267,7 @@ export interface IssuedSession {
   maxAgeSec: number
 }
 
-const SIGN_IN_OFF = 'Sign-in is turned off (POWDB_AUTH=off).'
+const SIGN_IN_OFF = 'Sign-in is turned off (POWDBS_AUTH=off).'
 const ALREADY_SET_UP = 'An admin account already exists. Sign in instead.'
 
 export async function authState(sessionToken: string | null | undefined): Promise<AuthState> {
@@ -317,7 +317,7 @@ export async function changeOwnPassword(
   return issueSession()
 }
 
-/** Used by `powdb admin reset-password` (local key only). Creates the admin if there is none. */
+/** Used by `powdbs admin reset-password` (local key only). Creates the admin if there is none. */
 export async function resetAdminPassword(next: string): Promise<void> {
   const passwordHash = await hashPassword(next)
   const data = await getAuthFile()
@@ -331,7 +331,7 @@ export async function resetAdminPassword(next: string): Promise<void> {
 }
 
 function sessionDays(): number {
-  const days = Number(process.env.POWDB_SESSION_DAYS)
+  const days = Number(process.env.POWDBS_SESSION_DAYS)
   return Number.isFinite(days) && days > 0 ? days : 30
 }
 
@@ -368,7 +368,7 @@ export async function verifySession(token: string | null | undefined): Promise<b
   return safeEqual(sig, sign(data, [expires, version, nonce]))
 }
 
-/** The local key from the CLI / container (X-PowDB-Local-Key). */
+/** The local key from the CLI / container (X-PowDBs-Local-Key). */
 export async function isLocalKey(candidate: string): Promise<boolean> {
   const data = await getAuthFile()
   return safeEqual(candidate, data.localKey)
@@ -471,7 +471,7 @@ export async function verifyApiToken(token: string): Promise<ApiTokenInfo | null
   if (stored.expiresAt && Date.parse(stored.expiresAt) <= now) return null
   if (!stored.lastUsedAt || now - Date.parse(stored.lastUsedAt) >= LAST_USED_INTERVAL_MS) {
     stored.lastUsedAt = new Date(now).toISOString()
-    persist(data).catch((err: Error) => console.warn(`[powdb] could not save token use: ${err.message}`))
+    persist(data).catch((err: Error) => console.warn(`[powdbs] could not save token use: ${err.message}`))
   }
   return publicInfo(stored)
 }
