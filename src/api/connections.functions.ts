@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import type { ConnectionConfig, ConnectionInfo, TestConnectionResult } from '@/lib/types'
+import type { ConnectionInfo, TestConnectionResult } from '@/lib/types'
 import type { TunnelEndpoint } from '@/server/tunnel.server'
 import { connectionValidators, type ConnectionInput } from './validators'
 
@@ -50,31 +50,16 @@ export const touchConnectionFn = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
-/** The connection to test before saving: typed secrets win, else the saved ones (when editing). */
+/**
+ * The connection to test before saving: typed secrets win, else the saved ones (when editing).
+ * Secrets stay sealed, as in a saved connection. The draft is only tested, never saved.
+ */
 async function draftFor(id: string | undefined, input: ConnectionInput) {
-  const { getConnection, resolvePassword } = await import('@/server/store.server')
-  const { mergeSshInput } = await import('@/server/ssh-settings')
+  const { getConnection } = await import('@/server/store.server')
+  const { encryptSecret } = await import('@/server/secret.server')
+  const { draftConnection } = await import('@/server/draft-connection')
   const saved = id ? await getConnection(id).catch(() => null) : null
-  let password = input.password
-  if (!password && saved && !input.clearPassword) password = resolvePassword(saved)
-  const conn: ConnectionConfig = {
-    id: id ?? 'test',
-    name: input.name,
-    color: input.color,
-    host: input.host,
-    port: input.port,
-    database: input.database,
-    user: input.user,
-    password,
-    ssl: input.ssl,
-    readOnly: input.readOnly,
-    production: input.production === true,
-    aiAccess: input.aiAccess ?? 'read',
-    createdAt: '',
-  }
-  // A draft is only tested, never saved, so its new secrets are used as typed (no encryption).
-  conn.ssh = mergeSshInput(saved?.ssh, input.ssh, (plain) => plain)
-  return conn
+  return draftConnection(saved, input, encryptSecret)
 }
 
 /** Test either a saved connection (id) merged with new input, or fresh input. Tunnels first when SSH is set. */

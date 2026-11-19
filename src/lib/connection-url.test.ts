@@ -103,9 +103,92 @@ describe('parseConnectionUrl', () => {
     ['an empty string', ''],
     ['a port that is not a number', 'postgres://h:abc/db'],
     ['a port out of range', 'postgres://h:99999/db'],
-    ['a raw % that is not an escape', 'postgres://user:100%@h/db'],
+    ['a password with no @ before the address', 'postgres://user:pass/db'],
   ])('%s gives null', (_, value) => {
     expect(parseConnectionUrl(value)).toBeNull()
+  })
+
+  test('a pasted password with # gives every field (the URL that failed before)', () => {
+    expect(parseConnectionUrl('postgres://postgres:451AdminDev#@192.168.42.90:5432/app_ac_scoring_rep')).toEqual({
+      host: '192.168.42.90',
+      port: 5432,
+      database: 'app_ac_scoring_rep',
+      user: 'postgres',
+      password: '451AdminDev#',
+      ssl: 'disable',
+    })
+  })
+
+  test('a password with @, /, ?, : and # together is read whole', () => {
+    const parsed = parseConnectionUrl('postgresql://ann:p@ss/w?rd:#x@db.internal:6543/orders?sslmode=require')
+    expect(parsed).toEqual({
+      host: 'db.internal',
+      port: 6543,
+      database: 'orders',
+      user: 'ann',
+      password: 'p@ss/w?rd:#x',
+      ssl: 'require',
+    })
+  })
+
+  test('an already percent-encoded password is decoded once', () => {
+    expect(parseConnectionUrl('postgres://ann:p%40ss@h/db')?.password).toBe('p@ss')
+  })
+
+  test('a bare % in the password is kept as typed', () => {
+    expect(parseConnectionUrl('postgres://user:100%@h/db')).toMatchObject({ host: 'h', user: 'user', password: '100%' })
+    expect(parseConnectionUrl('postgres://user:100%#x@h/db')?.password).toBe('100%#x')
+  })
+
+  test('a password with the special characters survives a percent-encoded round trip', () => {
+    const password = 'a@b/c?d:e#f'
+    const url = `postgresql://ann:${encodeURIComponent(password)}@db.internal:5432/orders`
+    expect(parseConnectionUrl(url)).toMatchObject({ host: 'db.internal', user: 'ann', database: 'orders', password })
+  })
+
+  test('a password put into a built URL keeps the built host, port, database and ssl', () => {
+    const built = buildConnectionUrl({
+      host: '2001:db8::1',
+      port: 5433,
+      database: 'orders',
+      user: 'ann',
+      ssl: 'verify-full',
+    })
+    const withPassword = built.replace('postgresql://ann@', 'postgresql://ann:p#@/?:@')
+    expect(parseConnectionUrl(withPassword)).toEqual({
+      host: '2001:db8::1',
+      port: 5433,
+      database: 'orders',
+      user: 'ann',
+      password: 'p#@/?:',
+      ssl: 'verify-full',
+    })
+  })
+
+  test('IPv6 hosts work with a password that has special characters', () => {
+    expect(parseConnectionUrl('postgres://ann:x#y@[::1]:5433/db')).toMatchObject({
+      host: '::1',
+      port: 5433,
+      user: 'ann',
+      password: 'x#y',
+    })
+  })
+
+  test('sslmode and ssl still work after a password with special characters', () => {
+    expect(parseConnectionUrl('postgres://ann:x#y@h/db?sslmode=verify-ca')?.ssl).toBe('verify-full')
+    expect(parseConnectionUrl('postgres://ann:x#y@h/db?ssl=true')?.ssl).toBe('require')
+    expect(parseConnectionUrl('postgres://ann:x#y@h/db?sslmode=disable')?.ssl).toBe('disable')
+  })
+
+  test('no credentials at all: user defaults to postgres and password is empty', () => {
+    expect(parseConnectionUrl('postgres://h:6000/db?sslmode=require')).toEqual({
+      host: 'h',
+      port: 6000,
+      database: 'db',
+      user: 'postgres',
+      password: '',
+      ssl: 'require',
+    })
   })
 })
 
