@@ -145,7 +145,7 @@ function Home() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {/* same header + grid while loading, only the cards are placeholders */}
-              {isPending && [0, 1].map((i) => <Skeleton className="h-32 rounded-2xl" key={i} />)}
+              {isPending && [0, 1].map((i) => <Skeleton className="h-28 rounded-2xl" key={i} />)}
               {(connections ?? []).map((conn) => (
                 <ConnectionCard
                   connection={conn}
@@ -166,7 +166,7 @@ function Home() {
                   to another cell when the real number of cards differs */}
               {!isPending && (
                 <Button
-                  className="h-auto min-h-32 flex-col rounded-2xl border-dashed font-normal text-muted-foreground shadow-none hover:text-foreground"
+                  className="h-auto min-h-28 flex-col rounded-2xl border-dashed font-normal text-muted-foreground shadow-none hover:text-foreground"
                   onClick={() => openNew()}
                   variant="outline"
                 >
@@ -259,7 +259,7 @@ function ConnectionCard({
 }) {
   const managed = Boolean(conn.managed)
   return (
-    <Card className="group gap-4 p-4 transition-[border-color,box-shadow] hover:border-ring/50 hover:shadow-sm">
+    <Card className="group min-h-28 justify-between gap-4 p-4 transition-[border-color,box-shadow] hover:border-ring/50 hover:shadow-sm">
       <button
         aria-label={`Open ${conn.name}`}
         className="absolute inset-0 z-0 cursor-pointer rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
