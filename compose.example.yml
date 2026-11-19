@@ -1,6 +1,6 @@
 # PowDB for everyday use. It pulls the published image (no build, no demo database).
 #
-#   curl -o compose.yml https://raw.githubusercontent.com/kimmyxpow/powdb/main/compose.example.yml
+#   curl -o compose.yml https://raw.githubusercontent.com/powroom/powdb/main/compose.example.yml
 #   docker compose up -d                → http://localhost:3333
 #   docker compose logs -f app          (show app logs, Ctrl+C to stop)
 #   docker compose down                 (add -v to also delete connections, accounts, and tokens)
@@ -8,7 +8,7 @@ name: powdb
 
 services:
   app:
-    image: ghcr.io/kimmyxpow/powdb:latest
+    image: ghcr.io/powroom/powdb:latest
     container_name: powdb
     restart: unless-stopped
     ports:

@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { createUpdateCheck, installMethod, parseReleaseResponse, updateCheckEnabled } from './update-check.server'
 
-const DEFAULT_URL = 'https://api.github.com/repos/kimmyxpow/powdb/releases/latest'
+const DEFAULT_URL = 'https://api.github.com/repos/powroom/powdb/releases/latest'
 const HOUR = 60 * 60 * 1000
 
 const RELEASE = {
   tag_name: 'v0.1.1',
-  html_url: 'https://github.com/kimmyxpow/powdb/releases/tag/v0.1.1',
+  html_url: 'https://github.com/powroom/powdb/releases/tag/v0.1.1',
   published_at: '2026-11-20T10:00:00Z',
   body: 'Faster table loading.',
   draft: false,

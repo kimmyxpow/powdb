@@ -4,7 +4,7 @@ import type { InstallMethod, ReleaseInfo, UpdateInfo } from '@/lib/version'
 // Asks GitHub for the latest PowDB release at most once a day. The only data sent is the
 // User-Agent header (PowDB/<version>). Set POWDB_UPDATE_CHECK=off to turn it off.
 
-const DEFAULT_RELEASE_URL = 'https://api.github.com/repos/kimmyxpow/powdb/releases/latest'
+const DEFAULT_RELEASE_URL = 'https://api.github.com/repos/powroom/powdb/releases/latest'
 const REQUEST_TIMEOUT_MS = 5_000
 const SUCCESS_TTL_MS = 24 * 60 * 60 * 1000
 const FAILURE_TTL_MS = 60 * 60 * 1000

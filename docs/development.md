@@ -87,14 +87,14 @@ Run it with the `docker run` command in [Install and update](install.md#run-with
 To build both CPU types at once, use buildx:
 
 ```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/kimmyxpow/powdb:test .
+docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/powroom/powdb:test .
 ```
 
 A multi-platform build cannot be loaded into the local image store. Add `--push` to push it to a registry, or build one platform with `--load`, for example `docker buildx build --platform linux/arm64 --load -t powdb .`. Building arm64 on an x86 machine uses emulation. Docker Desktop has it built in. On Linux, the publish workflow installs it with `docker/setup-qemu-action`.
 
 ### Published image
 
-`.github/workflows/publish-image.yml` runs the checks, builds amd64 and arm64, and pushes `ghcr.io/kimmyxpow/powdb` when a version tag (`v*.*.*`) is pushed. A manual run from a branch (**Actions > Publish image > Run workflow**) pushes only a `sha-...` tag. The workflow does not check that the tag matches `package.json`, so keep them the same.
+`.github/workflows/publish-image.yml` runs the checks, builds amd64 and arm64, and pushes `ghcr.io/powroom/powdb` when a version tag (`v*.*.*`) is pushed. A manual run from a branch (**Actions > Publish image > Run workflow**) pushes only a `sha-...` tag. The workflow does not check that the tag matches `package.json`, so keep them the same.
 
 ## npm package
 
@@ -117,7 +117,7 @@ The first run asks before it installs Bun. Add `--yes` to test the install path 
 Publishing:
 
 - Releases are published by `.github/workflows/publish-npm.yml` when a version tag is pushed. It uses npm trusted publishing: no npm token is stored in GitHub, and the package gets a provenance statement.
-- Trusted publishing is set up once on npmjs.com: package `powdb`, Settings, Trusted publishing, GitHub Actions, with user `kimmyxpow`, repository `powdb`, and workflow `publish-npm.yml`. npm drops the setting when it is not used for a successful publish within 2 days, so add it on the day of a release.
+- Trusted publishing is set up once on npmjs.com: package `powdb`, Settings, Trusted publishing, GitHub Actions, with organization `powroom`, repository `powdb`, and workflow `publish-npm.yml`. npm drops the setting when it is not used for a successful publish within 2 days, so add it on the day of a release.
 - The very first version has to be published by hand, because trusted publishing can only be set up for a package that exists: `npm login`, then `bun run build:npm` and `npm publish ./npm-package --access public`.
 - The workflow skips a version that is already on npm, so pushing the tag for a version published by hand still builds the image and the GitHub Release.
 

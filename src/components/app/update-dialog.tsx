@@ -47,7 +47,7 @@ function UpdateSteps({ install }: { install: InstallMethod }) {
     return (
       <div className="flex flex-col gap-3 text-sm">
         <p>Pull the new image:</p>
-        <Command text="docker pull ghcr.io/kimmyxpow/powdb:latest" />
+        <Command text="docker pull ghcr.io/powroom/powdb:latest" />
         <p>Recreate the container with the same command you used to start it. Your data stays in the volume.</p>
         <p>With Docker Compose, run:</p>
         <Command text="docker compose pull && docker compose up -d" />

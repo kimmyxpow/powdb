@@ -71,9 +71,9 @@ const manifest = {
   files: ['bin', 'lib', 'dist', 'start.js', 'README.md', 'LICENSE', 'NOTICE'],
   engines: { node: '>=18' },
   keywords: ['postgresql', 'postgres', 'database', 'sql', 'admin', 'web-ui', 'bun'],
-  repository: { type: 'git', url: 'git+https://github.com/kimmyxpow/powdb.git' },
-  homepage: 'https://github.com/kimmyxpow/powdb#readme',
-  bugs: { url: 'https://github.com/kimmyxpow/powdb/issues' },
+  repository: { type: 'git', url: 'git+https://github.com/powroom/powdb.git' },
+  homepage: 'https://github.com/powroom/powdb#readme',
+  bugs: { url: 'https://github.com/powroom/powdb/issues' },
   license: 'Apache-2.0',
 }
 await writeFile(path.join(outDir, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)

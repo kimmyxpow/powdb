@@ -18,13 +18,13 @@ PowDB opens at http://127.0.0.1:3333. It runs on Bun. If Bun is missing, `powdb`
 
 ```bash
 docker run -d --name powdb -p 127.0.0.1:3333:3333 -v powdb-data:/data \
-  --add-host host.docker.internal:host-gateway ghcr.io/kimmyxpow/powdb:latest
+  --add-host host.docker.internal:host-gateway ghcr.io/powroom/powdb:latest
 ```
 
 **With Docker Compose:**
 
 ```bash
-curl -o compose.yml https://raw.githubusercontent.com/kimmyxpow/powdb/main/compose.example.yml
+curl -o compose.yml https://raw.githubusercontent.com/powroom/powdb/main/compose.example.yml
 docker compose up -d
 ```
 

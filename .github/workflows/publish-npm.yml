@@ -3,7 +3,7 @@
 # package gets a provenance statement automatically.
 #
 # One-time setup on npmjs.com (package powdb > Settings > Trusted publishing > GitHub Actions):
-# user kimmyxpow, repository powdb, workflow publish-npm.yml. Do it on the day of a release: npm
+# organization powroom, repository powdb, workflow publish-npm.yml. Do it on the day of a release: npm
 # drops the setting when it is not used for a successful publish within 2 days.
 #
 # How to release (set "version" in package.json to the same number first, and commit it):

@@ -28,7 +28,7 @@ You need [Docker](https://docs.docker.com/get-docker/).
 
 ```bash
 docker run -d --name powdb -p 127.0.0.1:3333:3333 -v powdb-data:/data \
-  --add-host host.docker.internal:host-gateway ghcr.io/kimmyxpow/powdb:latest
+  --add-host host.docker.internal:host-gateway ghcr.io/powroom/powdb:latest
 ```
 
 - The port is bound to `127.0.0.1`, so only this computer can reach PowDB.
@@ -42,7 +42,7 @@ docker run -d --name powdb -p 127.0.0.1:3333:3333 -v powdb-data:/data \
 Download the example file and start it:
 
 ```bash
-curl -o compose.yml https://raw.githubusercontent.com/kimmyxpow/powdb/main/compose.example.yml
+curl -o compose.yml https://raw.githubusercontent.com/powroom/powdb/main/compose.example.yml
 docker compose up -d
 docker compose logs -f app   # show app logs (Ctrl+C to stop)
 docker compose down          # stop (the data volume stays)
@@ -52,7 +52,7 @@ The file has commented examples for the admin password, connections created at f
 
 ## Pin a version
 
-Use a version tag, such as `ghcr.io/kimmyxpow/powdb:0.1.0`, instead of `latest`.
+Use a version tag, such as `ghcr.io/powroom/powdb:0.1.0`, instead of `latest`.
 
 ## Update
 
@@ -61,7 +61,7 @@ Once a day, PowDB checks for a new release. When one is out, a notice appears at
 - **Docker:** pull the new image, then recreate the container. Your data stays in the volume:
 
   ```bash
-  docker pull ghcr.io/kimmyxpow/powdb:latest
+  docker pull ghcr.io/powroom/powdb:latest
   docker rm -f powdb     # then run the docker run command above again
   ```
 
