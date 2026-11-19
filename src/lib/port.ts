@@ -1,4 +1,4 @@
-/** The port PowView listens on when PORT is not set. */
+/** The port pow/view listens on when PORT is not set. */
 export const DEFAULT_PORT = 3333
 
 /**

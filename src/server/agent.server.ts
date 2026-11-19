@@ -54,10 +54,10 @@ function checkWriteStatements(statements: StatementRange[]): void {
   if (statements.length === 0) throw new Error('No statement to run.')
   for (const s of statements) {
     const keyword = firstKeyword(s.text)
-    // PowView owns the transaction, so statements that would end or nest it are refused.
+    // pow/view owns the transaction, so statements that would end or nest it are refused.
     if (keyword && TRANSACTION_KEYWORDS.has(keyword)) {
       throw new Error(
-        'Transaction statements (BEGIN, COMMIT, ROLLBACK, SAVEPOINT, ...) are not allowed. PowView wraps the request in one transaction.',
+        'Transaction statements (BEGIN, COMMIT, ROLLBACK, SAVEPOINT, ...) are not allowed. pow/view wraps the request in one transaction.',
       )
     }
     // COPY needs the copy sub-protocol, which this query path does not speak.

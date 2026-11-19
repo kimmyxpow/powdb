@@ -1,6 +1,6 @@
 # Install and update
 
-How to run PowView with npx or Docker, where your data is kept, and how to update. For settings, see [Configuration](configuration.md). To build from source, see [Development](development.md).
+How to run pow/view with npx or Docker, where your data is kept, and how to update. For settings, see [Configuration](configuration.md). To build from source, see [Development](development.md).
 
 ## Run with npx
 
@@ -11,7 +11,7 @@ npx powview          # or: bunx powview
 npx powview --yes    # installs Bun without asking, for scripts
 ```
 
-- PowView runs on [Bun](https://bun.sh). If Bun is missing or older than 1.4.4, `powview` says so and asks whether to install Bun 1.4.4. That copy goes only into `~/.powview/runtime`. Nothing else on your computer changes. Answer `n` to install Bun yourself from https://bun.sh instead. Without a terminal, `powview` installs Bun only when you pass `--yes`.
+- pow/view runs on [Bun](https://bun.sh). If Bun is missing or older than 1.4.4, `powview` says so and asks whether to install Bun 1.4.4. That copy goes only into `~/.powview/runtime`. Nothing else on your computer changes. Answer `n` to install Bun yourself from https://bun.sh instead. Without a terminal, `powview` installs Bun only when you pass `--yes`.
 - Your connections, account, tokens, and logs are kept in `~/.powview`. Change the folder with `--data-dir <path>` or `POWVIEW_DATA_DIR`.
 - Options: `--port <n>`, `--host <address>`, `--data-dir <path>`, `--no-open` (do not open the browser), and `-y` or `--yes`. Run `powview --help` for the list.
 - Other commands, such as `powview status` or `powview dump`, use the admin CLI. Run `powview help` to see them.
@@ -31,9 +31,9 @@ docker run -d --name powview -p 127.0.0.1:3333:3333 -v powview-data:/data \
   --add-host host.docker.internal:host-gateway ghcr.io/powroom/powview:latest
 ```
 
-- The port is bound to `127.0.0.1`, so only this computer can reach PowView.
+- The port is bound to `127.0.0.1`, so only this computer can reach pow/view.
 - Your connections, account, tokens, and logs are saved in the `powview-data` volume. They stay after a restart.
-- `--add-host` lets PowView reach databases on your computer through `host.docker.internal`.
+- `--add-host` lets pow/view reach databases on your computer through `host.docker.internal`.
 - The image works on amd64 and arm64, including Apple Silicon Macs.
 - The image layers use zstd compression for a smaller download, so pulling it needs Docker 23 or newer (or Podman 4, containerd 1.5).
 
@@ -56,7 +56,7 @@ Use a version tag, such as `ghcr.io/powroom/powview:0.1.0`, instead of `latest`.
 
 ## Update
 
-Once a day, PowView checks for a new release. When one is out, a notice appears at the bottom of the sidebar. Click it to read the release notes and see the steps for your install. Settings > General shows your version too. To turn the check off, set `POWVIEW_UPDATE_CHECK=off` (see [Configuration](configuration.md#environment-variables)).
+Once a day, pow/view checks for a new release. When one is out, a notice appears at the bottom of the sidebar. Click it to read the release notes and see the steps for your install. Settings > General shows your version too. To turn the check off, set `POWVIEW_UPDATE_CHECK=off` (see [Configuration](configuration.md#environment-variables)).
 
 - **Docker:** pull the new image, then recreate the container. Your data stays in the volume:
 
@@ -67,5 +67,5 @@ Once a day, PowView checks for a new release. When one is out, a notice appears 
 
   With Compose, run `docker compose pull && docker compose up -d` instead.
 
-- **npx:** stop PowView (Ctrl+C), then run `npx powview@latest` to get the newest release. `bunx powview@latest` works too. Your data in `~/.powview` stays.
-- **Source:** in your PowView folder, run `git pull`, `bun install`, and `bun run build`, then restart PowView.
+- **npx:** stop pow/view (Ctrl+C), then run `npx powview@latest` to get the newest release. `bunx powview@latest` works too. Your data in `~/.powview` stays.
+- **Source:** in your pow/view folder, run `git pull`, `bun install`, and `bun run build`, then restart pow/view.

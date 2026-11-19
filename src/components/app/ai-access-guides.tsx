@@ -134,7 +134,7 @@ export function ConnectSection({ token, modes }: { token: string | null; modes: 
         <TabsPanel className={PANEL} value="ask">
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm">Paste this into your AI tool. It will add PowView to its own settings.</p>
+              <p className="text-sm">Paste this into your AI tool. It will add pow/view to its own settings.</p>
               <CopyButton label="Copy prompt" size="lg" text={prompt}>
                 Copy prompt
               </CopyButton>

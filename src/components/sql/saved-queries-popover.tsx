@@ -125,7 +125,7 @@ export function SavedQueriesPopover({ connectionId }: { connectionId: string }) 
         description={
           <>
             <span className="font-medium text-foreground">"{deleting?.name}"</span> is removed for everyone using this
-            PowView.
+            pow/view.
           </>
         }
         destructive

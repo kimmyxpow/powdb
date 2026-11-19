@@ -1,6 +1,6 @@
 # Development
 
-For contributors: how to run PowView from source, build and release it, check the code, and find your way around the project. For what PowView does for users, see the [README](../README.md). The access layer's internal contract is in [access-spec.md](access-spec.md).
+For contributors: how to run pow/view from source, build and release it, check the code, and find your way around the project. For what pow/view does for users, see the [README](../README.md). The access layer's internal contract is in [access-spec.md](access-spec.md).
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ bun run dev          # http://localhost:3333
 
 The first time you open it, create an admin account. See [Login and admin account](configuration.md#login-and-admin-account).
 
-`bun install` runs a `postinstall` script that deletes the native builds of `ssh2` and `cpu-features`. PowView does not use them. It uses the pure JavaScript code path instead.
+`bun install` runs a `postinstall` script that deletes the native builds of `ssh2` and `cpu-features`. pow/view does not use them. It uses the pure JavaScript code path instead.
 
 ## Demo database
 
@@ -47,7 +47,7 @@ In `public`, `customers.country_code` is a foreign key to `countries`. `orders.i
 To run the built app with the demo database in Docker:
 
 ```bash
-docker compose up -d --build   # PowView on http://localhost:3333, with the "Demo shop" connection
+docker compose up -d --build   # pow/view on http://localhost:3333, with the "Demo shop" connection
 docker compose logs -f app     # show app logs (Ctrl+C to stop)
 docker compose down            # add -v to also delete connections, accounts, and demo data
 ```
@@ -129,9 +129,9 @@ Publishing:
 
 The publish workflows run the same checks again. If one fails, nothing is published. Otherwise the image is built for amd64 and arm64, and published as `0.1.1`, `0.1`, and `latest`. Every build also gets a `sha-...` tag.
 
-The publish image workflow then creates the GitHub Release for the tag, titled `PowView 0.1.1`, with notes generated from the merged pull requests and commits. If that release already exists, the job leaves it as it is. PowView reads this release to show its update notice.
+The publish image workflow then creates the GitHub Release for the tag, titled `pow/view 0.1.1`, with notes generated from the merged pull requests and commits. If that release already exists, the job leaves it as it is. pow/view reads this release to show its update notice.
 
-To test the update notice without a real release, run a small local server that answers with release JSON (`tag_name`, `html_url`, `published_at`, `body`), and start PowView with `POWVIEW_UPDATE_URL` set to that address. This variable is for local testing only. The build version comes from `package.json`, so the notice only appears when the test release has a higher version.
+To test the update notice without a real release, run a small local server that answers with release JSON (`tag_name`, `html_url`, `published_at`, `body`), and start pow/view with `POWVIEW_UPDATE_URL` set to that address. This variable is for local testing only. The build version comes from `package.json`, so the notice only appears when the test release has a higher version.
 
 After the first release only, make the package public. On GitHub, open **Packages > powview > Package settings** and set the visibility to **Public**. New packages are private, so nobody can pull them until you do this.
 

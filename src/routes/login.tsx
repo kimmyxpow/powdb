@@ -11,7 +11,7 @@ import { safeRedirect, validateRedirectSearch } from '@/lib/redirect'
 
 export const Route = createFileRoute('/login')({
   validateSearch: validateRedirectSearch,
-  head: () => ({ meta: [{ title: 'Sign in · PowView' }] }),
+  head: () => ({ meta: [{ title: 'Sign in · pow/view' }] }),
   component: LoginPage,
 })
 
@@ -41,8 +41,8 @@ function LoginPage() {
 
   return (
     <AuthCard
-      description="Enter the admin username and password you chose when you set up PowView."
-      title="Sign in to PowView"
+      description="Enter the admin username and password you chose when you set up pow/view."
+      title="Sign in to pow/view"
     >
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <Field>

@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in PowView does not work as expected.
+description: Something in pow/view does not work as expected.
 labels: [bug]
 body:
   - type: markdown
@@ -27,14 +27,14 @@ body:
   - type: input
     id: version
     attributes:
-      label: PowView version
+      label: pow/view version
       description: Shown by `powview --version`, or the image tag you run (for example 0.1.0).
     validations:
       required: true
   - type: dropdown
     id: install
     attributes:
-      label: How do you run PowView?
+      label: How do you run pow/view?
       options:
         - Docker image
         - npx / bunx

@@ -13,7 +13,7 @@ const MIN_PASSWORD = 8
 
 export const Route = createFileRoute('/setup')({
   validateSearch: validateRedirectSearch,
-  head: () => ({ meta: [{ title: 'Set up PowView · PowView' }] }),
+  head: () => ({ meta: [{ title: 'Set up pow/view · pow/view' }] }),
   component: SetupPage,
 })
 
@@ -46,7 +46,7 @@ function SetupPage() {
 
   return (
     <AuthCard
-      description="This account protects every connection you save in PowView."
+      description="This account protects every connection you save in pow/view."
       title="Create your admin account"
     >
       <form className="flex flex-col gap-4" onSubmit={submit}>

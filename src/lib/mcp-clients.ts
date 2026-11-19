@@ -1,6 +1,6 @@
 /**
- * Setup guides for AI tools that talk to PowView over MCP, plus the copy-paste prompt
- * that lets an AI tool install PowView itself. Plain data: the AI access page renders it.
+ * Setup guides for AI tools that talk to pow/view over MCP, plus the copy-paste prompt
+ * that lets an AI tool install pow/view itself. Plain data: the AI access page renders it.
  */
 
 type SetupKind = 'command' | 'file'
@@ -36,13 +36,13 @@ export function mcpUrl(): string {
   return `${window.location.origin}/mcp`
 }
 
-const DOCKER_NOTE = 'The PowView container must be running on this machine.'
+const DOCKER_NOTE = 'The pow/view container must be running on this machine.'
 
 function dockerNote(extra?: string): string {
   return extra ? `${extra} ${DOCKER_NOTE}` : DOCKER_NOTE
 }
 
-/** The stdio server entry that runs the MCP command inside the PowView container. */
+/** The stdio server entry that runs the MCP command inside the pow/view container. */
 const DOCKER_SERVER = { command: 'docker', args: ['exec', '-i', 'powview', 'powview', 'mcp'] }
 
 function json(value: unknown): string {
@@ -157,7 +157,7 @@ export const MCP_CLIENTS: McpClient[] = [
               headers: { Authorization: 'Bearer ${input:powview-token}' },
             },
           },
-          inputs: [{ type: 'promptString', id: 'powview-token', description: 'PowView token', password: true }],
+          inputs: [{ type: 'promptString', id: 'powview-token', description: 'pow/view token', password: true }],
         }),
       note: "VS Code asks for the token the first time and stores it securely, so it is not saved in the file. For all workspaces, run 'MCP: Open User Configuration' and paste the same.",
     },
@@ -256,18 +256,18 @@ export function resolveSetup(client: McpClient, mode: SetupMode, url: string, to
   return { where: h.where, kind: h.kind, code: h.snippet(url, token), note }
 }
 
-/** The copy-paste prompt. The AI tool installs PowView itself, so the details are spelled out. */
+/** The copy-paste prompt. The AI tool installs pow/view itself, so the details are spelled out. */
 export function aiPrompt(url: string, token: string): string {
   return (
-    `Add my PowView MCP server to your user settings: ${url} (Streamable HTTP), header "Authorization: Bearer ${token}". ` +
+    `Add my pow/view MCP server to your user settings: ${url} (Streamable HTTP), header "Authorization: Bearer ${token}". ` +
     'Then tell me which databases you can see.'
   )
 }
 
-/** The same, for the Docker method: the AI tool runs PowView's command, no token involved. */
+/** The same, for the Docker method: the AI tool runs pow/view's command, no token involved. */
 export function aiDockerPrompt(): string {
   return (
-    'Add my PowView MCP server to your user settings as a local stdio server: docker exec -i powview powview mcp. ' +
+    'Add my pow/view MCP server to your user settings as a local stdio server: docker exec -i powview powview mcp. ' +
     'Then tell me which databases you can see.'
   )
 }

@@ -405,7 +405,7 @@ describe('waitForServer', () => {
 describe('update notice', () => {
   test('the notice names the newer version, the current one, and the command', () => {
     expect(updateNotice('0.1.0', '0.1.1')).toBe(
-      'PowView 0.1.1 is available (you have 0.1.0). Stop PowView and run: npx powview@latest',
+      'pow/view 0.1.1 is available (you have 0.1.0). Stop pow/view and run: npx powview@latest',
     )
   })
 

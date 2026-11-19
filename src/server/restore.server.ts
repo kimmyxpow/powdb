@@ -117,7 +117,7 @@ function locatePgTool(name: PgTool): string | null {
 }
 
 function missingToolMessage(tool: PgTool): string {
-  return `${tool} is not installed. The PowView Docker image includes it; when running from source, install the PostgreSQL 18 client, or set POWVIEW_PG_BIN to the folder that holds it.`
+  return `${tool} is not installed. The pow/view Docker image includes it; when running from source, install the PostgreSQL 18 client, or set POWVIEW_PG_BIN to the folder that holds it.`
 }
 
 // ---------------------------------------------------------------------------

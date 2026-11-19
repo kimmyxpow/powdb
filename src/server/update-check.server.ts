@@ -1,8 +1,8 @@
 import { APP_VERSION, isNewer, isVersion } from '@/lib/version'
 import type { InstallMethod, ReleaseInfo, UpdateInfo } from '@/lib/version'
 
-// Asks GitHub for the latest PowView release at most once a day. The only data sent is the
-// User-Agent header (PowView/<version>). Set POWVIEW_UPDATE_CHECK=off to turn it off.
+// Asks GitHub for the latest pow/view release at most once a day. The only data sent is the
+// User-Agent header (powview/<version>). Set POWVIEW_UPDATE_CHECK=off to turn it off.
 
 const DEFAULT_RELEASE_URL = 'https://api.github.com/repos/powroom/powview/releases/latest'
 const REQUEST_TIMEOUT_MS = 5_000
@@ -74,7 +74,7 @@ async function fetchRelease(fetchImpl: typeof fetch, url: string, current: strin
   let response: Response
   try {
     response = await fetchImpl(url, {
-      headers: { Accept: 'application/vnd.github+json', 'User-Agent': `PowView/${current}` },
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': `powview/${current}` },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
   } catch (error) {
@@ -104,7 +104,7 @@ export function createUpdateCheck(): (options?: UpdateCheckOptions) => Promise<U
   function logFailure(reason: string, now: number): void {
     if (lastLogged !== null && now - lastLogged < FAILURE_TTL_MS) return
     lastLogged = now
-    console.error(`PowView update check failed: ${reason}. It will try again later.`)
+    console.error(`pow/view update check failed: ${reason}. It will try again later.`)
   }
 
   async function load(fetchImpl: typeof fetch, url: string, current: string, now: () => number) {

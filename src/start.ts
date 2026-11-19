@@ -7,6 +7,18 @@ const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === 'serverFn',
 })
 
+// A browser that leaves mid-request (it navigated or closed the tab) closes the connection while the
+// request is still read, and the read fails. Nobody waits for that answer, so the error gets the status
+// 499 ("client closed request"): TanStack then answers quietly instead of logging a server error.
+const clientGoneMiddleware = createMiddleware().server(async ({ next, request }) => {
+  try {
+    return await next()
+  } catch (error) {
+    if (request.signal.aborted && error instanceof Error) Object.assign(error, { status: 499 })
+    throw error
+  }
+})
+
 // Every server function needs a signed-in session when auth is on, except those listed in
 // src/api/public-functions.ts. The exemption is matched by the function's name and file (serverFnMeta),
 // never by path or header. A call without a known identity needs a session.
@@ -27,6 +39,6 @@ const authMiddleware = createMiddleware({ type: 'function' }).server(async ({ ne
 // and use server functions for everything that talks to PostgreSQL.
 export const startInstance = createStart(() => ({
   defaultSsr: false,
-  requestMiddleware: [csrfMiddleware],
+  requestMiddleware: [clientGoneMiddleware, csrfMiddleware],
   functionMiddleware: [authMiddleware],
 }))

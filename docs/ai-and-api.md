@@ -6,7 +6,7 @@ The access rules, field details, and error codes are in [access-spec.md](access-
 
 ## AI agents over MCP
 
-AI agents (such as Claude Code, Cursor, and Claude Desktop) never see database passwords. An agent names a connection, and PowView runs the query with the saved credentials.
+AI agents (such as Claude Code, Cursor, and Claude Desktop) never see database passwords. An agent names a connection, and pow/view runs the query with the saved credentials.
 
 Access is limited by default. A new connection has AI access `read`, so agents can only read. Set **AI and API access** for each connection to `off`, `read`, or `write`. Use the connection dialog, or `powview conn edit --ai`.
 
@@ -76,16 +76,16 @@ Keep the token in the MCP config file like any other secret. Do not commit it to
 
 ## API tokens
 
-Tokens let agents and scripts call PowView from outside the browser. Create one in the command palette (Ctrl/⌘+K, then **AI access**), or with `powview token create`.
+Tokens let agents and scripts call pow/view from outside the browser. Create one in the command palette (Ctrl/⌘+K, then **AI access**), or with `powview token create`.
 
 - **Scope**: `read`, `write`, or `admin`. An `admin` token can also create, change, and delete connections. Even then, an agent cannot raise a connection's AI access, give it AI write access, or make a read-only connection writable. Only the signed-in admin can do those. An agent never reads the audit log, whatever its scope.
 - **Connections**: `--conn id,id` limits a token to some connections, by id or exact name. Without it, the token can use every connection that allows AI access, within its scope.
 - **Lifetime**: 90 days by default. `--expires` takes `30d`, `90d`, `1y`, `never`, or `<n>d` (1 to 3650 days).
-- **Shown once**: copy the token when it is created. PowView keeps only a hash of it.
+- **Shown once**: copy the token when it is created. pow/view keeps only a hash of it.
 - **Expired tokens** are refused, but stay in the list until you revoke them. Revoke with `powview token revoke <id>`, or in **AI access**.
 - **Limits**: tokens cannot export a whole table, import CSV, back up a database, or restore one. Those requests get 403. Only the signed-in admin, or the local key, can do them.
 
-Give agents a database role with limited rights, for example one that can only `SELECT` from the tables they need. The read-only check in PowView is an extra safety net, not the only protection.
+Give agents a database role with limited rights, for example one that can only `SELECT` from the tables they need. The read-only check in pow/view is an extra safety net, not the only protection.
 
 ## REST API
 
@@ -133,7 +133,7 @@ Outside the container, set `POWVIEW_URL` (default `http://127.0.0.1:3333`) and `
 | `powview conn add <url> [--name N] [--read-only] [--production] [--ai off\|read\|write] [--color C] [--password-stdin] [--json]` `[--ssh user@host[:port] (--ssh-key FILE \| --ssh-password-stdin)]`                               | Adds a connection from a URL. `--password-stdin` reads the password from stdin. `--production` marks it as production.       |
 | `powview conn edit <id\|name> [--name N] [--url U] [--read-only \| --writable] [--production \| --not-production] [--ai off\|read\|write] [--json]` `[--ssh user@host[:port]] [--ssh-key FILE \| --ssh-password-stdin] [--no-ssh]` | Changes a connection. Only the flags you pass are changed. `--no-ssh` removes the SSH tunnel.                                |
 | `powview conn remove <id\|name> [--yes]`                                                                                                                                                                                           | Removes a connection. Asks first unless `--yes` is given.                                                                    |
-| `powview conn test <id\|name>`                                                                                                                                                                                                     | Checks that PowView can reach the database.                                                                                  |
+| `powview conn test <id\|name>`                                                                                                                                                                                                     | Checks that pow/view can reach the database.                                                                                 |
 | `powview tables <conn> [--schema S] [--json]`                                                                                                                                                                                      | Lists tables, views, and other relations.                                                                                    |
 | `powview describe <conn> <table> [--schema S] [--json]`                                                                                                                                                                            | Shows the columns, keys, and indexes of a table. Accepts `schema.table`.                                                     |
 | `powview query <conn> "<sql>" [--write] [--json] [--max-rows N]`                                                                                                                                                                   | Runs SQL. Read-only unless `--write` is given.                                                                               |

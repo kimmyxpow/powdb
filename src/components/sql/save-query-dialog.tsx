@@ -97,7 +97,7 @@ export function SaveQueryDialog({
                 <Switch checked={everywhere} id="saved-query-everywhere" onCheckedChange={setEverywhere} />
               </div>
               <FieldDescription>
-                {everywhere ? 'Listed on every connection in PowView.' : 'Listed only on this connection.'}
+                {everywhere ? 'Listed on every connection in pow/view.' : 'Listed only on this connection.'}
               </FieldDescription>
             </Field>
           </DialogPanel>

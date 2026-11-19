@@ -34,7 +34,7 @@ const sshSchema = s
     passphrase_env: envName.optional(),
     host_key: s
       .string()
-      .regex(/^SHA256:[A-Za-z0-9+/]+$/, 'host_key must look like SHA256:... (the fingerprint PowView shows)')
+      .regex(/^SHA256:[A-Za-z0-9+/]+$/, 'host_key must look like SHA256:... (the fingerprint pow/view shows)')
       .optional(),
   })
   .superRefine((ssh, ctx) => {
@@ -124,7 +124,7 @@ export function parseConfigText(text: string, file: string): ManagedConnection[]
 
 /**
  * Read powview.yaml. A missing file means no managed connections ([]). An invalid file is
- * logged and ignored (null), so the caller keeps what it already has and PowView still starts.
+ * logged and ignored (null), so the caller keeps what it already has and pow/view still starts.
  */
 export async function loadManagedConnections(dataDirPath: string): Promise<ManagedConnection[] | null> {
   const file = configPath(dataDirPath)

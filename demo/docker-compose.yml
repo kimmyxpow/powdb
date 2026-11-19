@@ -1,4 +1,4 @@
-# Demo PostgreSQL with sample data for PowView.
+# Demo PostgreSQL with sample data for pow/view.
 #   standalone:  docker compose -f demo/docker-compose.yml up -d    (bun run demo:db)
 #   or included by ../docker-compose.yml together with the app.
 # Connection URL from your machine: postgresql://demo:demo@localhost:55432/shop

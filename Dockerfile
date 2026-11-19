@@ -59,7 +59,7 @@ FROM oven/bun:1.4.4-distroless AS runtime
 WORKDIR /app
 
 LABEL org.opencontainers.image.source="https://github.com/powroom/powview" \
-      org.opencontainers.image.title="PowView" \
+      org.opencontainers.image.title="pow/view" \
       org.opencontainers.image.description="A web app for browsing and managing PostgreSQL databases." \
       org.opencontainers.image.url="https://github.com/powroom/powview" \
       org.opencontainers.image.licenses="Apache-2.0"

@@ -83,7 +83,7 @@ function sendRestore(
       }
       reject(new RestoreError(body?.error?.message ?? `Restore failed (${xhr.status}).`, body?.log ?? ''))
     }
-    xhr.onerror = () => reject(new RestoreError('Could not reach PowView.', ''))
+    xhr.onerror = () => reject(new RestoreError('Could not reach pow/view.', ''))
     xhr.send(file)
   })
 }

@@ -9,10 +9,10 @@ import { decryptSecret, encryptSecret, isEncrypted } from './secret.server'
 import { mergeSshInput, sshInfo } from './ssh-settings'
 
 /** Shown instead of saving when someone tries to edit or delete a powview.yaml connection. */
-export const MANAGED_ERROR = 'Managed by powview.yaml. Change the file and restart PowView.'
+export const MANAGED_ERROR = 'Managed by powview.yaml. Change the file and restart pow/view.'
 
 /**
- * Everything PowView keeps on disk lives here: $POWVIEW_DATA_DIR, else ./.data.
+ * Everything pow/view keeps on disk lives here: $POWVIEW_DATA_DIR, else ./.data.
  * Read on every call so tests can point it elsewhere.
  */
 export function dataDir(): string {

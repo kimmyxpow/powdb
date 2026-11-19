@@ -23,7 +23,7 @@ function noNativeAddons(): Plugin {
       return null
     },
     load(id) {
-      if (id === stub) return "throw new Error('Native addons are not used in PowView.')"
+      if (id === stub) return "throw new Error('Native addons are not used in pow/view.')"
       return null
     },
   }

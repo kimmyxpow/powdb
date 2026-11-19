@@ -80,7 +80,7 @@ describe('getUpdateInfo', () => {
     expect(fake.calls[0]!.url).toBe(DEFAULT_URL)
     expect(fake.calls[0]!.headers).toEqual({
       Accept: 'application/vnd.github+json',
-      'User-Agent': 'PowView/0.1.0',
+      'User-Agent': 'powview/0.1.0',
     })
     expect(fake.calls[0]!.signal).toBeDefined()
   })
@@ -219,7 +219,7 @@ describe('getUpdateInfo', () => {
     await createUpdateCheck()({ fetch: fake.fetch, env: {}, current: '0.1.0', now: fakeClock().now })
     expect(errors).toHaveBeenCalledTimes(1)
     const message = String(errors.mock.calls[0]![0])
-    expect(message).toBe('PowView update check failed: GitHub answered 500. It will try again later.')
+    expect(message).toBe('pow/view update check failed: GitHub answered 500. It will try again later.')
   })
 
   test('a repository without releases (404) is no update, not a failure, and is cached for a day', async () => {

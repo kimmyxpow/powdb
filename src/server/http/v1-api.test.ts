@@ -209,7 +209,7 @@ if (!ISOLATED) {
       expect(await errorCode(patch)).toBe('managed')
       const del = await call('DELETE', 'connections/prod', { token: adminBot.token })
       expect(del.status).toBe(409)
-      expect(await errorMessage(del)).toBe('Managed by powview.yaml. Change the file and restart PowView.')
+      expect(await errorMessage(del)).toBe('Managed by powview.yaml. Change the file and restart pow/view.')
     })
 
     test('an unknown connection is 404', async () => {

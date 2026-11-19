@@ -1,4 +1,4 @@
-# PowView for everyday use. It pulls the published image (no build, no demo database).
+# pow/view for everyday use. It pulls the published image (no build, no demo database).
 #
 #   curl -o compose.yml https://raw.githubusercontent.com/powroom/powview/main/compose.example.yml
 #   docker compose up -d                → http://localhost:3333

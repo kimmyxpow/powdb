@@ -1,4 +1,4 @@
-// Loads schema-compat.json, the record of what zod 4 did for PowView's schemas (see schema.test.ts
+// Loads schema-compat.json, the record of what zod 4 did for pow/view's schemas (see schema.test.ts
 // and mcp.test.ts). Test-only: nothing in the app imports this file.
 import { readFileSync } from 'node:fs'
 import path from 'node:path'

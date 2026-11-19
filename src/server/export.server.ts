@@ -330,7 +330,7 @@ export async function handleExportRequest(request: Request): Promise<Response> {
       throw new HttpError(
         403,
         'forbidden',
-        'API tokens and AI agents cannot export whole tables. Sign in to PowView, or use the local key.',
+        'API tokens and AI agents cannot export whole tables. Sign in to pow/view, or use the local key.',
       )
     }
     const req = parseTableExportRequest(request)

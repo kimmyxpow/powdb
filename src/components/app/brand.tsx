@@ -65,7 +65,7 @@ export function Logo() {
       <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
         <DatabaseIcon aria-hidden="true" className="size-4" />
       </span>
-      <span className="font-semibold text-sm tracking-tight">PowView</span>
+      <span className="font-semibold text-sm tracking-tight">pow/view</span>
     </span>
   )
 }

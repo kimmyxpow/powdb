@@ -194,7 +194,7 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
                       <span className="truncate text-muted-foreground">{r.applicationName ?? ''}</span>
                       {r.isPowview && (
                         <Badge size="sm" variant="info">
-                          PowView
+                          pow/view
                         </Badge>
                       )}
                     </span>

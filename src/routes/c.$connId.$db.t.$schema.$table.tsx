@@ -48,7 +48,7 @@ export const Route = createFileRoute('/c/$connId/$db/t/$schema/$table')({
       void queryClient.prefetchQuery(countQuery(connId, db, schema, table, countParams(deps)))
     }
   },
-  head: ({ params }) => ({ meta: [{ title: `${params.table} · ${params.db} · PowView` }] }),
+  head: ({ params }) => ({ meta: [{ title: `${params.table} · ${params.db} · pow/view` }] }),
   component: TablePage,
 })
 

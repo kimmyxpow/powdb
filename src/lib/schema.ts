@@ -1,4 +1,4 @@
-// Validation for PowView's request bodies, server function inputs, config files and MCP tools.
+// Validation for pow/view's request bodies, server function inputs, config files and MCP tools.
 // It covers the part of zod 4 the app uses, with the same results, the same English messages
 // and the same JSON Schema, so the API and the AI clients see no change. Schemas implement
 // Standard Schema v1, so TanStack Start's .validator() takes them directly.

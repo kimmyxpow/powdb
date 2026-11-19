@@ -1,6 +1,6 @@
-# PowView declarative connections (example, everything is commented out).
+# pow/view declarative connections (example, everything is commented out).
 # Copy this file to powview.yaml in the data folder, or in Docker mount it as
-# ./powview.yaml:/data/powview.yaml:ro. Uncomment only what you need, then restart PowView.
+# ./powview.yaml:/data/powview.yaml:ro. Uncomment only what you need, then restart pow/view.
 # Connections listed here are managed: edit them in this file, not in the UI or CLI.
 #
 # connections:

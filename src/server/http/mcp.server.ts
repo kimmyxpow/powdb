@@ -15,7 +15,7 @@ const SUPPORTED_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']
 const LATEST_VERSION = '2025-06-18'
 
 const INSTRUCTIONS =
-  'PowView gives you access to PostgreSQL connections. Call list_connections first, then list_schemas, ' +
+  'pow/view gives you access to PostgreSQL connections. Call list_connections first, then list_schemas, ' +
   'list_tables and describe_table to learn the schema, and run_query for SQL. Queries are read-only ' +
   'unless the token and the connection allow writes and you pass write: true. Connections are named by id ' +
   'or exact name. Results are capped by max_rows.'
@@ -39,7 +39,7 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     }
     const principal = await authenticate(request, { mcp: true })
     if (!principal) {
-      return errorResponse(401, 'unauthenticated', 'Send a PowView API token or the local key.', {
+      return errorResponse(401, 'unauthenticated', 'Send a pow/view API token or the local key.', {
         'WWW-Authenticate': 'Bearer',
       })
     }

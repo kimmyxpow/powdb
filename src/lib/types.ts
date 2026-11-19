@@ -49,7 +49,7 @@ export interface ConnectionConfig {
   /** Production connections show a marker and ask before every change. */
   production: boolean
   aiAccess: AiAccess
-  /** SSH tunnel: PowView connects to this server and reaches host:port from there */
+  /** SSH tunnel: pow/view connects to this server and reaches host:port from there */
   ssh?: SshSettings
   /** true when the connection comes from powview.yaml (read-only in the UI and API) */
   managed?: boolean

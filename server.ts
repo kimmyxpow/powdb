@@ -1,5 +1,5 @@
 /**
- * Production server for PowView (run `bun run build` first, then `bun run start`).
+ * Production server for pow/view (run `bun run build` first, then `bun run start`).
  *
  * - Serves the built client assets from memory (dist/client, read once at startup)
  * - Forwards everything else to the TanStack Start handler
@@ -129,4 +129,4 @@ const server = Bun.serve({
   fetch: handle,
 })
 
-console.log(`PowView running at http://${server.hostname}:${server.port}`)
+console.log(`pow/view running at http://${server.hostname}:${server.port}`)

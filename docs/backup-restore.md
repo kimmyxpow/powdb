@@ -59,9 +59,9 @@ powview restore shop shop-20261117-1138.sql.gz --keep-going
 
 Restore needs `psql` and `pg_restore` on the server. The Docker image includes both. From source, install the PostgreSQL 18 client, or set `POWVIEW_PG_BIN` to the folder that holds both. The file size limit is `POWVIEW_MAX_RESTORE_MB` (default 2048 MB).
 
-## Restore a backup outside PowView
+## Restore a backup outside pow/view
 
-Use these commands to restore a backup without PowView, for example on another server:
+Use these commands to restore a backup without pow/view, for example on another server:
 
 ```bash
 # .sql: plain SQL, run with psql

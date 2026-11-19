@@ -18,7 +18,7 @@ export interface ActivityRow {
   /** ms since query_start for active sessions, otherwise since state_change */
   durationMs: number | null
   blockedBy: number[]
-  /** PowView's own pool connections */
+  /** pow/view's own pool connections */
   isPowview: boolean
 }
 

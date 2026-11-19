@@ -1,4 +1,4 @@
-# DEVELOPMENT stack: builds PowView from source and starts a demo PostgreSQL with sample data.
+# DEVELOPMENT stack: builds pow/view from source and starts a demo PostgreSQL with sample data.
 # To run the published image for everyday use, see compose.example.yml instead.
 #
 #   docker compose up -d --build      → http://localhost:3333

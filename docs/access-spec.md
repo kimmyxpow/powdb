@@ -1,4 +1,4 @@
-# PowView access: login, API tokens, AI agents (MCP), CLI, config file
+# pow/view access: login, API tokens, AI agents (MCP), CLI, config file
 
 This is the contract every part of the implementation follows. Do not change names,
 paths or shapes here without updating this file.
@@ -6,7 +6,7 @@ paths or shapes here without updating this file.
 Principles
 
 - The UI needs a login. First start: create the admin account (or seed it from env).
-- AI agents never see database passwords. They name a connection; PowView runs the query.
+- AI agents never see database passwords. They name a connection; pow/view runs the query.
 - AI access is limited by default: every connection starts as **read-only for AI**.
 - One core, three doors: REST API (`/api/v1`), MCP (`/mcp`), CLI (`powview`, talks to the REST API). The browser UI uses server functions (`src/api/*.functions.ts`), not REST. Both call the same `src/server/*.server.ts` code.
 - Everything also works with zero config in Docker.
@@ -219,7 +219,7 @@ The `ssh` block holds references only; the secrets are read when the tunnel star
 ### `src/server/tunnel.server.ts` and `src/server/ssh-settings.ts`
 
 One `ssh2` client per connection with an SSH tunnel, forwarding a local port on `127.0.0.1` to `host:port` as seen from the SSH server. `ensureTunnel(conn)` starts it once (concurrent callers share the start) and returns the endpoint. A changed setting gives a new tunnel. A dropped SSH connection is re-opened on the next use. `closeTunnel(id)` runs when a connection is saved or removed. `testTunnel(ssh, dbHost, dbPort)` is the temporary tunnel for "Test connection". The host key check is `hostVerifier` with `hostHash: 'sha256'`, formatted like OpenSSH. `ssh-settings.ts` holds the pure parts (fingerprint, cache key, `mergeSshInput`, `sshInfo`). Clients reach PostgreSQL through `connectConfig(conn)` (pools and the SQL editor) and `pgTarget(conn)` (pg_dump; through a tunnel `host=<real host> hostaddr=127.0.0.1 port=<tunnel port>`, so the certificate is checked against the real name).
-Parsed with `Bun.YAML.parse` (`.json` files with `JSON.parse`), validated with the project's schema helper (`src/lib/schema.ts`). Unknown keys in a connection or its `ssh` block are refused. On `store.server.ts` load: managed connections are upserted by id (keep `lastUsedAt`), managed ones no longer in the file are removed. Invalid file: `console.warn` and ignore it (never crash). Managed connections cannot be edited or deleted through the UI, API or CLI: throw `Managed by powview.yaml. Change the file and restart PowView.`
+Parsed with `Bun.YAML.parse` (`.json` files with `JSON.parse`), validated with the project's schema helper (`src/lib/schema.ts`). Unknown keys in a connection or its `ssh` block are refused. On `store.server.ts` load: managed connections are upserted by id (keep `lastUsedAt`), managed ones no longer in the file are removed. Invalid file: `console.warn` and ignore it (never crash). Managed connections cannot be edited or deleted through the UI, API or CLI: throw `Managed by powview.yaml. Change the file and restart pow/view.`
 The pool must use `resolvePassword(conn)` = `conn.passwordEnv ? process.env[conn.passwordEnv] : conn.password`.
 
 ### `src/server/http/*.server.ts` and `src/routes/*`

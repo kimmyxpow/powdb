@@ -1,5 +1,5 @@
 /// <reference types="bun" />
-// powview: command-line client for PowView. It talks only to the HTTP API and the
+// powview: command-line client for pow/view. It talks only to the HTTP API and the
 // MCP endpoint of a running server. It never imports server modules.
 
 import { readFileSync } from 'node:fs'
@@ -82,7 +82,7 @@ interface TokenCreated {
 // ---------------------------------------------------------------------------
 
 const SIGN_IN_HINT = [
-  "Not signed in. Set POWVIEW_TOKEN to an API token, or run powview where POWVIEW_DATA_DIR points at PowView's data folder.",
+  "Not signed in. Set POWVIEW_TOKEN to an API token, or run powview where POWVIEW_DATA_DIR points at pow/view's data folder.",
   'In Docker: docker exec powview powview <command>.',
 ]
 
@@ -92,7 +92,7 @@ function serverUrl(): string {
 }
 
 function localKeyRejected(): string {
-  return `The local key in ${localKeyPath()} was not accepted. Check that POWVIEW_DATA_DIR points at PowView's data folder.`
+  return `The local key in ${localKeyPath()} was not accepted. Check that POWVIEW_DATA_DIR points at pow/view's data folder.`
 }
 
 function dataDir(): string {
@@ -133,7 +133,7 @@ function authHeaders(mode: AuthMode = 'default'): Record<string, string> {
   if (!key) {
     if (mode === 'local') {
       throw new Error(
-        `No local key found in ${localKeyPath()}. Run this where POWVIEW_DATA_DIR points at PowView's data folder.`,
+        `No local key found in ${localKeyPath()}. Run this where POWVIEW_DATA_DIR points at pow/view's data folder.`,
       )
     }
     return {}
@@ -154,7 +154,7 @@ interface RawResponse {
 
 function unreachable(): NetworkError {
   return new NetworkError(
-    `Cannot reach PowView at ${serverUrl()}. Is the server running? Set POWVIEW_URL if it runs somewhere else.`,
+    `Cannot reach pow/view at ${serverUrl()}. Is the server running? Set POWVIEW_URL if it runs somewhere else.`,
   )
 }
 
@@ -214,7 +214,7 @@ async function api<T = unknown>(
   try {
     return JSON.parse(res.text) as T
   } catch {
-    throw new Error('PowView sent a response that is not JSON.')
+    throw new Error('pow/view sent a response that is not JSON.')
   }
 }
 
@@ -1126,7 +1126,7 @@ async function relayMcpLine(line: string, scope: 'read' | 'write'): Promise<void
     res = await rawRequest('POST', '/mcp', { ...authHeaders(), 'X-PowView-Agent-Scope': scope }, line)
   } catch (err) {
     printError(messageOf(err))
-    replyError(`Cannot reach PowView at ${serverUrl()}.`)
+    replyError(`Cannot reach pow/view at ${serverUrl()}.`)
     return
   }
 
@@ -1135,14 +1135,14 @@ async function relayMcpLine(line: string, scope: 'read' | 'write'): Promise<void
     try {
       writeJsonLine(JSON.parse(res.text))
     } catch {
-      printError('PowView sent a response that is not JSON.')
-      replyError('Invalid response from PowView.')
+      printError('pow/view sent a response that is not JSON.')
+      replyError('Invalid response from pow/view.')
     }
     return
   }
 
   if (res.status === 401) printError(SIGN_IN_HINT.join('\n'))
-  else printError(`PowView rejected an MCP request: ${errorMessage(res)}`)
+  else printError(`pow/view rejected an MCP request: ${errorMessage(res)}`)
   replyError(apiErrorMessage(res.text) ?? `HTTP ${res.status}`)
 }
 
@@ -1175,7 +1175,7 @@ const USAGE = [
   '  powview conn add <url> [--name N] [--read-only] [--production] [--ai off|read|write] [--color C] [--password-stdin] [--json]',
   '      [--ssh user@host[:port] (--ssh-key FILE | --ssh-password-stdin)]',
   '      Add a connection from a PostgreSQL URL. --password-stdin reads the password from stdin.',
-  '      --production marks the connection as production: PowView asks before every change in the UI.',
+  '      --production marks the connection as production: pow/view asks before every change in the UI.',
   '      --ssh connects through an SSH server first. --ssh-key reads a private key file,',
   '      --ssh-password-stdin reads the SSH password from stdin.',
   '  powview conn edit <id|name> [--name N] [--url U] [--read-only | --writable] [--production | --not-production] [--ai off|read|write] [--json]',
@@ -1185,7 +1185,7 @@ const USAGE = [
   '  powview conn remove <id|name> [--yes]',
   '      Remove a connection. Asks first unless --yes is given.',
   '  powview conn test <id|name>',
-  '      Check that PowView can reach the database.',
+  '      Check that pow/view can reach the database.',
   '',
   'Schema and queries',
   '  powview tables <conn> [--schema S] [--json]',
@@ -1234,7 +1234,7 @@ const USAGE = [
   'Environment',
   '  POWVIEW_URL       Server URL (default http://127.0.0.1:3333)',
   '  POWVIEW_TOKEN     API token to use instead of the local key',
-  '  POWVIEW_DATA_DIR  PowView data folder that holds auth.json (default ./.data)',
+  '  POWVIEW_DATA_DIR  pow/view data folder that holds auth.json (default ./.data)',
 ]
 
 function reportUnknown(name: string): void {

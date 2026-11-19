@@ -1,6 +1,6 @@
 // Code behind the `powview` command (npx powview, bunx powview). See bin/powview.mjs.
 //
-// Runs on Node.js 18 or newer and on Bun, with no dependencies. PowView's server needs Bun, so the
+// Runs on Node.js 18 or newer and on Bun, with no dependencies. pow/view's server needs Bun, so the
 // launcher finds Bun 1.4.4 or newer (or offers to install it into ~/.powview/runtime), then runs
 // start.js with it. Other commands go to the admin CLI bundle, dist/cli/powview.js.
 // Importing this module does nothing: main() does the work.
@@ -194,7 +194,7 @@ export function updateCheckOn(env) {
 /** The line to print when latest is a newer version than current, or null (also when either is not a version). */
 export function updateNotice(current, latest) {
   if (compareVersions(latest, current) !== 1) return null
-  return `PowView ${latest} is available (you have ${current}). Stop PowView and run: npx powview@latest`
+  return `pow/view ${latest} is available (you have ${current}). Stop pow/view and run: npx powview@latest`
 }
 
 /**
@@ -331,7 +331,7 @@ export function helpText(version) {
     `powview ${version}: a web app for browsing and managing PostgreSQL databases`,
     '',
     'Usage:',
-    '  powview                    start PowView (same as "powview start")',
+    '  powview                    start pow/view (same as "powview start")',
     '  powview <command> [...]    admin commands, for example "powview status" (see "powview help")',
     '',
     'Start options:',
@@ -349,7 +349,7 @@ export function helpText(version) {
 }
 
 export function bunNotice({ old, runtimeDir }) {
-  const lines = [`NOTICE: PowView runs on the Bun runtime (version ${MIN_BUN_VERSION} or newer), not on Node.js.`]
+  const lines = [`NOTICE: pow/view runs on the Bun runtime (version ${MIN_BUN_VERSION} or newer), not on Node.js.`]
   if (old.length === 0) lines.push('Bun is not installed on this computer.')
   for (const copy of old) {
     if (copy.version) lines.push(`Bun ${copy.version} at ${copy.bin} is too old.`)
@@ -549,10 +549,10 @@ async function serve(bun, settings, platform) {
   const url = serverUrl(settings.host, settings.port)
   const port = parsePortFlag(settings.port)
   // If something already answers there, the server will fail to bind and print the real error.
-  // Waiting for an answer would then report that other program as PowView, so the wait is skipped.
+  // Waiting for an answer would then report that other program as pow/view, so the wait is skipped.
   const busy = port !== null && (await answers(url))
   if (busy)
-    console.error(`Something is already answering at ${url}. If it is not PowView, use --port to pick another port.`)
+    console.error(`Something is already answering at ${url}. If it is not pow/view, use --port to pick another port.`)
 
   // Started now and read after the server is up, so the check never delays the start.
   const latestCheck = latestRegistryVersion({ env: process.env })
@@ -579,7 +579,7 @@ async function serve(bun, settings, platform) {
       })
     } else if (!gone) {
       console.error(
-        `PowView has not answered at ${url} after ${SERVER_WAIT_MS / 1000} seconds. Check the messages above.`,
+        `pow/view has not answered at ${url} after ${SERVER_WAIT_MS / 1000} seconds. Check the messages above.`,
       )
     }
   }

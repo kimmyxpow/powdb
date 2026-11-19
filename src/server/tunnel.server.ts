@@ -6,7 +6,7 @@ import { rememberHostKey } from './store.server'
 import { formatHostKeyFingerprint, tunnelKey, type ResolvedSsh } from './ssh-settings'
 
 /**
- * SSH tunnels. PowView opens an SSH connection to a bastion and forwards a local port to
+ * SSH tunnels. pow/view opens an SSH connection to a bastion and forwards a local port to
  * PostgreSQL through it: pg connects to 127.0.0.1:<port>, the bastion connects to the database.
  * One tunnel per connection. Settings are compared with a fingerprint, so a change starts a new one.
  */
@@ -337,7 +337,7 @@ export async function ensureTunnel(conn: ConnectionConfig): Promise<TunnelEndpoi
       ssh: resolved,
       dbHost: conn.host,
       dbPort: conn.port,
-      // managed connections come from powview.yaml and are never changed by PowView
+      // managed connections come from powview.yaml and are never changed by pow/view
       connectionId: conn.managed ? undefined : conn.id,
       // check the database is reachable from the SSH server once, so a wrong host or port
       // gives a clear message instead of pg's "Connection terminated unexpectedly"

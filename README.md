@@ -1,8 +1,8 @@
-# PowView
+# pow/view
 
-PowView is a web app for browsing and managing PostgreSQL databases. Open it in your browser to see your tables, change data, run SQL queries, view how tables connect, and make backups. It is made for developers, analysts, and anyone who works with PostgreSQL data and wants a simple, fast tool.
+pow/view is a web app for browsing and managing PostgreSQL databases. Open it in your browser to see your tables, change data, run SQL queries, view how tables connect, and make backups. It is made for developers, analysts, and anyone who works with PostgreSQL data and wants a simple, fast tool.
 
-![Table data view](docs/screenshot-table.png) ![SQL editor](docs/screenshot-sql.png)
+![pow/view in light and dark mode](docs/screenshot.png)
 
 ## Quick start
 
@@ -12,7 +12,7 @@ PowView is a web app for browsing and managing PostgreSQL databases. Open it in 
 npx powview
 ```
 
-PowView opens at http://127.0.0.1:3333. It runs on Bun. If Bun is missing, `powview` asks before it installs Bun, and that copy goes only into `~/.powview/runtime`. Flags, data folders, and updates are in [Install and update](docs/install.md).
+pow/view opens at http://127.0.0.1:3333. It runs on Bun. If Bun is missing, `powview` asks before it installs Bun, and that copy goes only into `~/.powview/runtime`. Flags, data folders, and updates are in [Install and update](docs/install.md).
 
 **With Docker** (needs [Docker](https://docs.docker.com/get-docker/)):
 
@@ -32,7 +32,7 @@ With either Docker command, open http://localhost:3333 in your browser.
 
 ## First login
 
-The first time you open PowView, create an admin account. Enter a username and a password of at least 8 characters. You sign in with it after that.
+The first time you open pow/view, create an admin account. Enter a username and a password of at least 8 characters. You sign in with it after that.
 
 ## Connect a database
 
@@ -85,7 +85,7 @@ The full list is in [docs/shortcut.md](docs/shortcut.md).
 
 ## Security
 
-- **Local only**: by default PowView accepts connections only from this computer. For other machines, put it behind a reverse proxy with HTTPS. See [Network security](docs/configuration.md#network-security-and-proxy).
+- **Local only**: by default pow/view accepts connections only from this computer. For other machines, put it behind a reverse proxy with HTTPS. See [Network security](docs/configuration.md#network-security-and-proxy).
 - **Login**: the app asks for an admin account. Forgot the password? See [Login and admin account](docs/configuration.md#login-and-admin-account).
 - **Safety**: read-only connections and production mode stop changes you did not mean to make. Production mode is a check in the app, not a security boundary, so also use a database account with limited rights.
 - **Secrets**: saved database passwords are encrypted and never sent back to the browser. API tokens and the data folder give full access. Keep them private, and do not commit them to git.
@@ -102,4 +102,4 @@ The full list is in [docs/shortcut.md](docs/shortcut.md).
 
 ## License
 
-PowView is open source under the [Apache License 2.0](LICENSE). You can use, change, and share it, also in commercial products, as long as you keep the copyright and license notices (see [NOTICE](NOTICE)). The license does not give permission to use the PowView name or logo for your own product.
+pow/view is open source under the [Apache License 2.0](LICENSE). You can use, change, and share it, also in commercial products, as long as you keep the copyright and license notices (see [NOTICE](NOTICE)). The license does not give permission to use the pow/view name or logo for your own product.

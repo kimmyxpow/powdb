@@ -319,7 +319,9 @@ export function ConnectionDialog({
               <Alert variant="info">
                 <LockIcon />
                 <AlertTitle>Managed by powview.yaml</AlertTitle>
-                <AlertDescription>Change the file and restart PowView. The fields here are read-only.</AlertDescription>
+                <AlertDescription>
+                  Change the file and restart pow/view. The fields here are read-only.
+                </AlertDescription>
               </Alert>
             )}
 
