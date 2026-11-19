@@ -1,0 +1,175 @@
+import { keepPreviousData, queryOptions } from '@tanstack/react-query'
+import { getConnectionFn, listConnectionsFn } from '@/api/connections.functions'
+import { authStateFn } from '@/api/session.functions'
+import { listTokensFn } from '@/api/tokens.functions'
+import { updateInfoFn } from '@/api/update.functions'
+import {
+  allRelationsFn,
+  countRowsFn,
+  fetchRowsFn,
+  lookupReferencesFn,
+  listDatabasesFn,
+  listSchemasFn,
+  objectDefinitionFn,
+  relationDdlFn,
+  relationDetailsFn,
+  schemaObjectsFn,
+  serverInfoFn,
+  completionSchemaFn,
+  databaseOverviewFn,
+} from '@/api/explorer.functions'
+import type { Filter, Sort } from './types'
+
+export const keys = {
+  connections: () => ['connections'] as const,
+  connection: (id: string) => ['connections', id] as const,
+  /** prefix for everything that belongs to one database */
+  db: (id: string, db: string) => ['c', id, db] as const,
+  databases: (id: string) => ['c', id, '~databases'] as const,
+  relation: (id: string, db: string, schema: string, table: string) => ['c', id, db, 'rel', schema, table] as const,
+}
+
+export const connectionsQuery = () =>
+  queryOptions({
+    queryKey: keys.connections(),
+    queryFn: () => listConnectionsFn(),
+    staleTime: 5_000,
+  })
+
+export const connectionQuery = (id: string) =>
+  queryOptions({
+    queryKey: keys.connection(id),
+    queryFn: () => getConnectionFn({ data: { id } }),
+  })
+
+/** Sign-in state for the root route guard and the account page. */
+export const authStateQuery = () =>
+  queryOptions({
+    queryKey: ['auth'] as const,
+    queryFn: () => authStateFn(),
+    staleTime: 30_000,
+  })
+
+/** The newest PowDB release. The server caches it, so the browser asks at most once an hour. */
+export const updateInfoQuery = () =>
+  queryOptions({
+    queryKey: ['update-info'] as const,
+    queryFn: () => updateInfoFn(),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+
+export const tokensQuery = () =>
+  queryOptions({
+    queryKey: ['tokens'] as const,
+    queryFn: () => listTokensFn(),
+  })
+
+export const databasesQuery = (connectionId: string) =>
+  queryOptions({
+    queryKey: keys.databases(connectionId),
+    queryFn: () => listDatabasesFn({ data: { connectionId } }),
+  })
+
+export const serverInfoQuery = (connectionId: string, database: string) =>
+  queryOptions({
+    queryKey: [...keys.db(connectionId, database), 'server'],
+    queryFn: () => serverInfoFn({ data: { connectionId, database } }),
+  })
+
+export const schemasQuery = (connectionId: string, database: string) =>
+  queryOptions({
+    queryKey: [...keys.db(connectionId, database), 'schemas'],
+    queryFn: () => listSchemasFn({ data: { connectionId, database } }),
+  })
+
+export const schemaObjectsQuery = (connectionId: string, database: string, schema: string) =>
+  queryOptions({
+    queryKey: [...keys.db(connectionId, database), 'objects', schema],
+    queryFn: () => schemaObjectsFn({ data: { connectionId, database, schema } }),
+  })
+
+export const allRelationsQuery = (connectionId: string, database: string) =>
+  queryOptions({
+    queryKey: [...keys.db(connectionId, database), 'all-relations'],
+    queryFn: () => allRelationsFn({ data: { connectionId, database } }),
+  })
+
+export const completionSchemaQuery = (connectionId: string, database: string) =>
+  queryOptions({
+    queryKey: [...keys.db(connectionId, database), 'completion'],
+    queryFn: () => completionSchemaFn({ data: { connectionId, database } }),
+    staleTime: 5 * 60_000,
+  })
+
+export const relationDetailsQuery = (connectionId: string, database: string, schema: string, table: string) =>
+  queryOptions({
+    queryKey: [...keys.relation(connectionId, database, schema, table), 'details'],
+    queryFn: () => relationDetailsFn({ data: { connectionId, database, schema, table } }),
+  })
+
+export const relationDdlQuery = (connectionId: string, database: string, schema: string, table: string) =>
+  queryOptions({
+    queryKey: [...keys.relation(connectionId, database, schema, table), 'ddl'],
+    queryFn: () => relationDdlFn({ data: { connectionId, database, schema, table } }),
+  })
+
+export const definitionQuery = (connectionId: string, database: string, kind: 'function' | 'type', oid: number) =>
+  queryOptions({
+    queryKey: [...keys.db(connectionId, database), 'definition', kind, oid],
+    queryFn: () => objectDefinitionFn({ data: { connectionId, database, kind, oid } }),
+  })
+
+interface RowsParams {
+  page: number
+  pageSize: number
+  sort: Sort[]
+  filters: Filter[]
+  where?: string
+  search?: string
+}
+
+export const rowsQuery = (connectionId: string, database: string, schema: string, table: string, params: RowsParams) =>
+  queryOptions({
+    queryKey: [...keys.relation(connectionId, database, schema, table), 'rows', params],
+    queryFn: () => fetchRowsFn({ data: { connectionId, database, schema, table, ...params } }),
+    placeholderData: keepPreviousData,
+    // fresh enough: saves and SQL that changes data invalidate this key, and a prefetch from a
+    // link hover is not fetched again on mount
+    staleTime: 5_000,
+    retry: false,
+  })
+
+export const countQuery = (
+  connectionId: string,
+  database: string,
+  schema: string,
+  table: string,
+  params: Pick<RowsParams, 'filters' | 'where' | 'search'>,
+) =>
+  queryOptions({
+    queryKey: [...keys.relation(connectionId, database, schema, table), 'count', params],
+    queryFn: () => countRowsFn({ data: { connectionId, database, schema, table, ...params } }),
+    staleTime: 10_000,
+    retry: false,
+  })
+
+export const overviewQuery = (connectionId: string, database: string) =>
+  queryOptions({
+    queryKey: [...keys.db(connectionId, database), 'overview'],
+    queryFn: () => databaseOverviewFn({ data: { connectionId, database } }),
+  })
+
+/** Rows of a referenced table matching `search`, for picking a foreign key value. */
+export const referenceQuery = (
+  connectionId: string,
+  database: string,
+  fk: { schema: string; table: string; column: string },
+  search: string,
+) =>
+  queryOptions({
+    queryKey: [...keys.relation(connectionId, database, fk.schema, fk.table), 'lookup', fk.column, search],
+    queryFn: () => lookupReferencesFn({ data: { connectionId, database, ...fk, search, limit: 20 } }),
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+  })

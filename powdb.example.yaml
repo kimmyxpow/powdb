@@ -1,0 +1,25 @@
+# PowDB declarative connections (example, everything is commented out).
+# Copy this file to powdb.yaml in the data folder, or in Docker mount it as
+# ./powdb.yaml:/data/powdb.yaml:ro. Uncomment only what you need, then restart PowDB.
+# Connections listed here are managed: edit them in this file, not in the UI or CLI.
+#
+# connections:
+#   # Production, password comes from the environment variable PROD_PG_PASSWORD
+#   # (set it in an .env file or your shell, never put the password in this file).
+#   - id: prod                 # required: lowercase letters, digits, "-" or "_", 1 to 40 chars
+#     name: Production         # optional, shown in the UI
+#     url: postgresql://app_ro@db.internal:5432/app?sslmode=require   # no password in the URL
+#     password_env: PROD_PG_PASSWORD   # optional, name of the env var that holds the password
+#     read_only: true          # optional, default false
+#     ai_access: read          # optional: off | read | write, default read
+#     color: rose              # optional, one of: neutral, blue, emerald, amber, rose,
+#                              # violet, cyan, orange
+#
+#   # Local demo database (docker compose demo, published on localhost:55432).
+#   - id: local-dev
+#     name: Local demo
+#     url: postgresql://demo@127.0.0.1:55432/shop   # the password is not inline
+#     password_env: DEMO_PG_PASSWORD   # the env var holds the demo password
+#     read_only: false
+#     ai_access: off           # agents (MCP, REST tokens, powdb CLI) cannot query it
+#     color: emerald

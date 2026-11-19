@@ -1,0 +1,37 @@
+# PowDB for everyday use. It pulls the published image (no build, no demo database).
+#
+#   curl -o compose.yml https://raw.githubusercontent.com/kimmyxpow/powdb/main/compose.example.yml
+#   docker compose up -d                → http://localhost:3333
+#   docker compose logs -f app          (show app logs, Ctrl+C to stop)
+#   docker compose down                 (add -v to also delete connections, accounts, and tokens)
+name: powdb
+
+services:
+  app:
+    image: ghcr.io/kimmyxpow/powdb:latest
+    container_name: powdb
+    restart: unless-stopped
+    ports:
+      # only reachable from this machine; sign in at first start
+      - '127.0.0.1:3333:3333'
+    # environment:
+    # creates the admin on first start when no admin exists yet (at least 8 characters)
+    # POWDB_ADMIN_PASSWORD: change-me-now
+    # connections created on the very first start (one per line: "Name=postgresql://…")
+    # POWDB_CONNECTIONS: |
+    #   Shop=postgresql://user:password@host.docker.internal:5432/shop
+    # passwords for connections declared in powdb.yaml with password_env are read from
+    # environment variables like this one. Keep real secrets in an .env file or your shell,
+    # not in the YAML file.
+    # PROD_PG_PASSWORD: ...
+    volumes:
+      - powdb-data:/data
+      # declarative connections, mounted read-only (see powdb.example.yaml)
+      # - ./powdb.yaml:/data/powdb.yaml:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+volumes:
+  powdb-data:
+    # the same volume name as the docker run command in the README
+    name: powdb-data

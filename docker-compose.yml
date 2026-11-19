@@ -1,0 +1,47 @@
+# DEVELOPMENT stack: builds PowDB from source and starts a demo PostgreSQL with sample data.
+# To run the published image for everyday use, see compose.example.yml instead.
+#
+#   docker compose up -d --build      → http://localhost:3333
+#   docker compose down               (add -v to also delete saved connections + demo data)
+#
+# The app container reaches:
+#   - the demo database as      postgres:5432
+#   - databases on your machine host.docker.internal:<port>   (they must listen on 0.0.0.0 / the docker bridge)
+name: powdb
+
+include:
+  - demo/docker-compose.yml # service "postgres" (demo database, also published on localhost:55432)
+
+services:
+  app:
+    build: .
+    image: powdb:latest
+    container_name: powdb
+    restart: unless-stopped
+    ports:
+      # only reachable from this machine; sign in at first start (see README, section Login)
+      - '127.0.0.1:3333:3333'
+    environment:
+      # connections created on the very first start (one per line: "Name=postgresql://…")
+      POWDB_CONNECTIONS: |
+        Demo shop=postgresql://demo:demo@postgres:5432/shop
+      # creates the admin on first start when no admin exists yet (at least 8 characters)
+      # POWDB_ADMIN_PASSWORD: change-me-now
+      # disables the login entirely; trusted local use only, anyone who can reach the port gets in
+      # POWDB_AUTH: "off"
+      # passwords for connections declared in powdb.yaml with password_env are read from
+      # environment variables like this one. Keep real secrets in an .env file or your shell,
+      # not in the YAML file.
+      # PROD_PG_PASSWORD: ...
+    volumes:
+      - powdb-data:/data
+      # declarative connections, mounted read-only (see powdb.example.yaml)
+      # - ./powdb.yaml:/data/powdb.yaml:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  powdb-data:
