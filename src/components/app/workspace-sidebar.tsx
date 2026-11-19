@@ -29,7 +29,7 @@ import {
   UploadIcon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { executeSqlFn } from '@/api/explorer.functions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -44,15 +44,21 @@ import { Kbd } from '@/components/ui/kbd'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from '@/components/ui/menu'
 import {
-  Select,
-  SelectGroup,
-  SelectGroupLabel,
-  SelectItem,
-  SelectPopup,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Combobox,
+  ComboboxCollection,
+  ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxGroupLabel,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxSeparator,
+  ComboboxTrigger,
+  ComboboxValue,
+} from '@/components/ui/combobox'
+import { Group as ButtonGroup } from '@/components/ui/group'
+import { SelectButton } from '@/components/ui/select'
 import {
   Sidebar,
   SidebarContent,
@@ -120,6 +126,9 @@ export function WorkspaceSidebar({
   const [relationAction, setRelationAction] = useState<RelationAction | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const filterRef = useRef<HTMLInputElement>(null)
+  // The popups are anchored to their own trigger; the combobox default anchor is not set here.
+  const databaseTriggerRef = useRef<HTMLButtonElement>(null)
+  const schemaTriggerRef = useRef<HTMLButtonElement>(null)
   const queryClient = useQueryClient()
   const setExportOpen = useExportDatabaseDialog((s) => s.setOpen)
   const setRestoreOpen = useRestoreDatabaseDialog((s) => s.setOpen)
@@ -164,8 +173,14 @@ export function WorkspaceSidebar({
   const visibleSchemas = schemas ?? []
   const userSchemas = visibleSchemas.filter((s) => !s.isSystem)
   const systemSchemas = visibleSchemas.filter((s) => s.isSystem)
-  const schemaItems = visibleSchemas.map((s) => ({ label: s.name, value: s.name }))
-  if (!schemaItems.some((s) => s.value === schema)) schemaItems.push({ label: schema, value: schema })
+  // Grouped items for the schema combobox. A value outside these lists (the fallback above) still
+  // shows in the trigger, because the combobox displays an unlisted string value as its text.
+  const schemaGroups = [
+    { value: 'Schemas', items: userSchemas.map((s) => s.name) },
+    ...(systemSchemas.length > 0 ? [{ value: 'System', items: systemSchemas.map((s) => s.name) }] : []),
+  ]
+  const databaseList = databases ?? [{ name: database, size: null }]
+  const databaseNames = databaseList.map((d) => d.name)
 
   const needle = filter.trim().toLowerCase()
 
@@ -274,8 +289,9 @@ export function WorkspaceSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <Select
-          items={(databases ?? [{ name: database }]).map((d) => ({ label: d.name, value: d.name }))}
+        <Combobox
+          autoHighlight
+          items={databaseNames}
           onValueChange={(v) => {
             if (v && v !== database) {
               void navigate({ to: '/c/$connId/$db', params: { connId: connectionId, db: v } })
@@ -283,28 +299,44 @@ export function WorkspaceSidebar({
           }}
           value={database}
         >
-          <SelectTrigger aria-label="Database" className="bg-background" size="sm">
-            <span className="flex min-w-0 items-center gap-2">
+          <ComboboxTrigger
+            ref={databaseTriggerRef}
+            render={<SelectButton aria-label="Database" className="bg-background" size="sm" />}
+          >
+            <span className="flex min-w-0 flex-1 items-center gap-2">
               <DatabaseIcon aria-hidden="true" className="size-3.5 opacity-60" />
-              <SelectValue className="truncate" />
+              <span className="truncate">
+                <ComboboxValue />
+              </span>
             </span>
-          </SelectTrigger>
-          <SelectPopup alignItemWithTrigger={false}>
-            <SelectGroup>
-              <SelectGroupLabel>Databases</SelectGroupLabel>
-              {(databases ?? [{ name: database, size: null }]).map((d) => (
-                <SelectItem key={d.name} value={d.name}>
-                  <span className="flex w-full items-center justify-between gap-4">
-                    <span className="truncate">{d.name}</span>
-                    {d.size != null && (
-                      <span className="text-muted-foreground text-xs tabular-nums">{formatBytes(d.size)}</span>
-                    )}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectPopup>
-        </Select>
+          </ComboboxTrigger>
+          <ComboboxPopup anchor={databaseTriggerRef} aria-label="Databases">
+            <div className="border-b p-2">
+              <ComboboxInput
+                className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
+                placeholder="Search databases…"
+                showTrigger={false}
+                startAddon={<SearchIcon />}
+              />
+            </div>
+            <ComboboxEmpty>No databases found.</ComboboxEmpty>
+            <ComboboxList>
+              {(name: string) => {
+                const size = databaseList.find((d) => d.name === name)?.size
+                return (
+                  <ComboboxItem key={name} value={name}>
+                    <span className="flex w-full items-center justify-between gap-4">
+                      <span className="truncate">{name}</span>
+                      {size != null && (
+                        <span className="text-muted-foreground text-xs tabular-nums">{formatBytes(size)}</span>
+                      )}
+                    </span>
+                  </ComboboxItem>
+                )
+              }}
+            </ComboboxList>
+          </ComboboxPopup>
+        </Combobox>
       </SidebarHeader>
 
       <SidebarGroup className="pb-0">
@@ -331,65 +363,79 @@ export function WorkspaceSidebar({
       </SidebarGroup>
 
       <div className="flex flex-col gap-2 px-2 pt-3 pb-1">
-        <div className="flex items-center gap-1.5">
-          <Select items={schemaItems} onValueChange={(v) => v && setSchema(v)} value={schema}>
-            <SelectTrigger aria-label="Schema" className="min-w-0 flex-1 bg-background" size="sm">
-              <span className="flex min-w-0 items-center gap-2">
+        <Combobox autoHighlight items={schemaGroups} onValueChange={(v) => v && setSchema(v)} value={schema}>
+          <ButtonGroup className="w-full">
+            <ComboboxTrigger
+              ref={schemaTriggerRef}
+              render={<SelectButton aria-label="Schema" className="min-w-0 flex-1 bg-background" size="sm" />}
+            >
+              <span className="flex min-w-0 flex-1 items-center gap-2">
                 <BracesIcon aria-hidden="true" className="size-3.5 opacity-60" />
-                <SelectValue className="truncate" />
+                <span className="truncate">
+                  <ComboboxValue />
+                </span>
               </span>
-            </SelectTrigger>
-            <SelectPopup alignItemWithTrigger={false}>
-              <SelectGroup>
-                <SelectGroupLabel>Schemas</SelectGroupLabel>
-                {userSchemas.map((s) => (
-                  <SelectItem key={s.name} value={s.name}>
-                    <span className="flex w-full items-center justify-between gap-4">
-                      <span className="truncate">{s.name}</span>
-                      <span className="text-muted-foreground text-xs tabular-nums">{s.relationCount}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-              {systemSchemas.length > 0 && (
-                <>
-                  <SelectSeparator />
-                  <SelectGroup>
-                    <SelectGroupLabel>System</SelectGroupLabel>
-                    {systemSchemas.map((s) => (
-                      <SelectItem key={s.name} value={s.name}>
-                        <span className="flex w-full items-center justify-between gap-4">
-                          <span className="truncate">{s.name}</span>
-                          <span className="text-muted-foreground text-xs tabular-nums">{s.relationCount}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </>
-              )}
-            </SelectPopup>
-          </Select>
-          {canWrite && (
+            </ComboboxTrigger>
+            {canWrite && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label="New table"
+                      onClick={() => setCreateOpen(true)}
+                      size="icon-sm"
+                      variant="outline"
+                    />
+                  }
+                >
+                  <PlusIcon aria-hidden="true" className="size-3.5" />
+                </TooltipTrigger>
+                <TooltipPopup>New table in {schema}</TooltipPopup>
+              </Tooltip>
+            )}
             <Tooltip>
               <TooltipTrigger
-                render={
-                  <Button aria-label="New table" onClick={() => setCreateOpen(true)} size="icon-sm" variant="ghost" />
-                }
+                render={<Button aria-label="Refresh metadata" onClick={refresh} size="icon-sm" variant="outline" />}
               >
-                <PlusIcon aria-hidden="true" className="size-3.5" />
+                <RefreshCwIcon aria-hidden="true" className={cn('size-3.5', objects.isFetching && 'animate-spin')} />
               </TooltipTrigger>
-              <TooltipPopup>New table in {schema}</TooltipPopup>
+              <TooltipPopup>Refresh metadata</TooltipPopup>
             </Tooltip>
-          )}
-          <Tooltip>
-            <TooltipTrigger
-              render={<Button aria-label="Refresh metadata" onClick={refresh} size="icon-sm" variant="ghost" />}
-            >
-              <RefreshCwIcon aria-hidden="true" className={cn('size-3.5', objects.isFetching && 'animate-spin')} />
-            </TooltipTrigger>
-            <TooltipPopup>Refresh metadata</TooltipPopup>
-          </Tooltip>
-        </div>
+          </ButtonGroup>
+          <ComboboxPopup anchor={schemaTriggerRef} aria-label="Schemas">
+            <div className="border-b p-2">
+              <ComboboxInput
+                className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
+                placeholder="Search schemas…"
+                showTrigger={false}
+                startAddon={<SearchIcon />}
+              />
+            </div>
+            <ComboboxEmpty>No schemas found.</ComboboxEmpty>
+            <ComboboxList>
+              {(group: { value: string; items: string[] }, index: number) => (
+                <Fragment key={group.value}>
+                  <ComboboxGroup items={group.items}>
+                    <ComboboxGroupLabel>{group.value}</ComboboxGroupLabel>
+                    <ComboboxCollection>
+                      {(name: string) => (
+                        <ComboboxItem key={name} value={name}>
+                          <span className="flex w-full items-center justify-between gap-4">
+                            <span className="truncate">{name}</span>
+                            <span className="text-muted-foreground text-xs tabular-nums">
+                              {visibleSchemas.find((s) => s.name === name)?.relationCount}
+                            </span>
+                          </span>
+                        </ComboboxItem>
+                      )}
+                    </ComboboxCollection>
+                  </ComboboxGroup>
+                  {index < schemaGroups.length - 1 && <ComboboxSeparator />}
+                </Fragment>
+              )}
+            </ComboboxList>
+          </ComboboxPopup>
+        </Combobox>
         <InputGroup>
           <InputGroupInput
             aria-label="Filter objects"

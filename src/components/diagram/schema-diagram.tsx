@@ -5,10 +5,20 @@ import { useCallback, useRef, useState } from 'react'
 import { relationIcons } from '@/components/app/relation-icons'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  Combobox,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxTrigger,
+  ComboboxValue,
+} from '@/components/ui/combobox'
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SelectButton } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
@@ -33,10 +43,9 @@ export function SchemaDiagram({ connectionId, database }: { connectionId: string
       ? (schemas.find((s) => !s.isSystem)?.name ?? selectedSchema)
       : selectedSchema
 
-  const schemaItems = [...(schemas ?? [])]
-    .sort((a, b) => Number(a.isSystem) - Number(b.isSystem))
-    .map((s) => ({ label: s.name, value: s.name }))
-  if (!schemaItems.some((s) => s.value === schema)) schemaItems.push({ label: schema, value: schema })
+  const schemaNames = [...(schemas ?? [])].sort((a, b) => Number(a.isSystem) - Number(b.isSystem)).map((s) => s.name)
+  if (!schemaNames.includes(schema)) schemaNames.push(schema)
+  const schemaTriggerRef = useRef<HTMLButtonElement>(null)
 
   const { data, error, isPending } = useQuery({
     ...schemaDiagramQuery(connectionId, database, schema),
@@ -75,8 +84,9 @@ export function SchemaDiagram({ connectionId, database }: { connectionId: string
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b px-3 py-1.5">
-        <Select
-          items={schemaItems}
+        <Combobox
+          autoHighlight
+          items={schemaNames}
           onValueChange={(v) => {
             if (!v) return
             setSelectedId(null)
@@ -84,20 +94,36 @@ export function SchemaDiagram({ connectionId, database }: { connectionId: string
           }}
           value={schema}
         >
-          <SelectTrigger aria-label="Schema" className="w-44 min-w-0 bg-background" size="sm">
-            <span className="flex min-w-0 items-center gap-2">
+          <ComboboxTrigger
+            ref={schemaTriggerRef}
+            render={<SelectButton aria-label="Schema" className="w-44 min-w-0 bg-background" size="sm" />}
+          >
+            <span className="flex min-w-0 flex-1 items-center gap-2">
               <BracesIcon aria-hidden="true" className="size-3.5 opacity-60" />
-              <SelectValue className="truncate" />
+              <span className="truncate">
+                <ComboboxValue />
+              </span>
             </span>
-          </SelectTrigger>
-          <SelectPopup alignItemWithTrigger={false}>
-            {schemaItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectPopup>
-        </Select>
+          </ComboboxTrigger>
+          <ComboboxPopup anchor={schemaTriggerRef} aria-label="Schemas">
+            <div className="border-b p-2">
+              <ComboboxInput
+                className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
+                placeholder="Search schemas…"
+                showTrigger={false}
+                startAddon={<SearchIcon />}
+              />
+            </div>
+            <ComboboxEmpty>No schemas found.</ComboboxEmpty>
+            <ComboboxList>
+              {(name: string) => (
+                <ComboboxItem key={name} value={name}>
+                  {name}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxPopup>
+        </Combobox>
 
         <div className="relative w-56 max-w-full">
           <InputGroup>
