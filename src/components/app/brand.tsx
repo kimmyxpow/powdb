@@ -1,4 +1,3 @@
-import { DatabaseIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ConnectionColor } from '@/lib/types'
 
@@ -59,13 +58,7 @@ export function ConnectionAvatar({
   )
 }
 
+/** The wordmark. The icon is only used as the favicon. */
 export function Logo() {
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-        <DatabaseIcon aria-hidden="true" className="size-4" />
-      </span>
-      <span className="font-semibold text-sm tracking-tight">pow/view</span>
-    </span>
-  )
+  return <span className="font-semibold text-base tracking-tight">pow/view</span>
 }
