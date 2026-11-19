@@ -65,8 +65,8 @@ export function AccountSettings() {
       <Alert variant="info">
         <AlertTitle>Sign-in is turned off</AlertTitle>
         <AlertDescription>
-          PowDBs was started with POWDBS_AUTH=off, so anyone who can open this page can use it. Remove that setting and
-          restart PowDBs to turn sign-in back on.
+          PowView was started with POWVIEW_AUTH=off, so anyone who can open this page can use it. Remove that setting
+          and restart PowView to turn sign-in back on.
         </AlertDescription>
       </Alert>
     )

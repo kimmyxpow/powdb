@@ -12,7 +12,7 @@ if (!ISOLATED) {
     120_000,
   )
 } else {
-  const dir = process.env.POWDBS_DATA_DIR!
+  const dir = process.env.POWVIEW_DATA_DIR!
   const file = path.join(dir, 'connections.json')
   const store = await import('@/server/store.server')
   const { decryptSecret } = await import('./secret.server')

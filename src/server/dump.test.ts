@@ -29,10 +29,10 @@ function plan(req: Partial<Parameters<typeof buildDumpPlan>[2]> = {}, t: Partial
   return buildDumpPlan(PG, target(t), { content: 'all', format: 'sql', ...req })
 }
 
-const ORIGINAL_PG_DUMP = process.env.POWDBS_PG_DUMP
+const ORIGINAL_PG_DUMP = process.env.POWVIEW_PG_DUMP
 afterEach(() => {
-  if (ORIGINAL_PG_DUMP === undefined) delete process.env.POWDBS_PG_DUMP
-  else process.env.POWDBS_PG_DUMP = ORIGINAL_PG_DUMP
+  if (ORIGINAL_PG_DUMP === undefined) delete process.env.POWVIEW_PG_DUMP
+  else process.env.POWVIEW_PG_DUMP = ORIGINAL_PG_DUMP
 })
 
 describe('quotePgName', () => {
@@ -258,8 +258,8 @@ describe('exportFilename', () => {
 })
 
 describe('locatePgDump', () => {
-  test('POWDBS_PG_DUMP pointing at a missing file means pg_dump is missing', () => {
-    process.env.POWDBS_PG_DUMP = '/nonexistent/powdbs/pg_dump'
+  test('POWVIEW_PG_DUMP pointing at a missing file means pg_dump is missing', () => {
+    process.env.POWVIEW_PG_DUMP = '/nonexistent/powview/pg_dump'
     expect(locatePgDump()).toBeNull()
   })
 })

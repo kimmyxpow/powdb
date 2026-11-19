@@ -5,9 +5,9 @@ describe('parseReleaseNotes', () => {
   test('reads GitHub generated notes into a heading, a list, and a paragraph', () => {
     const notes = [
       "## What's Changed",
-      '* Faster table navigation by @user in https://github.com/powroom/powdbs/pull/3',
+      '* Faster table navigation by @user in https://github.com/powroom/powview/pull/3',
       '',
-      '**Full Changelog**: https://github.com/powroom/powdbs/compare/v0.1.0...v0.1.1',
+      '**Full Changelog**: https://github.com/powroom/powview/compare/v0.1.0...v0.1.1',
     ].join('\n')
 
     expect(parseReleaseNotes(notes)).toEqual([
@@ -19,8 +19,8 @@ describe('parseReleaseNotes', () => {
             { type: 'text', text: 'Faster table navigation by @user in ' },
             {
               type: 'link',
-              href: 'https://github.com/powroom/powdbs/pull/3',
-              text: 'https://github.com/powroom/powdbs/pull/3',
+              href: 'https://github.com/powroom/powview/pull/3',
+              text: 'https://github.com/powroom/powview/pull/3',
             },
           ],
         ],
@@ -32,8 +32,8 @@ describe('parseReleaseNotes', () => {
           { type: 'text', text: ': ' },
           {
             type: 'link',
-            href: 'https://github.com/powroom/powdbs/compare/v0.1.0...v0.1.1',
-            text: 'https://github.com/powroom/powdbs/compare/v0.1.0...v0.1.1',
+            href: 'https://github.com/powroom/powview/compare/v0.1.0...v0.1.1',
+            text: 'https://github.com/powroom/powview/compare/v0.1.0...v0.1.1',
           },
         ],
       },

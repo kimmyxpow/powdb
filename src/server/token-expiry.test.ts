@@ -9,12 +9,12 @@ if (!ISOLATED) {
   test('API token expiry passes in an isolated process', () => runInChildProcess(import.meta.path), 120_000)
 } else {
   const DAY = 86_400_000
-  const dir = process.env.POWDBS_DATA_DIR!
+  const dir = process.env.POWVIEW_DATA_DIR!
   const sha = (value: string) => createHash('sha256').update(value).digest('hex')
-  const neverToken = 'powdbs_neverNeverneverNeverneverNever12'
-  const expiredToken = 'powdbs_expiredExpiredExpiredExpiredEx12'
+  const neverToken = 'powview_neverNeverneverNeverneverNever12'
+  const expiredToken = 'powview_expiredExpiredExpiredExpiredEx12'
   const past = new Date(Date.now() - 2 * DAY).toISOString()
-  const base = { prefix: 'powdbs_', scope: 'read', connections: 'all', createdAt: past }
+  const base = { prefix: 'powview_', scope: 'read', connections: 'all', createdAt: past }
 
   // auth.json with a token that never expires (expiresAt null) and one that has already expired.
   writeFileSync(

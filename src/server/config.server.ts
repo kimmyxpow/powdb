@@ -6,7 +6,7 @@ import { CONNECTION_COLORS } from '@/lib/types'
 import type { ConnectionConfig, SshSettings } from '@/lib/types'
 
 /**
- * Declarative connections from powdbs.yaml. They are "managed": the file is the source of
+ * Declarative connections from powview.yaml. They are "managed": the file is the source of
  * truth, so the UI, API and CLI cannot edit or delete them. Only the file's own loader
  * (store.server.ts, on start) changes them.
  */
@@ -34,7 +34,7 @@ const sshSchema = s
     passphrase_env: envName.optional(),
     host_key: s
       .string()
-      .regex(/^SHA256:[A-Za-z0-9+/]+$/, 'host_key must look like SHA256:... (the fingerprint PowDBs shows)')
+      .regex(/^SHA256:[A-Za-z0-9+/]+$/, 'host_key must look like SHA256:... (the fingerprint PowView shows)')
       .optional(),
   })
   .superRefine((ssh, ctx) => {
@@ -82,9 +82,9 @@ const fileSchema = s.object({
   connections: s.array(entrySchema).default([]),
 })
 
-/** Where the declarative file lives: $POWDBS_CONFIG, else <data dir>/powdbs.yaml. */
+/** Where the declarative file lives: $POWVIEW_CONFIG, else <data dir>/powview.yaml. */
 function configPath(dataDirPath: string): string {
-  return process.env.POWDBS_CONFIG ? path.resolve(process.env.POWDBS_CONFIG) : path.join(dataDirPath, 'powdbs.yaml')
+  return process.env.POWVIEW_CONFIG ? path.resolve(process.env.POWVIEW_CONFIG) : path.join(dataDirPath, 'powview.yaml')
 }
 
 /** Parse and validate the file text. Throws with every problem in the message. */
@@ -123,8 +123,8 @@ export function parseConfigText(text: string, file: string): ManagedConnection[]
 }
 
 /**
- * Read powdbs.yaml. A missing file means no managed connections ([]). An invalid file is
- * logged and ignored (null), so the caller keeps what it already has and PowDBs still starts.
+ * Read powview.yaml. A missing file means no managed connections ([]). An invalid file is
+ * logged and ignored (null), so the caller keeps what it already has and PowView still starts.
  */
 export async function loadManagedConnections(dataDirPath: string): Promise<ManagedConnection[] | null> {
   const file = configPath(dataDirPath)
@@ -133,14 +133,14 @@ export async function loadManagedConnections(dataDirPath: string): Promise<Manag
     text = await Bun.file(file).text()
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
-    console.warn(`[powdbs] cannot read ${file}, ignoring it: ${redactSecrets((err as Error).message)}`)
+    console.warn(`[powview] cannot read ${file}, ignoring it: ${redactSecrets((err as Error).message)}`)
     return null
   }
   try {
     return parseConfigText(text, file)
   } catch (err) {
     // A YAML or JSON syntax error can quote the line it failed on, which may hold a URL password.
-    console.warn(`[powdbs] ignoring invalid ${file}: ${redactSecrets((err as Error).message)}`)
+    console.warn(`[powview] ignoring invalid ${file}: ${redactSecrets((err as Error).message)}`)
     return null
   }
 }

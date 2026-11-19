@@ -1,4 +1,4 @@
--- Demo database for PowDBs.
+-- Demo database for PowView.
 -- Loaded automatically by demo/docker-compose.yml (docker-entrypoint-initdb.d).
 
 CREATE EXTENSION IF NOT EXISTS citext;

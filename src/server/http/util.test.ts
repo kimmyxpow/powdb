@@ -306,15 +306,15 @@ describe('readCookie', () => {
     new Request('http://localhost:3335/', cookie === null ? {} : { headers: { cookie } })
 
   test('finds one cookie among several, ignoring spacing around the separators', () => {
-    const request = withCookie('theme=dark;  powdbs_session=abc123 ;lang=id')
+    const request = withCookie('theme=dark;  powview_session=abc123 ;lang=id')
     expect(readCookie(request, 'theme')).toBe('dark')
-    expect(readCookie(request, 'powdbs_session')).toBe('abc123')
+    expect(readCookie(request, 'powview_session')).toBe('abc123')
     expect(readCookie(request, 'lang')).toBe('id')
   })
 
   test('a name must match exactly, not as a prefix or suffix', () => {
-    const request = withCookie('powdbs_session_old=stale; xpowdbs_session=other')
-    expect(readCookie(request, 'powdbs_session')).toBeNull()
+    const request = withCookie('powview_session_old=stale; xpowview_session=other')
+    expect(readCookie(request, 'powview_session')).toBeNull()
   })
 
   test('a quoted value keeps its quotes, because the code does not unquote', () => {
@@ -331,38 +331,38 @@ describe('readCookie', () => {
   })
 
   test('a piece without "=" is skipped', () => {
-    expect(readCookie(withCookie('flag; powdbs_session=xyz'), 'powdbs_session')).toBe('xyz')
+    expect(readCookie(withCookie('flag; powview_session=xyz'), 'powview_session')).toBe('xyz')
     expect(readCookie(withCookie('flag'), 'flag')).toBeNull()
   })
 
   test('an empty value is returned as an empty string, not null', () => {
-    expect(readCookie(withCookie('powdbs_session='), SESSION_COOKIE)).toBe('')
+    expect(readCookie(withCookie('powview_session='), SESSION_COOKIE)).toBe('')
   })
 })
 
 describe('sessionCookieHeader', () => {
-  keepEnv('POWDBS_SECURE_COOKIES')
+  keepEnv('POWVIEW_SECURE_COOKIES')
   const http = new Request('http://localhost:3335/api/auth/login', { method: 'POST' })
-  const https = new Request('https://powdbs.example.test/api/auth/login', { method: 'POST' })
+  const https = new Request('https://powview.example.test/api/auth/login', { method: 'POST' })
 
   test('the session cookie is HttpOnly, SameSite=Lax, Path=/ and has the given Max-Age', () => {
-    expect(sessionCookieHeader(http, 'powdbs_abc', 3600)).toBe(
-      'powdbs_session=powdbs_abc; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600',
+    expect(sessionCookieHeader(http, 'powview_abc', 3600)).toBe(
+      'powview_session=powview_abc; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600',
     )
   })
 
   test('sign-out clears the cookie with an empty value and Max-Age=0', () => {
-    expect(sessionCookieHeader(http, '', 0)).toBe('powdbs_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
+    expect(sessionCookieHeader(http, '', 0)).toBe('powview_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
   })
 
   test('the session cookie name is the SESSION_COOKIE constant', () => {
-    expect(SESSION_COOKIE).toBe('powdbs_session')
-    expect(sessionCookieHeader(http, 't', 1).startsWith('powdbs_session=t;')).toBe(true)
+    expect(SESSION_COOKIE).toBe('powview_session')
+    expect(sessionCookieHeader(http, 't', 1).startsWith('powview_session=t;')).toBe(true)
   })
 
   test('auto (the default): Secure is set over https', () => {
     expect(sessionCookieHeader(https, 't', 60)).toBe(
-      'powdbs_session=t; HttpOnly; SameSite=Lax; Path=/; Max-Age=60; Secure',
+      'powview_session=t; HttpOnly; SameSite=Lax; Path=/; Max-Age=60; Secure',
     )
   })
 
@@ -373,26 +373,28 @@ describe('sessionCookieHeader', () => {
     expect(sessionCookieHeader(plain, 't', 60).endsWith('; Secure')).toBe(false)
   })
 
-  test('POWDBS_SECURE_COOKIES=true forces Secure over plain http (case and spaces ignored)', () => {
-    process.env.POWDBS_SECURE_COOKIES = '  TRUE '
+  test('POWVIEW_SECURE_COOKIES=true forces Secure over plain http (case and spaces ignored)', () => {
+    process.env.POWVIEW_SECURE_COOKIES = '  TRUE '
     expect(sessionCookieHeader(http, 't', 60).endsWith('; Secure')).toBe(true)
     expect(sessionCookieHeader(http, '', 0).endsWith('; Max-Age=0; Secure')).toBe(true)
   })
 
-  test('POWDBS_SECURE_COOKIES=false forces Secure off even over https', () => {
-    process.env.POWDBS_SECURE_COOKIES = 'false'
-    expect(sessionCookieHeader(https, 't', 60)).toBe('powdbs_session=t; HttpOnly; SameSite=Lax; Path=/; Max-Age=60')
+  test('POWVIEW_SECURE_COOKIES=false forces Secure off even over https', () => {
+    process.env.POWVIEW_SECURE_COOKIES = 'false'
+    expect(sessionCookieHeader(https, 't', 60)).toBe('powview_session=t; HttpOnly; SameSite=Lax; Path=/; Max-Age=60')
   })
 
-  test('any other POWDBS_SECURE_COOKIES value behaves as auto', () => {
-    process.env.POWDBS_SECURE_COOKIES = 'yes'
+  test('any other POWVIEW_SECURE_COOKIES value behaves as auto', () => {
+    process.env.POWVIEW_SECURE_COOKIES = 'yes'
     expect(sessionCookieHeader(https, 't', 60).endsWith('; Secure')).toBe(true)
     expect(sessionCookieHeader(http, 't', 60).endsWith('; Secure')).toBe(false)
   })
 
   test('the logout cookie clears the session: empty value, Max-Age=0, same attributes', () => {
-    expect(sessionCookieHeader(http, '', 0)).toBe('powdbs_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
-    expect(sessionCookieHeader(https, '', 0)).toBe('powdbs_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0; Secure')
+    expect(sessionCookieHeader(http, '', 0)).toBe('powview_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0')
+    expect(sessionCookieHeader(https, '', 0)).toBe(
+      'powview_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0; Secure',
+    )
   })
 })
 
@@ -409,7 +411,9 @@ describe('guardOrigin', () => {
   })
 
   test('the host comparison ignores case', () => {
-    expect(() => guardOrigin(at({ host: 'PowDBs.Example.test', origin: 'https://powdbs.example.test' }))).not.toThrow()
+    expect(() =>
+      guardOrigin(at({ host: 'PowView.Example.test', origin: 'https://powview.example.test' })),
+    ).not.toThrow()
   })
 
   test('the scheme is not compared, only the host', () => {
@@ -444,7 +448,7 @@ describe('guardOrigin', () => {
 })
 
 describe('guardMutation', () => {
-  const session = `${SESSION_COOKIE}=powdbs_abc`
+  const session = `${SESSION_COOKIE}=powview_abc`
   const req = (method: string, headers: Record<string, string> = {}) =>
     new Request('http://localhost:3335/api/x', { method, headers: { host: 'localhost:3335', ...headers } })
 

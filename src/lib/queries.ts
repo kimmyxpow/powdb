@@ -50,7 +50,7 @@ export const authStateQuery = () =>
     staleTime: 30_000,
   })
 
-/** The newest PowDBs release. The server caches it, so the browser asks at most once an hour. */
+/** The newest PowView release. The server caches it, so the browser asks at most once an hour. */
 export const updateInfoQuery = () =>
   queryOptions({
     queryKey: ['update-info'] as const,

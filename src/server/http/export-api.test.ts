@@ -1,14 +1,14 @@
 import { expect, test } from 'bun:test'
 import { ISOLATED, runInChildProcess } from './test-process'
 
-// Stateful: runs in a child process with its own POWDBS_DATA_DIR (see test-process.ts).
+// Stateful: runs in a child process with its own POWVIEW_DATA_DIR (see test-process.ts).
 // Nothing here reaches a database: every case is refused before a connection is opened,
 // and the one connection used points at a closed port.
 if (!ISOLATED) {
   test('table export passes in an isolated process', () => runInChildProcess(import.meta.path), 120_000)
 } else {
-  delete process.env.POWDBS_AUTH
-  delete process.env.POWDBS_ADMIN_PASSWORD
+  delete process.env.POWVIEW_AUTH
+  delete process.env.POWVIEW_ADMIN_PASSWORD
 
   const auth = await import('@/server/auth.server')
   const store = await import('@/server/store.server')
@@ -59,13 +59,13 @@ if (!ISOLATED) {
   })
 
   test('a cross-site Origin is refused', async () => {
-    const res = await call(query, { cookie: `powdbs_session=${session}`, origin: 'https://evil.example' })
+    const res = await call(query, { cookie: `powview_session=${session}`, origin: 'https://evil.example' })
     expect(res.status).toBe(403)
     expect(res.body?.error?.code).toBe('cross_origin')
   })
 
   test('bad parameters are 400 before the database is touched', async () => {
-    const withSession = { cookie: `powdbs_session=${session}` }
+    const withSession = { cookie: `powview_session=${session}` }
     expect((await call(query.replace('format=csv', 'format=xlsx'), withSession)).status).toBe(400)
     expect((await call('schema=public&table=orders&format=csv', withSession)).status).toBe(400)
     expect((await call(`${query}&filters=oops`, withSession)).status).toBe(400)
@@ -73,20 +73,20 @@ if (!ISOLATED) {
 
   test('an unknown connection is 404', async () => {
     const res = await call('connection=nope&schema=public&table=orders&format=csv', {
-      cookie: `powdbs_session=${session}`,
+      cookie: `powview_session=${session}`,
     })
     expect(res.status).toBe(404)
   })
 
   test('the local key counts as the user', async () => {
     const res = await call('connection=nope&schema=public&table=orders&format=csv', {
-      'x-powdbs-local-key': localKey,
+      'x-powview-local-key': localKey,
     })
     expect(res.status).toBe(404)
   })
 
   test('a connection that cannot be reached fails with a JSON error, before any stream starts', async () => {
-    const res = await call(query, { cookie: `powdbs_session=${session}` })
+    const res = await call(query, { cookie: `powview_session=${session}` })
     expect(res.status).toBe(500)
     expect(res.type).toContain('application/json')
     expect(res.body?.error?.message).toBe('connect ECONNREFUSED 127.0.0.1:1')

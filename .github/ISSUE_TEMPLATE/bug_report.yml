@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in PowDBs does not work as expected.
+description: Something in PowView does not work as expected.
 labels: [bug]
 body:
   - type: markdown
@@ -27,14 +27,14 @@ body:
   - type: input
     id: version
     attributes:
-      label: PowDBs version
-      description: Shown by `powdbs --version`, or the image tag you run (for example 0.1.0).
+      label: PowView version
+      description: Shown by `powview --version`, or the image tag you run (for example 0.1.0).
     validations:
       required: true
   - type: dropdown
     id: install
     attributes:
-      label: How do you run PowDBs?
+      label: How do you run PowView?
       options:
         - Docker image
         - npx / bunx
@@ -55,4 +55,4 @@ body:
     id: logs
     attributes:
       label: Logs or screenshots
-      description: Server logs (for example `docker logs powdbs`) or a screenshot.
+      description: Server logs (for example `docker logs powview`) or a screenshot.

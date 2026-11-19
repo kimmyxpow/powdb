@@ -112,7 +112,7 @@ export function CreateTokenDialog({ open, onOpenChange }: { open: boolean; onOpe
             <DialogHeader>
               <DialogTitle>Create token</DialogTitle>
               <DialogDescription>
-                A token lets an AI tool or script use PowDBs. Each token can be revoked at any time.
+                A token lets an AI tool or script use PowView. Each token can be revoked at any time.
               </DialogDescription>
             </DialogHeader>
             <DialogPanel className="flex flex-col gap-5">

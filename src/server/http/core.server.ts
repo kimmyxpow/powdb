@@ -12,7 +12,7 @@ import { HttpError } from './util.server'
 
 const AI_RANK: Record<AiAccess, number> = { off: 0, read: 1, write: 2 }
 
-const AGENT_NO_AI_WRITE = 'Agents cannot give a connection AI write access. Only the admin can do that in PowDBs.'
+const AGENT_NO_AI_WRITE = 'Agents cannot give a connection AI write access. Only the admin can do that in PowView.'
 const AGENT_NO_LOOSEN_AI = 'Agents can make AI access stricter, not looser. Only the admin can raise it.'
 const AGENT_NO_UNLOCK = 'Agents cannot make a read-only connection writable. Only the admin can do that.'
 

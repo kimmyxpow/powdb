@@ -47,7 +47,7 @@ function UpdateSteps({ install }: { install: InstallMethod }) {
     return (
       <div className="flex flex-col gap-3 text-sm">
         <p>Pull the new image:</p>
-        <Command text="docker pull ghcr.io/powroom/powdbs:latest" />
+        <Command text="docker pull ghcr.io/powroom/powview:latest" />
         <p>Recreate the container with the same command you used to start it. Your data stays in the volume.</p>
         <p>With Docker Compose, run:</p>
         <Command text="docker compose pull && docker compose up -d" />
@@ -57,21 +57,21 @@ function UpdateSteps({ install }: { install: InstallMethod }) {
   if (install === 'npm') {
     return (
       <div className="flex flex-col gap-3 text-sm">
-        <p>Stop PowDBs (Ctrl+C), then start it again with:</p>
-        <Command text="npx powdbs@latest" />
+        <p>Stop PowView (Ctrl+C), then start it again with:</p>
+        <Command text="npx powview@latest" />
         <p>Or with Bun:</p>
-        <Command text="bunx powdbs@latest" />
-        <p>Your data in ~/.powdbs stays.</p>
+        <Command text="bunx powview@latest" />
+        <p>Your data in ~/.powview stays.</p>
       </div>
     )
   }
   return (
     <div className="flex flex-col gap-3 text-sm">
-      <p>In your PowDBs folder, run these:</p>
+      <p>In your PowView folder, run these:</p>
       <Command text="git pull" />
       <Command text="bun install" />
       <Command text="bun run build" />
-      <p>Then restart PowDBs.</p>
+      <p>Then restart PowView.</p>
     </div>
   )
 }
@@ -164,7 +164,7 @@ export function UpdateDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogPopup className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>PowDBs {latest.version} is available</DialogTitle>
+          <DialogTitle>PowView {latest.version} is available</DialogTitle>
           <DialogDescription>
             You have {current}.{date && ` Released ${date}.`}
           </DialogDescription>
@@ -214,7 +214,7 @@ export function UpdateNotice() {
   const dismissed = useAppStore((s) => s.dismissedUpdate)
   const [open, setOpen] = useState(false)
   if (!update || update.latest.version === dismissed) return null
-  const label = `PowDBs ${update.latest.version} is available`
+  const label = `PowView ${update.latest.version} is available`
   return (
     <>
       <Tooltip>

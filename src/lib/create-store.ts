@@ -1,4 +1,4 @@
-// A small store with the subset of zustand's API that PowDBs uses: `create<T>()(initializer)`,
+// A small store with the subset of zustand's API that PowView uses: `create<T>()(initializer)`,
 // the `persist` middleware on localStorage, and hooks built on useSyncExternalStore.
 // Semantics follow zustand 5: set shallow-merges objects, a set that changes nothing is ignored,
 // listeners get (state, previousState), and the persisted value is the saved part of the state as JSON.

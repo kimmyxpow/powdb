@@ -17,9 +17,9 @@ connections:
     ai_access: write
 `
 
-describe('powdbs.yaml parsing', () => {
+describe('powview.yaml parsing', () => {
   test('a valid file gives managed connections with defaults filled in', () => {
-    const [prod, stage] = parseConfigText(VALID, 'powdbs.yaml')
+    const [prod, stage] = parseConfigText(VALID, 'powview.yaml')
     expect(prod).toEqual({
       id: 'prod',
       name: 'app @ db.internal',
@@ -60,18 +60,18 @@ connections:
     url: postgres://u@h/shop
     databases: [warehouse, analytics]
 `
-    expect(() => parseConfigText(yaml, 'powdbs.yaml')).toThrow('databases')
-    expect(() => parseConfigText(yaml, 'powdbs.yaml')).toThrow('Unrecognized key')
+    expect(() => parseConfigText(yaml, 'powview.yaml')).toThrow('databases')
+    expect(() => parseConfigText(yaml, 'powview.yaml')).toThrow('Unrecognized key')
   })
 
   test('an empty file means no connections', () => {
-    expect(parseConfigText('', 'powdbs.yaml')).toEqual([])
-    expect(parseConfigText('connections: []', 'powdbs.yaml')).toEqual([])
+    expect(parseConfigText('', 'powview.yaml')).toEqual([])
+    expect(parseConfigText('connections: []', 'powview.yaml')).toEqual([])
   })
 
   test('JSON files are accepted', () => {
     const json = JSON.stringify({ connections: [{ id: 'a', url: 'postgres://u@h/d' }] })
-    expect(parseConfigText(json, 'powdbs.json')[0]).toMatchObject({ id: 'a', database: 'd' })
+    expect(parseConfigText(json, 'powview.json')[0]).toMatchObject({ id: 'a', database: 'd' })
   })
 
   test.each([
@@ -83,7 +83,7 @@ connections:
     ['a bad password_env name', 'connections:\n  - id: a\n    url: postgres://u@h/d\n    password_env: "not a name"'],
     ['duplicate ids', 'connections:\n  - id: a\n    url: postgres://u@h/d\n  - id: a\n    url: postgres://u@h/e'],
   ])('rejects %s', (_label, yaml) => {
-    expect(() => parseConfigText(yaml, 'powdbs.yaml')).toThrow()
+    expect(() => parseConfigText(yaml, 'powview.yaml')).toThrow()
   })
 })
 
@@ -93,7 +93,7 @@ describe('loading the file from the data dir', () => {
     for (const d of made) rmSync(d, { recursive: true, force: true })
   })
   const freshDir = (): string => {
-    const d = mkdtempSync(path.join(tmpdir(), 'powdbs-config-'))
+    const d = mkdtempSync(path.join(tmpdir(), 'powview-config-'))
     made.push(d)
     return d
   }
@@ -105,25 +105,25 @@ describe('loading the file from the data dir', () => {
 
   test('a valid file is read from the data dir', async () => {
     const dir = freshDir()
-    writeFileSync(path.join(dir, 'powdbs.yaml'), VALID)
+    writeFileSync(path.join(dir, 'powview.yaml'), VALID)
     const loaded = await loadManagedConnections(dir)
     expect(loaded?.map((c) => c.id)).toEqual(['prod', 'stage_1'])
   })
 
   test('an invalid file is ignored (null), never a crash', async () => {
     const dir = freshDir()
-    writeFileSync(path.join(dir, 'powdbs.yaml'), 'connections:\n  - id: a\n    ai_access: nope\n')
+    writeFileSync(path.join(dir, 'powview.yaml'), 'connections:\n  - id: a\n    ai_access: nope\n')
     expect(await loadManagedConnections(dir)).toBeNull()
   })
 })
 
-describe('powdbs.yaml ssh block', () => {
+describe('powview.yaml ssh block', () => {
   const base = 'connections:\n  - id: prod\n    url: postgresql://app@db.internal:5432/app\n'
 
   test('a password_env login becomes a managed password tunnel, port 22 by default', () => {
     const [conn] = parseConfigText(
       `${base}    ssh:\n      host: bastion.example.com\n      user: deploy\n      password_env: BASTION_PW\n`,
-      'powdbs.yaml',
+      'powview.yaml',
     )
     expect(conn!.ssh).toEqual({
       host: 'bastion.example.com',
@@ -138,7 +138,7 @@ describe('powdbs.yaml ssh block', () => {
   test('a private_key_file login keeps the path and the optional passphrase_env and host_key', () => {
     const [conn] = parseConfigText(
       `${base}    ssh:\n      host: bastion.example.com\n      port: 2222\n      user: deploy\n      private_key_file: /run/secrets/bastion_key\n      passphrase_env: BASTION_KEY_PASS\n      host_key: SHA256:abcDEF123+/\n`,
-      'powdbs.yaml',
+      'powview.yaml',
     )
     expect(conn!.ssh).toEqual({
       host: 'bastion.example.com',
@@ -154,13 +154,13 @@ describe('powdbs.yaml ssh block', () => {
   test('a private_key_env login is a key tunnel too', () => {
     const [conn] = parseConfigText(
       `${base}    ssh:\n      host: b\n      user: u\n      private_key_env: BASTION_KEY\n`,
-      'powdbs.yaml',
+      'powview.yaml',
     )
     expect(conn!.ssh).toMatchObject({ auth: 'key', privateKeyEnv: 'BASTION_KEY' })
   })
 
   test('a connection without ssh has no ssh key at all', () => {
-    const [conn] = parseConfigText(base, 'powdbs.yaml')
+    const [conn] = parseConfigText(base, 'powview.yaml')
     expect(conn).not.toHaveProperty('ssh')
   })
 
@@ -176,6 +176,6 @@ describe('powdbs.yaml ssh block', () => {
     ['a misspelled ssh key', '      host: b\n      user: u\n      password_envv: A\n'],
     ['a bad env name', '      host: b\n      user: u\n      password_env: "not a name"\n'],
   ])('rejects an ssh block with %s', (_label, sshLines) => {
-    expect(() => parseConfigText(`${base}    ssh:\n${sshLines}`, 'powdbs.yaml')).toThrow()
+    expect(() => parseConfigText(`${base}    ssh:\n${sshLines}`, 'powview.yaml')).toThrow()
   })
 })

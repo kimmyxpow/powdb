@@ -7,7 +7,7 @@ import { ISOLATED, runInChildProcess } from './http/test-process'
 if (!ISOLATED) {
   test('saved password encryption passes in an isolated process', () => runInChildProcess(import.meta.path), 120_000)
 } else {
-  const dir = process.env.POWDBS_DATA_DIR!
+  const dir = process.env.POWVIEW_DATA_DIR!
   const file = path.join(dir, 'connections.json')
   const REFUSED = 'A stored secret is not encrypted. Save it again.'
   // A connection whose password is in clear text. Nothing converts it: it has to be saved again.

@@ -1,10 +1,10 @@
 import { APP_VERSION, isNewer, isVersion } from '@/lib/version'
 import type { InstallMethod, ReleaseInfo, UpdateInfo } from '@/lib/version'
 
-// Asks GitHub for the latest PowDBs release at most once a day. The only data sent is the
-// User-Agent header (PowDBs/<version>). Set POWDBS_UPDATE_CHECK=off to turn it off.
+// Asks GitHub for the latest PowView release at most once a day. The only data sent is the
+// User-Agent header (PowView/<version>). Set POWVIEW_UPDATE_CHECK=off to turn it off.
 
-const DEFAULT_RELEASE_URL = 'https://api.github.com/repos/powroom/powdbs/releases/latest'
+const DEFAULT_RELEASE_URL = 'https://api.github.com/repos/powroom/powview/releases/latest'
 const REQUEST_TIMEOUT_MS = 5_000
 const SUCCESS_TTL_MS = 24 * 60 * 60 * 1000
 const FAILURE_TTL_MS = 60 * 60 * 1000
@@ -27,15 +27,15 @@ interface Cached {
   expiresAt: number
 }
 
-/** docker and npm come from POWDBS_INSTALL (set by the image and the npm launcher). Anything else is a source checkout. */
+/** docker and npm come from POWVIEW_INSTALL (set by the image and the npm launcher). Anything else is a source checkout. */
 export function installMethod(env: Env): InstallMethod {
-  const value = (env.POWDBS_INSTALL ?? '').trim().toLowerCase()
+  const value = (env.POWVIEW_INSTALL ?? '').trim().toLowerCase()
   return value === 'docker' || value === 'npm' ? value : 'source'
 }
 
-/** Off when POWDBS_UPDATE_CHECK is off, false or 0. On otherwise, including when it is not set. */
+/** Off when POWVIEW_UPDATE_CHECK is off, false or 0. On otherwise, including when it is not set. */
 export function updateCheckEnabled(env: Env): boolean {
-  const value = (env.POWDBS_UPDATE_CHECK ?? '').trim().toLowerCase()
+  const value = (env.POWVIEW_UPDATE_CHECK ?? '').trim().toLowerCase()
   return value !== 'off' && value !== 'false' && value !== '0'
 }
 
@@ -74,7 +74,7 @@ async function fetchRelease(fetchImpl: typeof fetch, url: string, current: strin
   let response: Response
   try {
     response = await fetchImpl(url, {
-      headers: { Accept: 'application/vnd.github+json', 'User-Agent': `PowDBs/${current}` },
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': `PowView/${current}` },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
   } catch (error) {
@@ -104,7 +104,7 @@ export function createUpdateCheck(): (options?: UpdateCheckOptions) => Promise<U
   function logFailure(reason: string, now: number): void {
     if (lastLogged !== null && now - lastLogged < FAILURE_TTL_MS) return
     lastLogged = now
-    console.error(`PowDBs update check failed: ${reason}. It will try again later.`)
+    console.error(`PowView update check failed: ${reason}. It will try again later.`)
   }
 
   async function load(fetchImpl: typeof fetch, url: string, current: string, now: () => number) {
@@ -136,7 +136,7 @@ export function createUpdateCheck(): (options?: UpdateCheckOptions) => Promise<U
     const install = installMethod(env)
     if (!updateCheckEnabled(env)) return { current, install, latest: null }
 
-    const url = env.POWDBS_UPDATE_URL?.trim() || DEFAULT_RELEASE_URL
+    const url = env.POWVIEW_UPDATE_URL?.trim() || DEFAULT_RELEASE_URL
     const release = await latestRelease(options.fetch ?? globalThis.fetch, url, current, options.now ?? Date.now)
     if (!release || !isNewer(release.version, current)) return { current, install, latest: null }
     return { current, install, latest: release }

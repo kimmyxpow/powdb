@@ -1,6 +1,6 @@
 /**
- * Setup guides for AI tools that talk to PowDBs over MCP, plus the copy-paste prompt
- * that lets an AI tool install PowDBs itself. Plain data: the AI access page renders it.
+ * Setup guides for AI tools that talk to PowView over MCP, plus the copy-paste prompt
+ * that lets an AI tool install PowView itself. Plain data: the AI access page renders it.
  */
 
 type SetupKind = 'command' | 'file'
@@ -36,21 +36,21 @@ export function mcpUrl(): string {
   return `${window.location.origin}/mcp`
 }
 
-const DOCKER_NOTE = 'The PowDBs container must be running on this machine.'
+const DOCKER_NOTE = 'The PowView container must be running on this machine.'
 
 function dockerNote(extra?: string): string {
   return extra ? `${extra} ${DOCKER_NOTE}` : DOCKER_NOTE
 }
 
-/** The stdio server entry that runs the MCP command inside the PowDBs container. */
-const DOCKER_SERVER = { command: 'docker', args: ['exec', '-i', 'powdbs', 'powdbs', 'mcp'] }
+/** The stdio server entry that runs the MCP command inside the PowView container. */
+const DOCKER_SERVER = { command: 'docker', args: ['exec', '-i', 'powview', 'powview', 'mcp'] }
 
 function json(value: unknown): string {
   return JSON.stringify(value, null, 2)
 }
 
 function mcpServers(server: unknown): string {
-  return json({ mcpServers: { powdbs: server } })
+  return json({ mcpServers: { powview: server } })
 }
 
 export const MCP_CLIENTS: McpClient[] = [
@@ -61,13 +61,13 @@ export const MCP_CLIENTS: McpClient[] = [
       where: 'Run in a terminal',
       kind: 'command',
       snippet: (url, token) =>
-        `claude mcp add --scope user --transport http powdbs ${url} --header "Authorization: Bearer ${token}"`,
-      note: 'In Claude Code, run /mcp to check that powdbs is connected.',
+        `claude mcp add --scope user --transport http powview ${url} --header "Authorization: Bearer ${token}"`,
+      note: 'In Claude Code, run /mcp to check that powview is connected.',
     },
     docker: {
       where: 'Run in a terminal',
       kind: 'command',
-      snippet: () => 'claude mcp add --scope user powdbs -- docker exec -i powdbs powdbs mcp',
+      snippet: () => 'claude mcp add --scope user powview -- docker exec -i powview powview mcp',
       note: dockerNote(),
     },
   },
@@ -78,14 +78,16 @@ export const MCP_CLIENTS: McpClient[] = [
       where: '~/.codex/config.toml',
       kind: 'file',
       snippet: (url, token) =>
-        ['[mcp_servers.powdbs]', `url = "${url}"`, `http_headers = { "Authorization" = "Bearer ${token}" }`].join('\n'),
+        ['[mcp_servers.powview]', `url = "${url}"`, `http_headers = { "Authorization" = "Bearer ${token}" }`].join(
+          '\n',
+        ),
       note: (url) =>
-        `Codex also has \`codex mcp add powdbs --url ${url} --bearer-token-env-var POWDBS_TOKEN\`, which keeps the token in an environment variable instead of the file.`,
+        `Codex also has \`codex mcp add powview --url ${url} --bearer-token-env-var POWVIEW_TOKEN\`, which keeps the token in an environment variable instead of the file.`,
     },
     docker: {
       where: 'Run in a terminal',
       kind: 'command',
-      snippet: () => 'codex mcp add powdbs -- docker exec -i powdbs powdbs mcp',
+      snippet: () => 'codex mcp add powview -- docker exec -i powview powview mcp',
       note: dockerNote(),
     },
   },
@@ -127,13 +129,14 @@ export const MCP_CLIENTS: McpClient[] = [
     http: {
       where: 'Run in a terminal',
       kind: 'command',
-      snippet: (url, token) => `opencode mcp add powdbs --global --url ${url} --header 'Authorization=Bearer ${token}'`,
+      snippet: (url, token) =>
+        `opencode mcp add powview --global --url ${url} --header 'Authorization=Bearer ${token}'`,
       note: 'Without --global it is added to the current project only.',
     },
     docker: {
       where: 'Run in a terminal',
       kind: 'command',
-      snippet: () => 'opencode mcp add powdbs --global -- docker exec -i powdbs powdbs mcp',
+      snippet: () => 'opencode mcp add powview --global -- docker exec -i powview powview mcp',
       note: dockerNote(),
     },
   },
@@ -144,24 +147,24 @@ export const MCP_CLIENTS: McpClient[] = [
       where: '.vscode/mcp.json',
       kind: 'file',
       // The token is never written into the file: VS Code asks for it and stores it securely.
-      // The literal ${input:powdbs-token} is VS Code syntax, so it is single-quoted here.
+      // The literal ${input:powview-token} is VS Code syntax, so it is single-quoted here.
       snippet: (url) =>
         json({
           servers: {
-            powdbs: {
+            powview: {
               type: 'http',
               url,
-              headers: { Authorization: 'Bearer ${input:powdbs-token}' },
+              headers: { Authorization: 'Bearer ${input:powview-token}' },
             },
           },
-          inputs: [{ type: 'promptString', id: 'powdbs-token', description: 'PowDBs token', password: true }],
+          inputs: [{ type: 'promptString', id: 'powview-token', description: 'PowView token', password: true }],
         }),
       note: "VS Code asks for the token the first time and stores it securely, so it is not saved in the file. For all workspaces, run 'MCP: Open User Configuration' and paste the same.",
     },
     docker: {
       where: '.vscode/mcp.json',
       kind: 'file',
-      snippet: () => json({ servers: { powdbs: { type: 'stdio', ...DOCKER_SERVER } } }),
+      snippet: () => json({ servers: { powview: { type: 'stdio', ...DOCKER_SERVER } } }),
       note: dockerNote(),
     },
   },
@@ -224,13 +227,13 @@ export const MCP_CLIENTS: McpClient[] = [
       where: "your tool's MCP settings",
       kind: 'file',
       snippet: (url, token) =>
-        `Server name: powdbs\nTransport: Streamable HTTP\nURL: ${url}\nHeader: Authorization: Bearer ${token}`,
+        `Server name: powview\nTransport: Streamable HTTP\nURL: ${url}\nHeader: Authorization: Bearer ${token}`,
       note: 'Most tools accept these four values in their MCP settings.',
     },
     docker: {
       where: "your tool's MCP settings",
       kind: 'file',
-      snippet: () => 'Command: docker exec -i powdbs powdbs mcp',
+      snippet: () => 'Command: docker exec -i powview powview mcp',
       note: dockerNote('Most tools accept a command like this in their MCP settings.'),
     },
   },
@@ -253,18 +256,18 @@ export function resolveSetup(client: McpClient, mode: SetupMode, url: string, to
   return { where: h.where, kind: h.kind, code: h.snippet(url, token), note }
 }
 
-/** The copy-paste prompt. The AI tool installs PowDBs itself, so the details are spelled out. */
+/** The copy-paste prompt. The AI tool installs PowView itself, so the details are spelled out. */
 export function aiPrompt(url: string, token: string): string {
   return (
-    `Add my PowDBs MCP server to your user settings: ${url} (Streamable HTTP), header "Authorization: Bearer ${token}". ` +
+    `Add my PowView MCP server to your user settings: ${url} (Streamable HTTP), header "Authorization: Bearer ${token}". ` +
     'Then tell me which databases you can see.'
   )
 }
 
-/** The same, for the Docker method: the AI tool runs PowDBs's command, no token involved. */
+/** The same, for the Docker method: the AI tool runs PowView's command, no token involved. */
 export function aiDockerPrompt(): string {
   return (
-    'Add my PowDBs MCP server to your user settings as a local stdio server: docker exec -i powdbs powdbs mcp. ' +
+    'Add my PowView MCP server to your user settings as a local stdio server: docker exec -i powview powview mcp. ' +
     'Then tell me which databases you can see.'
   )
 }

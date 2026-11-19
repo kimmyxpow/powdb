@@ -1,4 +1,4 @@
-// Validation for PowDBs's request bodies, server function inputs, config files and MCP tools.
+// Validation for PowView's request bodies, server function inputs, config files and MCP tools.
 // It covers the part of zod 4 the app uses, with the same results, the same English messages
 // and the same JSON Schema, so the API and the AI clients see no change. Schemas implement
 // Standard Schema v1, so TanStack Start's .validator() takes them directly.
@@ -263,7 +263,7 @@ export abstract class Schema<O = unknown, I = O> {
   get '~standard'(): StandardSchemaProps<I, O> {
     return {
       version: 1,
-      vendor: 'powdbs',
+      vendor: 'powview',
       validate: (value: unknown) => {
         const run = this._run(value)
         if (run.issues.length === 0) return { value: run.value as O }

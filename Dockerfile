@@ -14,8 +14,8 @@ RUN bun run build \
   # server.ts imports app code (#/lib/...): bundle it too, so the image needs no src/ or package.json
   && bun build server.ts --target bun --minify --outfile start.js \
   # the CLI runs straight from the kernel (no shell in the runtime image)
-  && sed -i '1i #!/usr/local/bin/bun' dist/cli/powdbs.js \
-  && chmod 0755 dist/cli/powdbs.js \
+  && sed -i '1i #!/usr/local/bin/bun' dist/cli/powview.js \
+  && chmod 0755 dist/cli/powview.js \
   # the data directory, created here because the runtime image has no shell
   && mkdir -p /out/data
 
@@ -58,26 +58,26 @@ RUN set -eux; \
 FROM oven/bun:1.4.4-distroless AS runtime
 WORKDIR /app
 
-LABEL org.opencontainers.image.source="https://github.com/powroom/powdbs" \
-      org.opencontainers.image.title="PowDBs" \
+LABEL org.opencontainers.image.source="https://github.com/powroom/powview" \
+      org.opencontainers.image.title="PowView" \
       org.opencontainers.image.description="A web app for browsing and managing PostgreSQL databases." \
-      org.opencontainers.image.url="https://github.com/powroom/powdbs" \
+      org.opencontainers.image.url="https://github.com/powroom/powview" \
       org.opencontainers.image.licenses="Apache-2.0"
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3333 \
-    POWDBS_DATA_DIR=/data \
-    POWDBS_INSTALL=docker \
-    POWDBS_PG_DUMP=/usr/lib/postgresql/18/bin/pg_dump
+    POWVIEW_DATA_DIR=/data \
+    POWVIEW_INSTALL=docker \
+    POWVIEW_PG_DUMP=/usr/lib/postgresql/18/bin/pg_dump
 
 COPY --from=pgtools /out/ /
 COPY --from=build --chown=1000:1000 /out/data /data
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/start.js ./
 COPY LICENSE NOTICE ./
-# `powdbs` CLI (talks to the running server; reads /data/auth.json)
-COPY --from=build /app/dist/cli/powdbs.js /usr/local/bin/powdbs
+# `powview` CLI (talks to the running server; reads /data/auth.json)
+COPY --from=build /app/dist/cli/powview.js /usr/local/bin/powview
 
 # uid 1000 matches the bun user, so a /data folder owned by uid 1000 (for example a bind mount) works
 USER 1000:1000

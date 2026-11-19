@@ -1,21 +1,21 @@
 import { describe, expect, test } from 'bun:test'
 import { ISOLATED, runInChildProcess } from './test-process'
 
-// Stateful: runs in a child process with its own POWDBS_DATA_DIR (see test-process.ts).
+// Stateful: runs in a child process with its own POWVIEW_DATA_DIR (see test-process.ts).
 if (!ISOLATED) {
   test('REST API passes in an isolated process', () => runInChildProcess(import.meta.path), 120_000)
 } else {
   const { writeFileSync } = await import('node:fs')
   const path = await import('node:path')
-  const dataDir = process.env.POWDBS_DATA_DIR!
+  const dataDir = process.env.POWVIEW_DATA_DIR!
   // A managed connection, present from the first store load on.
   writeFileSync(
-    path.join(dataDir, 'powdbs.yaml'),
-    'connections:\n  - id: prod\n    url: postgres://app_ro@db.invalid:5432/app\n    password_env: POWDBS_TEST_PROD_PW\n    read_only: true\n',
+    path.join(dataDir, 'powview.yaml'),
+    'connections:\n  - id: prod\n    url: postgres://app_ro@db.invalid:5432/app\n    password_env: POWVIEW_TEST_PROD_PW\n    read_only: true\n',
   )
-  process.env.POWDBS_TEST_PROD_PW = 'from-env'
-  delete process.env.POWDBS_AUTH
-  delete process.env.POWDBS_ADMIN_PASSWORD
+  process.env.POWVIEW_TEST_PROD_PW = 'from-env'
+  delete process.env.POWVIEW_AUTH
+  delete process.env.POWVIEW_ADMIN_PASSWORD
 
   const auth = await import('@/server/auth.server')
   const store = await import('@/server/store.server')
@@ -39,7 +39,7 @@ if (!ISOLATED) {
     const headers: Record<string, string> = {}
     if (opts.body !== undefined) headers['content-type'] = opts.contentType ?? 'application/json'
     if (opts.token) headers.authorization = `Bearer ${opts.token}`
-    if (opts.cookie) headers.cookie = `powdbs_session=${session}`
+    if (opts.cookie) headers.cookie = `powview_session=${session}`
     if (opts.origin) headers.origin = opts.origin
     const url = `http://localhost:3335/api/v1/${route}${opts.query ?? ''}`
     const request = new Request(url, {
@@ -94,7 +94,7 @@ if (!ISOLATED) {
     })
 
     test('an unknown bearer token is 401', async () => {
-      expect((await call('GET', 'connections', { token: 'powdbs_not-a-real-token' })).status).toBe(401)
+      expect((await call('GET', 'connections', { token: 'powview_not-a-real-token' })).status).toBe(401)
     })
   })
 
@@ -209,7 +209,7 @@ if (!ISOLATED) {
       expect(await errorCode(patch)).toBe('managed')
       const del = await call('DELETE', 'connections/prod', { token: adminBot.token })
       expect(del.status).toBe(409)
-      expect(await errorMessage(del)).toBe('Managed by powdbs.yaml. Change the file and restart PowDBs.')
+      expect(await errorMessage(del)).toBe('Managed by powview.yaml. Change the file and restart PowView.')
     })
 
     test('an unknown connection is 404', async () => {
@@ -292,7 +292,7 @@ if (!ISOLATED) {
       })
       expect(created.status).toBe(201)
       const body = (await created.json()) as { token: string; info: { id: string; connections: string[] } }
-      expect(body.token.startsWith('powdbs_')).toBe(true)
+      expect(body.token.startsWith('powview_')).toBe(true)
       expect(body.info.connections).toEqual([C_RO.id])
 
       const list = (await (await call('GET', 'tokens', { cookie: true })).json()) as Array<Record<string, unknown>>
@@ -396,14 +396,14 @@ if (!ISOLATED) {
     })
   })
 
-  describe('auth disabled (POWDBS_AUTH=off)', () => {
+  describe('auth disabled (POWVIEW_AUTH=off)', () => {
     test('REST answers without credentials as the local user', async () => {
-      process.env.POWDBS_AUTH = 'off'
+      process.env.POWVIEW_AUTH = 'off'
       try {
         const res = await call('GET', 'connections')
         expect(res.status).toBe(200)
       } finally {
-        delete process.env.POWDBS_AUTH
+        delete process.env.POWVIEW_AUTH
       }
     })
   })

@@ -1,7 +1,7 @@
 import { expect, test, beforeAll } from 'bun:test'
 import { ISOLATED, runInChildProcess } from './test-process'
 
-// Stateful: runs in a child process with its own POWDBS_DATA_DIR (see test-process.ts).
+// Stateful: runs in a child process with its own POWVIEW_DATA_DIR (see test-process.ts).
 // Covers the REST routes the CLI still uses (/api/auth/state and /api/auth/reset-password).
 // Sign-in, setup and password flows are tested in src/server/auth-flow.test.ts.
 if (!ISOLATED) {
@@ -9,9 +9,9 @@ if (!ISOLATED) {
 } else {
   const LOCAL_URL = 'http://localhost:3335'
 
-  delete process.env.POWDBS_AUTH
-  delete process.env.POWDBS_ADMIN_PASSWORD
-  delete process.env.POWDBS_SECURE_COOKIES
+  delete process.env.POWVIEW_AUTH
+  delete process.env.POWVIEW_ADMIN_PASSWORD
+  delete process.env.POWVIEW_SECURE_COOKIES
 
   const auth = await import('@/server/auth.server')
   const api = await import('./auth-api.server')
@@ -71,7 +71,7 @@ if (!ISOLATED) {
     const none = await call('POST', 'reset-password', { body: { password: 'correct horse battery' } })
     expect(none.status).toBe(401)
     const wrongKey = await call('POST', 'reset-password', {
-      headers: { 'x-powdbs-local-key': 'not-the-key' },
+      headers: { 'x-powview-local-key': 'not-the-key' },
       body: { password: 'correct horse battery' },
     })
     expect(wrongKey.status).toBe(401)
@@ -80,7 +80,7 @@ if (!ISOLATED) {
   test('a cross-site reset-password is refused before anything else happens', async () => {
     const key = (await auth.getAuthFile()).localKey
     const res = await call('POST', 'reset-password', {
-      headers: { 'x-powdbs-local-key': key },
+      headers: { 'x-powview-local-key': key },
       origin: 'https://evil.example',
       body: { password: 'correct horse battery' },
     })
@@ -91,7 +91,7 @@ if (!ISOLATED) {
   test('reset-password with the local key creates the admin when there is none, and state follows', async () => {
     const key = (await auth.getAuthFile()).localKey
     const res = await call('POST', 'reset-password', {
-      headers: { 'x-powdbs-local-key': key },
+      headers: { 'x-powview-local-key': key },
       body: { password: 'correct horse battery' },
     })
     expect(res.status).toBe(200)

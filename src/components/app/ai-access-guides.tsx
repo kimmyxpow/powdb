@@ -22,7 +22,7 @@ const MODE_LABELS: Record<SetupMode, string> = {
   docker: 'Without a token (Docker)',
 }
 
-const TOOL_KEY = 'powdbs.ai-access.tool'
+const TOOL_KEY = 'powview.ai-access.tool'
 
 /** Same height on both sub-tabs, so switching tabs, tools or methods never resizes the dialog. */
 const PANEL = 'h-[min(30rem,calc(100dvh-18rem))] flex-none overflow-y-auto'
@@ -134,7 +134,7 @@ export function ConnectSection({ token, modes }: { token: string | null; modes: 
         <TabsPanel className={PANEL} value="ask">
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm">Paste this into your AI tool. It will add PowDBs to its own settings.</p>
+              <p className="text-sm">Paste this into your AI tool. It will add PowView to its own settings.</p>
               <CopyButton label="Copy prompt" size="lg" text={prompt}>
                 Copy prompt
               </CopyButton>

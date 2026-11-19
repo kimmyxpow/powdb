@@ -102,18 +102,18 @@ describe('pure helpers', () => {
 })
 
 describe('file-backed store (temp data dir)', () => {
-  const originalDir = process.env.POWDBS_DATA_DIR
+  const originalDir = process.env.POWVIEW_DATA_DIR
   let dir: string
 
   beforeEach(() => {
     if (dir) rmSync(dir, { recursive: true, force: true })
-    dir = mkdtempSync(path.join(tmpdir(), 'powdbs-saved-'))
-    process.env.POWDBS_DATA_DIR = dir
+    dir = mkdtempSync(path.join(tmpdir(), 'powview-saved-'))
+    process.env.POWVIEW_DATA_DIR = dir
   })
 
   afterAll(() => {
-    if (originalDir === undefined) delete process.env.POWDBS_DATA_DIR
-    else process.env.POWDBS_DATA_DIR = originalDir
+    if (originalDir === undefined) delete process.env.POWVIEW_DATA_DIR
+    else process.env.POWVIEW_DATA_DIR = originalDir
     if (dir) rmSync(dir, { recursive: true, force: true })
   })
 

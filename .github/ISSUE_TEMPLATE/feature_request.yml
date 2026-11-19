@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest an idea for PowDBs.
+description: Suggest an idea for PowView.
 labels: [enhancement]
 body:
   - type: textarea
@@ -13,7 +13,7 @@ body:
     id: idea
     attributes:
       label: How should it work?
-      description: How you imagine it in PowDBs. Screenshots or examples from other tools help.
+      description: How you imagine it in PowView. Screenshots or examples from other tools help.
   - type: textarea
     id: other
     attributes:

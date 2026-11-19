@@ -4,18 +4,18 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-const dir = mkdtempSync(path.join(tmpdir(), 'powdbs-auth-'))
+const dir = mkdtempSync(path.join(tmpdir(), 'powview-auth-'))
 // Restored in afterAll: bun runs every test file in one process.
 const SAVED_ENV: Record<string, string | undefined> = {
-  POWDBS_DATA_DIR: process.env.POWDBS_DATA_DIR,
-  POWDBS_AUTH: process.env.POWDBS_AUTH,
-  POWDBS_ADMIN_PASSWORD: process.env.POWDBS_ADMIN_PASSWORD,
-  POWDBS_SESSION_DAYS: process.env.POWDBS_SESSION_DAYS,
+  POWVIEW_DATA_DIR: process.env.POWVIEW_DATA_DIR,
+  POWVIEW_AUTH: process.env.POWVIEW_AUTH,
+  POWVIEW_ADMIN_PASSWORD: process.env.POWVIEW_ADMIN_PASSWORD,
+  POWVIEW_SESSION_DAYS: process.env.POWVIEW_SESSION_DAYS,
 }
-process.env.POWDBS_DATA_DIR = dir
-delete process.env.POWDBS_AUTH
-delete process.env.POWDBS_ADMIN_PASSWORD
-delete process.env.POWDBS_SESSION_DAYS
+process.env.POWVIEW_DATA_DIR = dir
+delete process.env.POWVIEW_AUTH
+delete process.env.POWVIEW_ADMIN_PASSWORD
+delete process.env.POWVIEW_SESSION_DAYS
 
 const auth = await import('./auth.server')
 const { RateLimitError } = auth
@@ -23,7 +23,7 @@ const { RateLimitError } = auth
 let password = 'correct horse battery'
 
 beforeAll(() => {
-  process.env.POWDBS_DATA_DIR = dir
+  process.env.POWVIEW_DATA_DIR = dir
 })
 
 afterAll(() => {
@@ -113,7 +113,7 @@ describe('API tokens and the local key', () => {
       scope: 'write',
       connections: ['prod', 'prod', ' prod '],
     })
-    expect(created.token).toMatch(/^powdbs_[A-Za-z0-9]{32}$/)
+    expect(created.token).toMatch(/^powview_[A-Za-z0-9]{32}$/)
     expect(created.info.prefix).toBe(created.token.slice(0, 12))
     expect(created.info.id).toHaveLength(8)
     expect(created.info.connections).toEqual(['prod'])
@@ -122,7 +122,7 @@ describe('API tokens and the local key', () => {
     expect(info?.name).toBe('ci bot')
     expect(info?.scope).toBe('write')
     expect(await auth.verifyApiToken(flipLastChar(created.token))).toBeNull()
-    expect(await auth.verifyApiToken('not-a-powdbs-token')).toBeNull()
+    expect(await auth.verifyApiToken('not-a-powview-token')).toBeNull()
 
     const listed = await auth.listApiTokens()
     expect(listed.map((t) => t.id)).toContain(created.info.id)
@@ -146,10 +146,10 @@ describe('API tokens and the local key', () => {
     expect(await auth.isLocalKey('nope')).toBe(false)
   })
 
-  test('POWDBS_AUTH=off turns the login off', () => {
-    process.env.POWDBS_AUTH = 'off'
+  test('POWVIEW_AUTH=off turns the login off', () => {
+    process.env.POWVIEW_AUTH = 'off'
     expect(auth.authEnabled()).toBe(false)
-    delete process.env.POWDBS_AUTH
+    delete process.env.POWVIEW_AUTH
     expect(auth.authEnabled()).toBe(true)
   })
 })

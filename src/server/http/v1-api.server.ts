@@ -215,7 +215,7 @@ async function createRoute(request: Request, p: Principal): Promise<Response> {
   return jsonResponse(toInfo(conn), 201)
 }
 
-/** Managed connections come from powdbs.yaml and are refused before anything else is read. */
+/** Managed connections come from powview.yaml and are refused before anything else is read. */
 async function manageable(p: Principal, ref: string): Promise<ConnectionConfig> {
   const conn = await findConnection(p, ref)
   if (conn.managed) throw new HttpError(409, 'managed', MANAGED_ERROR)

@@ -43,7 +43,7 @@ import type { ConnectionInfo } from '@/lib/types'
 
 export const Route = createFileRoute('/')({
   component: Home,
-  head: () => ({ meta: [{ title: 'Connections · PowDBs' }] }),
+  head: () => ({ meta: [{ title: 'Connections · PowView' }] }),
 })
 
 function Home() {
@@ -193,7 +193,7 @@ function Home() {
         confirmLabel="Delete connection"
         description={
           <>
-            <span className="font-medium text-foreground">{toDelete?.name}</span> will be removed from PowDBs. The
+            <span className="font-medium text-foreground">{toDelete?.name}</span> will be removed from PowView. The
             database itself is not touched.
           </>
         }
@@ -354,14 +354,14 @@ function ConnectionCard({
   )
 }
 
-/** Explains why a menu item is off for a connection that comes from powdbs.yaml. */
+/** Explains why a menu item is off for a connection that comes from powview.yaml. */
 function ManagedTip({ managed, children }: { managed: boolean; children: ReactElement }) {
   if (!managed) return children
   return (
     // A disabled menu item ignores the pointer, so the tooltip is triggered by a wrapper.
     <Tooltip>
       <TooltipTrigger render={<span className="block" />}>{children}</TooltipTrigger>
-      <TooltipPopup side="left">Managed by powdbs.yaml. Change the file and restart PowDBs.</TooltipPopup>
+      <TooltipPopup side="left">Managed by powview.yaml. Change the file and restart PowView.</TooltipPopup>
     </Tooltip>
   )
 }

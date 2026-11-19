@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "powdbs",
+      "name": "powview",
       "dependencies": {
         "@base-ui/react": "^1.9.0",
         "@codemirror/autocomplete": "^6.20.4",

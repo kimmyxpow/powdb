@@ -31,19 +31,19 @@ describe('requestBodyLimitBytes', () => {
   })
 
   test('follows a larger restore limit', () => {
-    expect(requestBodyLimitBytes({ POWDBS_MAX_RESTORE_MB: '4096' })).toBe(4096 * MB)
+    expect(requestBodyLimitBytes({ POWVIEW_MAX_RESTORE_MB: '4096' })).toBe(4096 * MB)
   })
 
   test('follows a larger import limit', () => {
-    expect(requestBodyLimitBytes({ POWDBS_MAX_IMPORT_MB: '5000', POWDBS_MAX_RESTORE_MB: '512' })).toBe(5000 * MB)
+    expect(requestBodyLimitBytes({ POWVIEW_MAX_IMPORT_MB: '5000', POWVIEW_MAX_RESTORE_MB: '512' })).toBe(5000 * MB)
   })
 
   test('a smaller restore limit does not shrink the limit below the import default', () => {
-    expect(requestBodyLimitBytes({ POWDBS_MAX_RESTORE_MB: '64' })).toBe(200 * MB)
+    expect(requestBodyLimitBytes({ POWVIEW_MAX_RESTORE_MB: '64' })).toBe(200 * MB)
   })
 
   test('invalid values fall back to the defaults', () => {
-    expect(requestBodyLimitBytes({ POWDBS_MAX_RESTORE_MB: 'lots', POWDBS_MAX_IMPORT_MB: '-1' })).toBe(2048 * MB)
+    expect(requestBodyLimitBytes({ POWVIEW_MAX_RESTORE_MB: 'lots', POWVIEW_MAX_IMPORT_MB: '-1' })).toBe(2048 * MB)
   })
 })
 

@@ -5,20 +5,20 @@ import path from 'node:path'
 /**
  * bun test runs every file in one process, and auth.server and store.server keep their data
  * in module state. Stateful HTTP tests therefore run in a child bun process of their own,
- * each with a fresh POWDBS_DATA_DIR. The child sets POWDBS_HTTP_ISOLATED=1 and runs the tests.
+ * each with a fresh POWVIEW_DATA_DIR. The child sets POWVIEW_HTTP_ISOLATED=1 and runs the tests.
  */
-export const ISOLATED = process.env.POWDBS_HTTP_ISOLATED === '1'
+export const ISOLATED = process.env.POWVIEW_HTTP_ISOLATED === '1'
 
 const PROJECT_ROOT = path.resolve(import.meta.dir, '../../..')
 
 export async function runInChildProcess(file: string): Promise<void> {
-  const dir = mkdtempSync(path.join(tmpdir(), 'powdbs-http-'))
+  const dir = mkdtempSync(path.join(tmpdir(), 'powview-http-'))
   const env: Record<string, string> = {}
   for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined && !key.startsWith('POWDBS_')) env[key] = value
+    if (value !== undefined && !key.startsWith('POWVIEW_')) env[key] = value
   }
-  env.POWDBS_DATA_DIR = dir
-  env.POWDBS_HTTP_ISOLATED = '1'
+  env.POWVIEW_DATA_DIR = dir
+  env.POWVIEW_HTTP_ISOLATED = '1'
   try {
     const proc = Bun.spawn([process.execPath, 'test', file], {
       cwd: PROJECT_ROOT,

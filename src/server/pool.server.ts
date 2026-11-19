@@ -31,7 +31,7 @@ export function clientConfig(conn: ConnectionConfig, database?: string, endpoint
     password: resolvePassword(conn),
     database: database || conn.database,
     ssl: sslConfig(conn.ssl, endpoint ? conn.host : undefined),
-    application_name: 'powdbs',
+    application_name: 'powview',
     connectionTimeoutMillis: 10_000,
     options: conn.readOnly ? '-c default_transaction_read_only=on' : undefined,
   }
@@ -55,7 +55,7 @@ const pools = (globalPools.__dbxPools ??= new Map())
  */
 export function watchClient(client: pg.Client, label: string): void {
   client.on('error', (err) => {
-    console.warn(`[powdbs] ${label}: connection error: ${redactSecrets(err.message)}`)
+    console.warn(`[powview] ${label}: connection error: ${redactSecrets(err.message)}`)
   })
 }
 

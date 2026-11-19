@@ -2,12 +2,12 @@ import { describe, expect, test } from 'bun:test'
 import { ISOLATED, runInChildProcess } from './test-process'
 import { FIXTURE, revive } from '@/lib/__fixtures__/schema-compat'
 
-// Stateful: runs in a child process with its own POWDBS_DATA_DIR (see test-process.ts).
+// Stateful: runs in a child process with its own POWVIEW_DATA_DIR (see test-process.ts).
 if (!ISOLATED) {
   test('MCP endpoint passes in an isolated process', () => runInChildProcess(import.meta.path), 120_000)
 } else {
-  delete process.env.POWDBS_AUTH
-  delete process.env.POWDBS_ADMIN_PASSWORD
+  delete process.env.POWVIEW_AUTH
+  delete process.env.POWVIEW_ADMIN_PASSWORD
 
   const auth = await import('@/server/auth.server')
   const store = await import('@/server/store.server')
@@ -38,9 +38,9 @@ if (!ISOLATED) {
   async function rpc(body: unknown, opts: Opts = {}): Promise<Response> {
     const headers: Record<string, string> = { 'content-type': 'application/json' }
     if (opts.token) headers.authorization = `Bearer ${opts.token}`
-    if (opts.localKey) headers['x-powdbs-local-key'] = opts.localKey
-    if (opts.scope) headers['x-powdbs-agent-scope'] = opts.scope
-    if (opts.cookie) headers.cookie = `powdbs_session=${session}`
+    if (opts.localKey) headers['x-powview-local-key'] = opts.localKey
+    if (opts.scope) headers['x-powview-agent-scope'] = opts.scope
+    if (opts.cookie) headers.cookie = `powview_session=${session}`
     const request = new Request('http://localhost:3335/mcp', {
       method: 'POST',
       headers,
@@ -84,7 +84,7 @@ if (!ISOLATED) {
     })
 
     test('an invalid token is 401', async () => {
-      expect((await rpc({ jsonrpc: '2.0', id: 1, method: 'ping' }, { token: 'powdbs_nope' })).status).toBe(401)
+      expect((await rpc({ jsonrpc: '2.0', id: 1, method: 'ping' }, { token: 'powview_nope' })).status).toBe(401)
     })
 
     test('a parse error is JSON-RPC -32700 with HTTP 400', async () => {
@@ -117,7 +117,7 @@ if (!ISOLATED) {
       expect(body.id).toBe(1)
       expect(body.result.protocolVersion).toBe('2024-11-05')
       expect(body.result.capabilities).toEqual({ tools: { listChanged: false } })
-      expect(body.result.serverInfo).toMatchObject({ name: 'powdbs' })
+      expect(body.result.serverInfo).toMatchObject({ name: 'powview' })
       expect(typeof body.result.instructions).toBe('string')
     })
 

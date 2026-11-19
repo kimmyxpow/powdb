@@ -1,4 +1,4 @@
--- Edge cases for PowDBs: every column type, odd identifiers, partitions,
+-- Edge cases for PowView: every column type, odd identifiers, partitions,
 -- constraints of every kind, a foreign table, empty / wide / single-row tables.
 -- Runs in the "shop" database after 01-shop.sql and 02-warehouse.sql.
 

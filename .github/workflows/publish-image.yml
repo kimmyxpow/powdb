@@ -1,4 +1,4 @@
-# Publishes the PowDBs image to ghcr.io/powroom/powdbs (amd64 and arm64).
+# Publishes the PowView image to ghcr.io/powroom/powview (amd64 and arm64).
 #
 # How to release (set "version" in package.json to the same number first, and commit it):
 #   git tag v0.1.0 && git push origin v0.1.0
@@ -82,5 +82,5 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             echo "Release $GITHUB_REF_NAME already exists. Nothing to do."
           else
-            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "PowDBs ${GITHUB_REF_NAME#v}"
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "PowView ${GITHUB_REF_NAME#v}"
           fi

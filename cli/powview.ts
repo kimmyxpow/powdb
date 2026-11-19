@@ -1,5 +1,5 @@
 /// <reference types="bun" />
-// powdbs: command-line client for PowDBs. It talks only to the HTTP API and the
+// powview: command-line client for PowView. It talks only to the HTTP API and the
 // MCP endpoint of a running server. It never imports server modules.
 
 import { readFileSync } from 'node:fs'
@@ -82,21 +82,21 @@ interface TokenCreated {
 // ---------------------------------------------------------------------------
 
 const SIGN_IN_HINT = [
-  "Not signed in. Set POWDBS_TOKEN to an API token, or run powdbs where POWDBS_DATA_DIR points at PowDBs's data folder.",
-  'In Docker: docker exec powdbs powdbs <command>.',
+  "Not signed in. Set POWVIEW_TOKEN to an API token, or run powview where POWVIEW_DATA_DIR points at PowView's data folder.",
+  'In Docker: docker exec powview powview <command>.',
 ]
 
 function serverUrl(): string {
-  const base = process.env.POWDBS_URL?.trim() || `http://127.0.0.1:${process.env.PORT || '3333'}`
+  const base = process.env.POWVIEW_URL?.trim() || `http://127.0.0.1:${process.env.PORT || '3333'}`
   return base.replace(/\/+$/, '')
 }
 
 function localKeyRejected(): string {
-  return `The local key in ${localKeyPath()} was not accepted. Check that POWDBS_DATA_DIR points at PowDBs's data folder.`
+  return `The local key in ${localKeyPath()} was not accepted. Check that POWVIEW_DATA_DIR points at PowView's data folder.`
 }
 
 function dataDir(): string {
-  return process.env.POWDBS_DATA_DIR || './.data'
+  return process.env.POWVIEW_DATA_DIR || './.data'
 }
 
 function localKeyPath(): string {
@@ -117,7 +117,7 @@ function readLocalKey(): string | undefined {
 }
 
 /**
- * default: POWDBS_TOKEN if set, else the local key, else no header.
+ * default: POWVIEW_TOKEN if set, else the local key, else no header.
  * local: always the local key (admin reset-password), fails when there is none.
  * none: no auth header at all.
  */
@@ -126,19 +126,19 @@ type AuthMode = 'default' | 'local' | 'none'
 function authHeaders(mode: AuthMode = 'default'): Record<string, string> {
   if (mode === 'none') return {}
   if (mode === 'default') {
-    const token = process.env.POWDBS_TOKEN
+    const token = process.env.POWVIEW_TOKEN
     if (token) return { Authorization: `Bearer ${token}` }
   }
   const key = readLocalKey()
   if (!key) {
     if (mode === 'local') {
       throw new Error(
-        `No local key found in ${localKeyPath()}. Run this where POWDBS_DATA_DIR points at PowDBs's data folder.`,
+        `No local key found in ${localKeyPath()}. Run this where POWVIEW_DATA_DIR points at PowView's data folder.`,
       )
     }
     return {}
   }
-  return { 'X-PowDBs-Local-Key': key }
+  return { 'X-PowView-Local-Key': key }
 }
 
 // ---------------------------------------------------------------------------
@@ -154,7 +154,7 @@ interface RawResponse {
 
 function unreachable(): NetworkError {
   return new NetworkError(
-    `Cannot reach PowDBs at ${serverUrl()}. Is the server running? Set POWDBS_URL if it runs somewhere else.`,
+    `Cannot reach PowView at ${serverUrl()}. Is the server running? Set POWVIEW_URL if it runs somewhere else.`,
   )
 }
 
@@ -214,7 +214,7 @@ async function api<T = unknown>(
   try {
     return JSON.parse(res.text) as T
   } catch {
-    throw new Error('PowDBs sent a response that is not JSON.')
+    throw new Error('PowView sent a response that is not JSON.')
   }
 }
 
@@ -277,7 +277,7 @@ function parseArgs(args: string[], spec: Record<string, FlagKind>): Parsed {
 
 function positionals(p: Parsed, labels: string[]): string[] {
   if (p.positional.length < labels.length) {
-    throw new Error(`Missing <${labels[p.positional.length]}>. Run powdbs help for usage.`)
+    throw new Error(`Missing <${labels[p.positional.length]}>. Run powview help for usage.`)
   }
   const extra = p.positional[labels.length]
   if (extra !== undefined) throw new Error(`Unexpected argument: ${extra}`)
@@ -397,7 +397,7 @@ async function cmdConnList(args: string[]): Promise<void> {
   positionals(p, [])
   const rows = await api<ConnectionRow[]>('GET', '/api/v1/connections')
   if (bool(p, 'json')) return printJson(rows)
-  if (rows.length === 0) return print('No connections yet. Add one with: powdbs conn add <url>')
+  if (rows.length === 0) return print('No connections yet. Add one with: powview conn add <url>')
   print(
     renderTable(
       ['ID', 'NAME', 'HOST', 'DATABASE', 'USER', 'AI', 'READ ONLY', 'PROD', 'ACCESS', 'MANAGED'],
@@ -478,7 +478,7 @@ async function findConnectionRow(ref: string, auth: AuthMode = 'default'): Promi
   const found = rows.find((c) => c.id === ref) ?? (byName.length === 1 ? byName[0] : undefined)
   if (!found) {
     if (byName.length > 1) throw new Error(`More than one connection is named "${ref}". Use its id instead.`)
-    throw new Error(`No connection matches "${ref}". Run powdbs conn list.`)
+    throw new Error(`No connection matches "${ref}". Run powview conn list.`)
   }
   return found
 }
@@ -730,7 +730,7 @@ function fileStamp(now = new Date()): string {
 
 /**
  * Starts a download. The export routes take the local key only (API tokens get 403 there), so
- * this never falls back to POWDBS_TOKEN. A non-2xx answer becomes an Error with the API's message.
+ * this never falls back to POWVIEW_TOKEN. A non-2xx answer becomes an Error with the API's message.
  */
 async function openDownload(path: string): Promise<Response> {
   const headers = authHeaders('local')
@@ -970,7 +970,7 @@ async function cmdTokenList(args: string[]): Promise<void> {
   positionals(p, [])
   const tokens = await api<ApiTokenInfo[]>('GET', '/api/v1/tokens')
   if (bool(p, 'json')) return printJson(tokens)
-  if (tokens.length === 0) return print('No API tokens yet. Create one with: powdbs token create <name>')
+  if (tokens.length === 0) return print('No API tokens yet. Create one with: powview token create <name>')
   print(
     renderTable(
       ['ID', 'NAME', 'PREFIX', 'SCOPE', 'CONNECTIONS', 'CREATED', 'LAST USED', 'EXPIRES'],
@@ -1123,10 +1123,10 @@ async function relayMcpLine(line: string, scope: 'read' | 'write'): Promise<void
 
   let res: RawResponse
   try {
-    res = await rawRequest('POST', '/mcp', { ...authHeaders(), 'X-PowDBs-Agent-Scope': scope }, line)
+    res = await rawRequest('POST', '/mcp', { ...authHeaders(), 'X-PowView-Agent-Scope': scope }, line)
   } catch (err) {
     printError(messageOf(err))
-    replyError(`Cannot reach PowDBs at ${serverUrl()}.`)
+    replyError(`Cannot reach PowView at ${serverUrl()}.`)
     return
   }
 
@@ -1135,14 +1135,14 @@ async function relayMcpLine(line: string, scope: 'read' | 'write'): Promise<void
     try {
       writeJsonLine(JSON.parse(res.text))
     } catch {
-      printError('PowDBs sent a response that is not JSON.')
-      replyError('Invalid response from PowDBs.')
+      printError('PowView sent a response that is not JSON.')
+      replyError('Invalid response from PowView.')
     }
     return
   }
 
   if (res.status === 401) printError(SIGN_IN_HINT.join('\n'))
-  else printError(`PowDBs rejected an MCP request: ${errorMessage(res)}`)
+  else printError(`PowView rejected an MCP request: ${errorMessage(res)}`)
   replyError(apiErrorMessage(res.text) ?? `HTTP ${res.status}`)
 }
 
@@ -1163,78 +1163,78 @@ async function cmdMcp(args: string[]): Promise<void> {
 // ---------------------------------------------------------------------------
 
 const USAGE = [
-  'powdbs <command>',
+  'powview <command>',
   '',
   'Server',
-  '  powdbs status [--json]',
+  '  powview status [--json]',
   '      Show the server URL, whether sign-in is set up, and whether the CLI can connect.',
   '',
   'Connections',
-  '  powdbs conn list [--json]',
+  '  powview conn list [--json]',
   '      List connections with your access to each one.',
-  '  powdbs conn add <url> [--name N] [--read-only] [--production] [--ai off|read|write] [--color C] [--password-stdin] [--json]',
+  '  powview conn add <url> [--name N] [--read-only] [--production] [--ai off|read|write] [--color C] [--password-stdin] [--json]',
   '      [--ssh user@host[:port] (--ssh-key FILE | --ssh-password-stdin)]',
   '      Add a connection from a PostgreSQL URL. --password-stdin reads the password from stdin.',
-  '      --production marks the connection as production: PowDBs asks before every change in the UI.',
+  '      --production marks the connection as production: PowView asks before every change in the UI.',
   '      --ssh connects through an SSH server first. --ssh-key reads a private key file,',
   '      --ssh-password-stdin reads the SSH password from stdin.',
-  '  powdbs conn edit <id|name> [--name N] [--url U] [--read-only | --writable] [--production | --not-production] [--ai off|read|write] [--json]',
+  '  powview conn edit <id|name> [--name N] [--url U] [--read-only | --writable] [--production | --not-production] [--ai off|read|write] [--json]',
   '      [--ssh user@host[:port]] [--ssh-key FILE | --ssh-password-stdin] [--no-ssh]',
   '      Change a connection. Only the flags you pass are updated. --no-ssh removes the SSH tunnel.',
   '      Without a new secret, the saved SSH password or key is kept.',
-  '  powdbs conn remove <id|name> [--yes]',
+  '  powview conn remove <id|name> [--yes]',
   '      Remove a connection. Asks first unless --yes is given.',
-  '  powdbs conn test <id|name>',
-  '      Check that PowDBs can reach the database.',
+  '  powview conn test <id|name>',
+  '      Check that PowView can reach the database.',
   '',
   'Schema and queries',
-  '  powdbs tables <conn> [--schema S] [--json]',
+  '  powview tables <conn> [--schema S] [--json]',
   '      List tables, views and other relations.',
-  '  powdbs describe <conn> <table> [--schema S] [--json]',
+  '  powview describe <conn> <table> [--schema S] [--json]',
   '      Show the columns, keys and indexes of a table. Accepts schema.table.',
-  '  powdbs query <conn> "<sql>" [--write] [--json] [--max-rows N]',
+  '  powview query <conn> "<sql>" [--write] [--json] [--max-rows N]',
   '      Run SQL. Read-only unless --write is given.',
   '',
-  'Export (local key: run where POWDBS_DATA_DIR points at the data folder, or docker exec)',
-  '  powdbs export <conn> <table> [--schema S] [--format csv|json|ndjson|sql] [--where "<sql condition>"] [--output FILE]',
+  'Export (local key: run where POWVIEW_DATA_DIR points at the data folder, or docker exec)',
+  '  powview export <conn> <table> [--schema S] [--format csv|json|ndjson|sql] [--where "<sql condition>"] [--output FILE]',
   '      Export a whole table, or only the rows matching --where, streamed to a file. Default: <table>.<format>.',
   '      --output - writes to stdout. Accepts schema.table.',
-  '  powdbs dump <conn> [--database D] [--content all|schema|data] [--format sql|sql-gz|custom] [--schema S]... [--table schema.table]... [--output FILE]',
+  '  powview dump <conn> [--database D] [--content all|schema|data] [--format sql|sql-gz|custom] [--schema S]... [--table schema.table]... [--output FILE]',
   '      Dump a database with pg_dump. Default: <database>-<YYYYMMDD-HHmm>.sql (.sql.gz for sql-gz, .dump for custom).',
   '      --schema and --table repeat; choose one or the other. Needs pg_dump on the server.',
-  '      Inside Docker, write to stdout and redirect: docker exec powdbs powdbs dump shop --output - > shop.sql',
-  '  powdbs restore <conn> <file> [--database D] [--keep-going] [--clean]',
+  '      Inside Docker, write to stdout and redirect: docker exec powview powview dump shop --output - > shop.sql',
+  '  powview restore <conn> <file> [--database D] [--keep-going] [--clean]',
   '      Run a .sql, .sql.gz or pg_dump custom (.dump) file into a database. The format is read from the file.',
   '      All or nothing by default: an error stops the run and undoes it. --keep-going keeps what ran and exits 1 when it counted errors.',
   '      --clean drops existing objects first (custom files only). Restore into an empty database unless the file replaces what is there.',
-  '      Needs psql and pg_restore on the server. Inside Docker, copy the file in first: docker cp shop.sql powdbs:/tmp/shop.sql',
-  '      then docker exec powdbs powdbs restore shop /tmp/shop.sql',
+  '      Needs psql and pg_restore on the server. Inside Docker, copy the file in first: docker cp shop.sql powview:/tmp/shop.sql',
+  '      then docker exec powview powview restore shop /tmp/shop.sql',
   '',
   'API tokens',
-  '  powdbs token create <name> [--scope read|write|admin] [--conn id,id] [--expires 30d|90d|1y|never|<n>d] [--json]',
+  '  powview token create <name> [--scope read|write|admin] [--conn id,id] [--expires 30d|90d|1y|never|<n>d] [--json]',
   '      Create an API token. It expires after 90 days unless --expires says otherwise.',
   '      The token is shown only once.',
-  '  powdbs token list [--json]',
+  '  powview token list [--json]',
   '      List API tokens. Secrets are never shown.',
-  '  powdbs token revoke <id>',
+  '  powview token revoke <id>',
   '      Revoke an API token.',
   '',
   'Audit and admin',
-  '  powdbs audit [--limit N] [--json]',
+  '  powview audit [--limit N] [--json]',
   '      Show recent queries and who ran them.',
-  '  powdbs admin reset-password [--password-stdin]',
-  '      Set a new admin password. Needs the local key, so run it where POWDBS_DATA_DIR points at the data folder.',
+  '  powview admin reset-password [--password-stdin]',
+  '      Set a new admin password. Needs the local key, so run it where POWVIEW_DATA_DIR points at the data folder.',
   '',
   'AI agents',
-  '  powdbs mcp [--write]',
+  '  powview mcp [--write]',
   '      Run the stdio MCP bridge for AI agents such as Claude Code or Cursor.',
-  '  powdbs help',
+  '  powview help',
   '      Show this help.',
   '',
   'Environment',
-  '  POWDBS_URL       Server URL (default http://127.0.0.1:3333)',
-  '  POWDBS_TOKEN     API token to use instead of the local key',
-  '  POWDBS_DATA_DIR  PowDBs data folder that holds auth.json (default ./.data)',
+  '  POWVIEW_URL       Server URL (default http://127.0.0.1:3333)',
+  '  POWVIEW_TOKEN     API token to use instead of the local key',
+  '  POWVIEW_DATA_DIR  PowView data folder that holds auth.json (default ./.data)',
 ]
 
 function reportUnknown(name: string): void {
@@ -1311,7 +1311,7 @@ async function run(argv: string[]): Promise<void> {
  * start nothing has asked yet, so ask once before giving up on the local key.
  */
 async function ensureLocalKey(): Promise<void> {
-  if (process.env.POWDBS_TOKEN || readLocalKey()) return
+  if (process.env.POWVIEW_TOKEN || readLocalKey()) return
   try {
     await fetch(`${serverUrl()}/api/auth/state`, { signal: AbortSignal.timeout(3000) })
   } catch {

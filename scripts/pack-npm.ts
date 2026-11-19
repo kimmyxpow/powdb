@@ -1,5 +1,5 @@
 /**
- * Assembles npm-package/: the folder that `npm publish` uploads as the `powdbs` package.
+ * Assembles npm-package/: the folder that `npm publish` uploads as the `powview` package.
  *
  * Run by `bun run build:npm` after the build and the start.js bundle, or alone with
  * `bun run pack:npm` when those outputs already exist. Only the files listed here are copied, so
@@ -19,8 +19,8 @@ const required = [
   'start.js',
   'dist/client',
   'dist/server/server.js',
-  'dist/cli/powdbs.js',
-  'npm/bin/powdbs.mjs',
+  'dist/cli/powview.js',
+  'npm/bin/powview.mjs',
   'npm/lib/launcher.mjs',
 ]
 
@@ -52,9 +52,9 @@ await mkdir(path.join(outDir, 'dist', 'cli'), { recursive: true })
 await copyFile(path.join(root, 'start.js'), path.join(outDir, 'start.js'))
 await copyTree(path.join(root, 'dist', 'client'), path.join(outDir, 'dist', 'client'))
 await copyTree(path.join(root, 'dist', 'server'), path.join(outDir, 'dist', 'server'))
-await copyFile(path.join(root, 'dist', 'cli', 'powdbs.js'), path.join(outDir, 'dist', 'cli', 'powdbs.js'))
-await copyFile(path.join(root, 'npm', 'bin', 'powdbs.mjs'), path.join(outDir, 'bin', 'powdbs.mjs'))
-await chmod(path.join(outDir, 'bin', 'powdbs.mjs'), 0o755)
+await copyFile(path.join(root, 'dist', 'cli', 'powview.js'), path.join(outDir, 'dist', 'cli', 'powview.js'))
+await copyFile(path.join(root, 'npm', 'bin', 'powview.mjs'), path.join(outDir, 'bin', 'powview.mjs'))
+await chmod(path.join(outDir, 'bin', 'powview.mjs'), 0o755)
 await copyFile(path.join(root, 'npm', 'lib', 'launcher.mjs'), path.join(outDir, 'lib', 'launcher.mjs'))
 await copyFile(path.join(root, 'README.md'), path.join(outDir, 'README.md'))
 
@@ -63,19 +63,19 @@ await copyFile(path.join(root, 'LICENSE'), path.join(outDir, 'LICENSE'))
 await copyFile(path.join(root, 'NOTICE'), path.join(outDir, 'NOTICE'))
 
 const manifest = {
-  name: 'powdbs',
+  name: 'powview',
   version: rootPackage.version,
-  description: 'A web app for browsing and managing PostgreSQL databases. Start it with npx powdbs.',
+  description: 'A web app for browsing and managing PostgreSQL databases. Start it with npx powview.',
   type: 'module',
-  bin: { powdbs: 'bin/powdbs.mjs' },
+  bin: { powview: 'bin/powview.mjs' },
   files: ['bin', 'lib', 'dist', 'start.js', 'README.md', 'LICENSE', 'NOTICE'],
   engines: { node: '>=18' },
   keywords: ['postgresql', 'postgres', 'database', 'sql', 'admin', 'web-ui', 'bun'],
-  repository: { type: 'git', url: 'git+https://github.com/powroom/powdbs.git' },
-  homepage: 'https://github.com/powroom/powdbs#readme',
-  bugs: { url: 'https://github.com/powroom/powdbs/issues' },
+  repository: { type: 'git', url: 'git+https://github.com/powroom/powview.git' },
+  homepage: 'https://github.com/powroom/powview#readme',
+  bugs: { url: 'https://github.com/powroom/powview/issues' },
   license: 'Apache-2.0',
 }
 await writeFile(path.join(outDir, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)
 
-console.log(`Assembled ${path.relative(root, outDir)}/ for powdbs ${rootPackage.version}`)
+console.log(`Assembled ${path.relative(root, outDir)}/ for powview ${rootPackage.version}`)

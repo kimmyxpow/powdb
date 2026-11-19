@@ -51,7 +51,7 @@ export const Route = createFileRoute('/c/$connId/$db')({
     await context.queryClient.ensureQueryData(serverInfoQuery(params.connId, params.db))
     return { connection }
   },
-  head: ({ params }) => ({ meta: [{ title: `${params.db} · PowDBs` }] }),
+  head: ({ params }) => ({ meta: [{ title: `${params.db} · PowView` }] }),
   component: Workspace,
   pendingComponent: WorkspacePending,
   errorComponent: WorkspaceError,

@@ -1,5 +1,5 @@
 /**
- * Production server for PowDBs (run `bun run build` first, then `bun run start`).
+ * Production server for PowView (run `bun run build` first, then `bun run start`).
  *
  * - Serves the built client assets from memory (dist/client, read once at startup)
  * - Forwards everything else to the TanStack Start handler
@@ -7,8 +7,8 @@
  *   app can run arbitrary SQL with your saved credentials. Expose it on a network
  *   only behind your own authentication.
  *
- * Env: PORT (3333), HOST (127.0.0.1), POWDBS_ALLOWED_HOSTS (comma separated),
- *      POWDBS_DATA_DIR (./.data), POWDBS_MAX_IMPORT_MB (200), POWDBS_MAX_RESTORE_MB (2048)
+ * Env: PORT (3333), HOST (127.0.0.1), POWVIEW_ALLOWED_HOSTS (comma separated),
+ *      POWVIEW_DATA_DIR (./.data), POWVIEW_MAX_IMPORT_MB (200), POWVIEW_MAX_RESTORE_MB (2048)
  */
 /// <reference types="bun" />
 import path from 'node:path'
@@ -26,7 +26,7 @@ import { parsePort } from '#/lib/port'
 
 const port = parsePort(process.env.PORT)
 if (port === null) {
-  console.error(`[powdbs] PORT must be a whole number from 1 to 65535, not "${process.env.PORT}". Fix it or unset it.`)
+  console.error(`[powview] PORT must be a whole number from 1 to 65535, not "${process.env.PORT}". Fix it or unset it.`)
   process.exit(1)
 }
 const hostname = process.env.HOST ?? '127.0.0.1'
@@ -36,7 +36,7 @@ const allowedHosts = new Set([
   'localhost',
   '127.0.0.1',
   '[::1]',
-  ...(process.env.POWDBS_ALLOWED_HOSTS ?? '')
+  ...(process.env.POWVIEW_ALLOWED_HOSTS ?? '')
     .split(',')
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean),
@@ -60,7 +60,7 @@ function hostAllowed(request: Request): boolean {
 }
 
 function forbidden(): Response {
-  return new Response('Forbidden: unknown host. Add it to POWDBS_ALLOWED_HOSTS.', { status: 403 })
+  return new Response('Forbidden: unknown host. Add it to POWVIEW_ALLOWED_HOSTS.', { status: 403 })
 }
 
 /** Gzips a dynamic response when the client accepts it, the type is text-like and the body is not small. */
@@ -129,4 +129,4 @@ const server = Bun.serve({
   fetch: handle,
 })
 
-console.log(`PowDBs running at http://${server.hostname}:${server.port}`)
+console.log(`PowView running at http://${server.hostname}:${server.port}`)

@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { createUpdateCheck, installMethod, parseReleaseResponse, updateCheckEnabled } from './update-check.server'
 
-const DEFAULT_URL = 'https://api.github.com/repos/powroom/powdbs/releases/latest'
+const DEFAULT_URL = 'https://api.github.com/repos/powroom/powview/releases/latest'
 const HOUR = 60 * 60 * 1000
 
 const RELEASE = {
   tag_name: 'v0.1.1',
-  html_url: 'https://github.com/powroom/powdbs/releases/tag/v0.1.1',
+  html_url: 'https://github.com/powroom/powview/releases/tag/v0.1.1',
   published_at: '2026-11-20T10:00:00Z',
   body: 'Faster table loading.',
   draft: false,
@@ -80,7 +80,7 @@ describe('getUpdateInfo', () => {
     expect(fake.calls[0]!.url).toBe(DEFAULT_URL)
     expect(fake.calls[0]!.headers).toEqual({
       Accept: 'application/vnd.github+json',
-      'User-Agent': 'PowDBs/0.1.0',
+      'User-Agent': 'PowView/0.1.0',
     })
     expect(fake.calls[0]!.signal).toBeDefined()
   })
@@ -105,12 +105,12 @@ describe('getUpdateInfo', () => {
     expect((await createUpdateCheck()({ ...options, fetch: draft.fetch })).latest).toBeNull()
   })
 
-  test('disabled with POWDBS_UPDATE_CHECK off, false or 0: no request is made', async () => {
+  test('disabled with POWVIEW_UPDATE_CHECK off, false or 0: no request is made', async () => {
     for (const value of ['off', 'false', '0', 'OFF']) {
       const fake = fakeFetch(() => json(RELEASE))
       const info = await createUpdateCheck()({
         fetch: fake.fetch,
-        env: { POWDBS_UPDATE_CHECK: value },
+        env: { POWVIEW_UPDATE_CHECK: value },
         current: '0.1.0',
         now: fakeClock().now,
       })
@@ -119,18 +119,18 @@ describe('getUpdateInfo', () => {
     }
   })
 
-  test('the check is on when POWDBS_UPDATE_CHECK is not set or set to anything else', () => {
+  test('the check is on when POWVIEW_UPDATE_CHECK is not set or set to anything else', () => {
     expect(updateCheckEnabled({})).toBe(true)
-    expect(updateCheckEnabled({ POWDBS_UPDATE_CHECK: 'on' })).toBe(true)
-    expect(updateCheckEnabled({ POWDBS_UPDATE_CHECK: 'off' })).toBe(false)
-    expect(updateCheckEnabled({ POWDBS_UPDATE_CHECK: ' 0 ' })).toBe(false)
+    expect(updateCheckEnabled({ POWVIEW_UPDATE_CHECK: 'on' })).toBe(true)
+    expect(updateCheckEnabled({ POWVIEW_UPDATE_CHECK: 'off' })).toBe(false)
+    expect(updateCheckEnabled({ POWVIEW_UPDATE_CHECK: ' 0 ' })).toBe(false)
   })
 
-  test('POWDBS_UPDATE_URL replaces the release address', async () => {
+  test('POWVIEW_UPDATE_URL replaces the release address', async () => {
     const fake = fakeFetch(() => json(RELEASE))
     await createUpdateCheck()({
       fetch: fake.fetch,
-      env: { POWDBS_UPDATE_URL: 'http://127.0.0.1:9999/latest' },
+      env: { POWVIEW_UPDATE_URL: 'http://127.0.0.1:9999/latest' },
       current: '0.1.0',
       now: fakeClock().now,
     })
@@ -219,7 +219,7 @@ describe('getUpdateInfo', () => {
     await createUpdateCheck()({ fetch: fake.fetch, env: {}, current: '0.1.0', now: fakeClock().now })
     expect(errors).toHaveBeenCalledTimes(1)
     const message = String(errors.mock.calls[0]![0])
-    expect(message).toBe('PowDBs update check failed: GitHub answered 500. It will try again later.')
+    expect(message).toBe('PowView update check failed: GitHub answered 500. It will try again later.')
   })
 
   test('a repository without releases (404) is no update, not a failure, and is cached for a day', async () => {
@@ -259,11 +259,11 @@ describe('getUpdateInfo', () => {
 })
 
 describe('installMethod', () => {
-  test('docker and npm come from POWDBS_INSTALL, anything else is source', () => {
-    expect(installMethod({ POWDBS_INSTALL: 'docker' })).toBe('docker')
-    expect(installMethod({ POWDBS_INSTALL: 'npm' })).toBe('npm')
-    expect(installMethod({ POWDBS_INSTALL: 'NPM' })).toBe('npm')
-    expect(installMethod({ POWDBS_INSTALL: 'brew' })).toBe('source')
+  test('docker and npm come from POWVIEW_INSTALL, anything else is source', () => {
+    expect(installMethod({ POWVIEW_INSTALL: 'docker' })).toBe('docker')
+    expect(installMethod({ POWVIEW_INSTALL: 'npm' })).toBe('npm')
+    expect(installMethod({ POWVIEW_INSTALL: 'NPM' })).toBe('npm')
+    expect(installMethod({ POWVIEW_INSTALL: 'brew' })).toBe('source')
     expect(installMethod({})).toBe('source')
   })
 })

@@ -213,7 +213,7 @@ export function ConnectionDialog({
   const [test, setTest] = useState<TestConnectionResult | null>(null)
   const keyFileInput = useRef<HTMLInputElement>(null)
   const isEdit = Boolean(connection)
-  // Managed connections come from powdbs.yaml: they can be looked at here, not changed.
+  // Managed connections come from powview.yaml: they can be looked at here, not changed.
   const managed = Boolean(connection?.managed)
   const hadSsh = Boolean(connection?.ssh)
 
@@ -318,8 +318,8 @@ export function ConnectionDialog({
             {managed && (
               <Alert variant="info">
                 <LockIcon />
-                <AlertTitle>Managed by powdbs.yaml</AlertTitle>
-                <AlertDescription>Change the file and restart PowDBs. The fields here are read-only.</AlertDescription>
+                <AlertTitle>Managed by powview.yaml</AlertTitle>
+                <AlertDescription>Change the file and restart PowView. The fields here are read-only.</AlertDescription>
               </Alert>
             )}
 

@@ -1,9 +1,9 @@
-# Publishes the powdbs package to npm (https://www.npmjs.com/package/powdbs) with npm trusted publishing:
+# Publishes the powview package to npm (https://www.npmjs.com/package/powview) with npm trusted publishing:
 # GitHub proves to npm that this workflow is running, so no npm token is stored anywhere, and the
 # package gets a provenance statement automatically.
 #
-# One-time setup on npmjs.com (package powdbs > Settings > Trusted publishing > GitHub Actions):
-# organization powroom, repository powdbs, workflow publish-npm.yml. Do it on the day of a release: npm
+# One-time setup on npmjs.com (package powview > Settings > Trusted publishing > GitHub Actions):
+# organization powroom, repository powview, workflow publish-npm.yml. Do it on the day of a release: npm
 # drops the setting when it is not used for a successful publish within 2 days.
 #
 # How to release (set "version" in package.json to the same number first, and commit it):
@@ -58,9 +58,9 @@ jobs:
         id: npm
         run: |
           version=$(node -p "require('./npm-package/package.json').version")
-          if npm view "powdbs@$version" version >/dev/null 2>&1; then
+          if npm view "powview@$version" version >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "powdbs $version is already on npm. Nothing to publish."
+            echo "powview $version is already on npm. Nothing to publish."
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi

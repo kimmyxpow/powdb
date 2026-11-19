@@ -1,37 +1,37 @@
-# PowDBs for everyday use. It pulls the published image (no build, no demo database).
+# PowView for everyday use. It pulls the published image (no build, no demo database).
 #
-#   curl -o compose.yml https://raw.githubusercontent.com/powroom/powdbs/main/compose.example.yml
+#   curl -o compose.yml https://raw.githubusercontent.com/powroom/powview/main/compose.example.yml
 #   docker compose up -d                → http://localhost:3333
 #   docker compose logs -f app          (show app logs, Ctrl+C to stop)
 #   docker compose down                 (add -v to also delete connections, accounts, and tokens)
-name: powdbs
+name: powview
 
 services:
   app:
-    image: ghcr.io/powroom/powdbs:latest
-    container_name: powdbs
+    image: ghcr.io/powroom/powview:latest
+    container_name: powview
     restart: unless-stopped
     ports:
       # only reachable from this machine; sign in at first start
       - '127.0.0.1:3333:3333'
     # environment:
     # creates the admin on first start when no admin exists yet (at least 8 characters)
-    # POWDBS_ADMIN_PASSWORD: change-me-now
+    # POWVIEW_ADMIN_PASSWORD: change-me-now
     # connections created on the very first start (one per line: "Name=postgresql://…")
-    # POWDBS_CONNECTIONS: |
+    # POWVIEW_CONNECTIONS: |
     #   Shop=postgresql://user:password@host.docker.internal:5432/shop
-    # passwords for connections declared in powdbs.yaml with password_env are read from
+    # passwords for connections declared in powview.yaml with password_env are read from
     # environment variables like this one. Keep real secrets in an .env file or your shell,
     # not in the YAML file.
     # PROD_PG_PASSWORD: ...
     volumes:
-      - powdbs-data:/data
-      # declarative connections, mounted read-only (see powdbs.example.yaml)
-      # - ./powdbs.yaml:/data/powdbs.yaml:ro
+      - powview-data:/data
+      # declarative connections, mounted read-only (see powview.example.yaml)
+      # - ./powview.yaml:/data/powview.yaml:ro
     extra_hosts:
       - 'host.docker.internal:host-gateway'
 
 volumes:
-  powdbs-data:
+  powview-data:
     # the same volume name as the docker run command in the README
-    name: powdbs-data
+    name: powview-data

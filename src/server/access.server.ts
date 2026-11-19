@@ -11,8 +11,8 @@ export type Principal =
   | { kind: 'user'; label: string } // signed-in admin (session) or the local CLI key on REST
   | { kind: 'agent'; label: string; scope: TokenScope; connections: 'all' | string[]; tokenId?: string }
 
-export const LOCAL_KEY_HEADER = 'x-powdbs-local-key'
-const AGENT_SCOPE_HEADER = 'x-powdbs-agent-scope'
+export const LOCAL_KEY_HEADER = 'x-powview-local-key'
+const AGENT_SCOPE_HEADER = 'x-powview-agent-scope'
 
 /**
  * Credentials in priority order: Bearer token, local key header, session cookie. Once a

@@ -5,7 +5,7 @@ import path from 'node:path'
 import { parseAuthFile } from './auth.server'
 import { parseStoreFile } from './store.server'
 
-const dir = mkdtempSync(path.join(tmpdir(), 'powdbs-files-'))
+const dir = mkdtempSync(path.join(tmpdir(), 'powview-files-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
 /**
@@ -32,7 +32,7 @@ const fullConnection = {
   database: 'app',
   user: 'app',
   password: 'enc:v1:AAAA:BBBB',
-  passwordEnv: 'POWDBS_PROD_PW',
+  passwordEnv: 'POWVIEW_PROD_PW',
   ssl: 'verify-full',
   readOnly: true,
   production: true,
@@ -129,7 +129,7 @@ describe('connections.json', () => {
 const token = {
   id: 'abcd1234',
   name: 'CI',
-  prefix: 'powdbs_abc123',
+  prefix: 'powview_abc123',
   scope: 'read',
   connections: 'all',
   createdAt: '2025-01-01T00:00:00.000Z',

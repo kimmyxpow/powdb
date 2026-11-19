@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { ISOLATED, runInChildProcess } from './http/test-process'
 
-// Stateful: runs in a child process with its own POWDBS_DATA_DIR (see test-process.ts).
+// Stateful: runs in a child process with its own POWVIEW_DATA_DIR (see test-process.ts).
 // These are the sign-in, setup, state and password flows that the browser's server functions
 // (src/api/session.functions.ts, src/api/account.functions.ts) call.
 if (!ISOLATED) {
@@ -11,9 +11,9 @@ if (!ISOLATED) {
   const NEXT_PASSWORD = 'another long password'
   const IP = '198.51.100.20'
 
-  delete process.env.POWDBS_AUTH
-  delete process.env.POWDBS_ADMIN_PASSWORD
-  delete process.env.POWDBS_SECURE_COOKIES
+  delete process.env.POWVIEW_AUTH
+  delete process.env.POWVIEW_ADMIN_PASSWORD
+  delete process.env.POWVIEW_SECURE_COOKIES
 
   const auth = await import('@/server/auth.server')
 
@@ -87,14 +87,14 @@ if (!ISOLATED) {
       expect(await auth.verifyLogin('admin', PASSWORD, '198.51.100.22')).toBe(true)
     })
 
-    test('POWDBS_AUTH=off refuses sign-in and setup with the turned-off message', async () => {
-      process.env.POWDBS_AUTH = 'off'
+    test('POWVIEW_AUTH=off refuses sign-in and setup with the turned-off message', async () => {
+      process.env.POWVIEW_AUTH = 'off'
       try {
         await expect(auth.signIn('admin', PASSWORD, IP)).rejects.toThrow('Sign-in is turned off')
         await expect(auth.setUpFirstAdmin('admin', PASSWORD)).rejects.toThrow('Sign-in is turned off')
         expect(await auth.isSetupRequired()).toBe(false)
       } finally {
-        delete process.env.POWDBS_AUTH
+        delete process.env.POWVIEW_AUTH
       }
     })
   })
