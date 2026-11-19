@@ -130,7 +130,6 @@ export async function listSchemaObjects(
       name: string
       kind: RelationKind
       estimated_rows: number | null
-      total_bytes: string
       comment: string | null
       is_partition: boolean
       partition_of: string | null
@@ -139,7 +138,6 @@ export async function listSchemaObjects(
       database,
       `SELECT c.oid::int AS oid, c.relname AS name, c.relkind::text AS kind,
               CASE WHEN c.reltuples < 0 THEN NULL ELSE c.reltuples::float8 END AS estimated_rows,
-              CASE WHEN c.relkind IN ('r', 'p', 'm') THEN pg_total_relation_size(c.oid) ELSE 0 END AS total_bytes,
               obj_description(c.oid, 'pg_class') AS comment,
               c.relispartition AS is_partition,
               CASE WHEN c.relispartition THEN
@@ -214,7 +212,6 @@ export async function listSchemaObjects(
       name: r.name,
       kind: r.kind,
       estimatedRows: r.estimated_rows,
-      totalBytes: num(r.total_bytes),
       comment: r.comment,
       isPartition: r.is_partition,
       partitionOf: r.partition_of,
@@ -257,7 +254,6 @@ export async function listAllRelations(connectionId: string, database: string): 
     name: r.name,
     kind: r.kind,
     estimatedRows: r.estimated_rows,
-    totalBytes: 0,
     comment: r.comment,
     isPartition: r.is_partition,
   }))

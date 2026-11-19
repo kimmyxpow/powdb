@@ -19,7 +19,7 @@ import {
 import { useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
 import { applyChangesFn, referenceLabelsFn } from '@/api/explorer.functions'
 import { ExportMenu, type WholeTableFormat } from '@/components/app/export-menu'
-import { DataGrid } from '@/components/grid/data-grid'
+import { DataGrid, rowNumberGutter } from '@/components/grid/data-grid'
 import {
   createIdentityBox,
   createKeyedCache,
@@ -61,7 +61,6 @@ import {
   MenuTrigger,
 } from '@/components/ui/menu'
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Spinner } from '@/components/ui/spinner'
 import { toastManager } from '@/components/ui/toast'
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { shortcut, useHotkey } from '@/hooks/use-hotkey'
@@ -73,7 +72,7 @@ import type { ExportFormat } from '@/lib/export'
 import { countLabel, formatCount, formatDuration } from '@/lib/format'
 import { useProductionGuard } from '@/lib/production-guard'
 import type { ProductionRequest } from '@/lib/production-guard'
-import { countQuery, keys, rowsQuery } from '@/lib/queries'
+import { countQuery, keys, rowsQuery, schemaObjectsQuery } from '@/lib/queries'
 import { displayQualified } from '@/lib/sql'
 import { useAppStore } from '@/lib/store'
 import { isZoned, localZoneName, sameTimestamptz } from '@/lib/time'
@@ -83,7 +82,8 @@ import { describeFilter, FilterPopover } from './filter-popover'
 import { ImportCsvDialog } from './import-csv-dialog'
 import { buildChanges, changeRowIds, emptyPending, pendingStats, previewSql, savedRowIndex } from './pending'
 import type { PendingChanges } from './pending'
-import { RowDrawer } from './row-drawer'
+import { LazyRowDrawer, preloadRowDrawer } from './row-drawer-lazy'
+import { TableDataSkeleton } from './table-data-skeleton'
 import { LookupContext, columnSpec } from '@/components/grid/value-editors'
 import type { PendingHistory } from '@/hooks/use-pending-history'
 import { validateValue } from '@/lib/validate'
@@ -730,6 +730,21 @@ export function TableData({
     setDrawerRowId(i >= 0 ? baseIds[i]! : null)
   }, [drawerRowId, drawerIndex, result, pkIndexes, baseIds])
 
+  // the drawer's code is fetched while the browser is idle, so the first open is instant
+  useEffect(() => {
+    const warm = () => {
+      preloadRowDrawer().catch(() => {
+        // a failed warm-up is harmless: opening the drawer loads it again and reports the error then
+      })
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(warm)
+      return () => window.cancelIdleCallback(id)
+    }
+    const timer = window.setTimeout(warm, 1500)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   // ---- counts -----------------------------------------------------------------
   const start = (page - 1) * pageSize
   const shown = result?.rows.length ?? 0
@@ -743,7 +758,7 @@ export function TableData({
   const hasNext = result?.hasMore ?? false
 
   const rowPanel = (
-    <RowDrawer
+    <LazyRowDrawer
       columns={columns}
       docked={docked}
       editable={editable}
@@ -845,12 +860,12 @@ export function TableData({
   // table metadata; render the view once both rows and metadata are here so
   // nothing jumps after the first paint.
   if (!rowsQ.error && !(result && details)) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-muted-foreground text-sm">
-        <Spinner />
-        Loading rows…
-      </div>
-    )
+    // the sidebar usually has the table's row estimate already, so the skeleton's row-number
+    // column gets the width the grid will use
+    const listed = queryClient
+      .getQueryData(schemaObjectsQuery(connectionId, database, schema).queryKey)
+      ?.relations.find((r) => r.name === table)
+    return <TableDataSkeleton gutter={rowNumberGutter(Math.max(rowCountHint, listed?.estimatedRows ?? 0))} />
   }
 
   return (

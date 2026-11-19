@@ -23,6 +23,7 @@ import { modKey } from '@/hooks/use-hotkey'
 import { countLabel, formatBytes, formatCount, timeAgo } from '@/lib/format'
 import { overviewQuery, serverInfoQuery, allRelationsQuery } from '@/lib/queries'
 import { useAppStore } from '@/lib/store'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/c/$connId/$db/')({
   component: Overview,
@@ -102,10 +103,27 @@ function Overview() {
             </FrameHeader>
             <FramePanel className="p-2">
               {isPending ? (
-                <div className="flex flex-col">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div className="flex h-[46px] items-center px-3" key={i}>
-                      <Skeleton className="h-4 w-full" />
+                // the query returns up to 8 tables; each row is the real link's grid with the same heights
+                <div aria-busy="true" className="flex flex-col">
+                  <span className="sr-only">Loading tables</span>
+                  {LARGEST_NAME_WIDTHS.map((width, i) => (
+                    <div
+                      className="grid grid-cols-[minmax(0,1fr)_5rem_4.5rem] items-center gap-3 rounded-lg px-3 py-2 text-sm"
+                      key={i}
+                    >
+                      <span className="flex min-w-0 flex-col gap-1.5">
+                        <span className="flex h-5 min-w-0 items-center gap-2">
+                          <Skeleton className="size-3.5 shrink-0 rounded-sm" />
+                          <Skeleton className={cn('h-3', width)} />
+                        </span>
+                        <Skeleton className="h-1 rounded-full" />
+                      </span>
+                      <span className="flex h-4 items-center justify-end">
+                        <Skeleton className="h-3 w-12" />
+                      </span>
+                      <span className="flex h-4 items-center justify-end">
+                        <Skeleton className="h-3 w-12" />
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -195,7 +213,7 @@ function Overview() {
               </FrameHeader>
               <FramePanel className="flex flex-wrap gap-2 p-4">
                 {isPending ? (
-                  <Skeleton className="h-5.5 w-40" />
+                  <BadgeSkeleton />
                 ) : overview?.sessions.length ? (
                   overview.sessions.map((s) => (
                     <Badge key={s.state} size="lg" variant={s.state === 'active' ? 'success' : 'secondary'}>
@@ -215,7 +233,7 @@ function Overview() {
               </FrameHeader>
               <FramePanel className="flex flex-wrap gap-2 p-4">
                 {isPending ? (
-                  <Skeleton className="h-5.5 w-40" />
+                  <BadgeSkeleton />
                 ) : (
                   overview?.extensions.map((e) => (
                     <Badge key={e.name} size="lg" variant="outline">
@@ -229,6 +247,18 @@ function Overview() {
         </div>
       </div>
     </div>
+  )
+}
+
+const LARGEST_NAME_WIDTHS = ['w-44', 'w-36', 'w-52', 'w-40', 'w-32', 'w-48', 'w-40', 'w-28']
+
+// two pills at the height of a Badge size="lg" (h-6.5, h-5.5 from sm)
+function BadgeSkeleton() {
+  return (
+    <>
+      <Skeleton className="h-6.5 w-24 sm:h-5.5" />
+      <Skeleton className="h-6.5 w-20 sm:h-5.5" />
+    </>
   )
 }
 

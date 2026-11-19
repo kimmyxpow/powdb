@@ -230,8 +230,7 @@ export function DataGrid({
     acc += w
   }
 
-  const maxRowNumber = Math.max(rowNumberOffset + rows.length, rowCountHint)
-  const gutter = Math.max(52, String(maxRowNumber).length * 8 + 34)
+  const gutter = rowNumberGutter(Math.max(rowNumberOffset + rows.length, rowCountHint))
   const openWidth = onOpenRow ? OPEN_W : 0
   // sticky area left of the data columns: row number / checkbox, then the open-row column
   const lead = gutter + openWidth
@@ -1827,4 +1826,9 @@ function TemporalCellEditor({
       </Popover>
     </div>
   )
+}
+
+/** Width of the row-number column: room for the widest row number. Shared with the loading skeleton. */
+export function rowNumberGutter(maxRowNumber: number): number {
+  return Math.max(52, String(maxRowNumber).length * 8 + 34)
 }

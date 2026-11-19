@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowRightIcon,
   BotIcon,
@@ -166,7 +166,6 @@ function Home() {
                   connected={connectedIds?.includes(conn.id) ?? false}
                   connection={conn}
                   key={conn.id}
-                  onConnect={() => connect(conn)}
                   onDisconnect={() => disconnectMutation.mutate(conn)}
                   onDelete={() => setToDelete(conn)}
                   onDuplicate={() =>
@@ -264,7 +263,6 @@ function QuickConnect({ onSubmit, className }: { onSubmit: (url: string) => void
 function ConnectionCard({
   connected,
   connection: conn,
-  onConnect,
   onEdit,
   onDuplicate,
   onDelete,
@@ -272,7 +270,6 @@ function ConnectionCard({
 }: {
   connected: boolean
   connection: ConnectionInfo
-  onConnect: () => void
   onEdit: () => void
   onDuplicate: () => void
   onDelete: () => void
@@ -281,11 +278,12 @@ function ConnectionCard({
   const managed = Boolean(conn.managed)
   return (
     <Card className="group min-h-28 justify-between gap-4 p-4 transition-[border-color,box-shadow] hover:border-ring/50 hover:shadow-sm">
-      <button
+      <Link
         aria-label={`Open ${conn.name}`}
         className="absolute inset-0 z-0 cursor-pointer rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        onClick={onConnect}
-        type="button"
+        params={{ connId: conn.id }}
+        preload={false}
+        to="/c/$connId"
       />
       <div className="pointer-events-none relative flex items-start gap-3">
         <ConnectionAvatar className="size-10 text-sm" color={conn.color} name={conn.name} />

@@ -20,6 +20,7 @@ import { connectionQuery, countQuery, relationDdlQuery, relationDetailsQuery, ro
 import { displayQualified } from '@/lib/sql'
 import { countParams, parseTableSearch, rowsParams } from '@/lib/table-search'
 import { useAppStore } from '@/lib/store'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/c/$connId/$db/t/$schema/$table')({
   validateSearch: (search: Record<string, unknown>): TableSearch => parseTableSearch(search),
@@ -119,7 +120,7 @@ function TablePage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-2.5">
-        <div className="flex min-w-0 items-center gap-2.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-card shadow-xs/5">
             {Icon ? <Icon aria-hidden="true" className="size-4 opacity-70" /> : <Skeleton className="size-4" />}
           </span>
@@ -149,14 +150,15 @@ function TablePage() {
             </p>
           </div>
         </div>
+        {/* on phones the tabs take a row of their own, so the subtitle length never moves them */}
         <Tabs
-          className="ms-auto"
+          className="ms-auto shrink-0 max-sm:basis-full max-sm:w-full"
           onValueChange={(value) =>
             onSearchChange({ tab: value === 'data' ? undefined : (value as TableSearch['tab']) })
           }
           value={tab}
         >
-          <TabsList>
+          <TabsList className="max-sm:w-full">
             <TabsTab value="data">Data</TabsTab>
             <TabsTab value="structure">Structure</TabsTab>
             <TabsTab value="ddl">DDL</TabsTab>
@@ -265,17 +267,35 @@ function DdlView({
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {isPending ? (
-          <div className="flex flex-col gap-2 p-6">
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-4 w-1/3" />
-          </div>
+          <DdlSkeleton />
         ) : error ? (
           <p className="p-6 text-destructive-foreground text-sm">{error.message}</p>
         ) : (
           <SqlCodeView className="h-full" value={data ?? ''} />
         )}
       </div>
+    </div>
+  )
+}
+
+// Lines in the code view's rhythm (SqlCodeView: 13px mono, line-height 1.6, 10px top padding,
+// a 37px gutter: 6px margin plus the line numbers). The frame is clipped, so it keeps its size either way.
+const DDL_LINE_WIDTHS = ['w-2/5', 'w-3/5', 'w-1/2', 'w-4/5', 'w-1/3', 'w-2/3', 'w-3/4', 'w-1/4']
+
+function DdlSkeleton() {
+  return (
+    <div aria-busy="true" className="flex h-full flex-col overflow-hidden py-2.5 font-mono text-[13px] leading-[1.6]">
+      <span className="sr-only">Loading DDL</span>
+      {Array.from({ length: 60 }, (_, i) => (
+        <div className="flex h-[20.8px] shrink-0 items-center" key={i}>
+          <div className="flex w-[37px] shrink-0 justify-end pe-2.5">
+            <Skeleton className="h-2 w-3 opacity-60" />
+          </div>
+          <div className="min-w-0 flex-1 ps-1.5">
+            <Skeleton className={cn('h-2.5', DDL_LINE_WIDTHS[i % DDL_LINE_WIDTHS.length])} />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

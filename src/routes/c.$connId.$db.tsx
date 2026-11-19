@@ -38,7 +38,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { Spinner } from '@/components/ui/spinner'
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { modKey, useHotkey } from '@/hooks/use-hotkey'
-import { connectionQuery, serverInfoQuery } from '@/lib/queries'
+import { connectionQuery, connectionsQuery, databasesQuery, schemasQuery, serverInfoQuery } from '@/lib/queries'
 import { useAiAccessDialog } from '@/lib/ai-access-dialog'
 import { useAppStore } from '@/lib/store'
 import type { ConnectionInfo } from '@/lib/types'
@@ -46,9 +46,15 @@ import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/c/$connId/$db')({
   loader: async ({ params, context }) => {
-    const connection = await context.queryClient.ensureQueryData(connectionQuery(params.connId))
-    // fail fast with a helpful error when the server is unreachable
-    await context.queryClient.ensureQueryData(serverInfoQuery(params.connId, params.db))
+    // the sidebar needs these on every load, so start them without waiting
+    void context.queryClient.prefetchQuery(databasesQuery(params.connId))
+    void context.queryClient.prefetchQuery(schemasQuery(params.connId, params.db))
+    void context.queryClient.prefetchQuery(connectionsQuery())
+    const [connection] = await Promise.all([
+      context.queryClient.ensureQueryData(connectionQuery(params.connId)),
+      // fail fast with a helpful error when the server is unreachable
+      context.queryClient.ensureQueryData(serverInfoQuery(params.connId, params.db)),
+    ])
     return { connection }
   },
   head: ({ params }) => ({ meta: [{ title: `${params.db} · pow/view` }] }),

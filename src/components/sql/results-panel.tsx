@@ -7,11 +7,11 @@ import {
   SquareTerminalIcon,
   TriangleAlertIcon,
 } from 'lucide-react'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { ExportMenu } from '@/components/app/export-menu'
 import { DataGrid } from '@/components/grid/data-grid'
 import type { GridColumn, GridRow } from '@/components/grid/types'
-import { RowDrawer } from '@/components/table/row-drawer'
+import { LazyRowDrawer, preloadRowDrawer } from '@/components/table/row-drawer-lazy'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs'
@@ -99,7 +99,7 @@ function ResultGrid({ result, name }: { result: StatementResult; name: string })
         sort={sort}
         storageKey={`sql:${name}:${columns.map((c) => c.name).join(',')}`}
       />
-      <RowDrawer
+      <LazyRowDrawer
         docked={false}
         columns={columns}
         editable={false}
@@ -148,6 +148,21 @@ export function ResultsPanel({
     const t = setInterval(() => setTick({ startedAt: timerStart, now: Date.now() }), 100)
     return () => clearInterval(t)
   }, [timerStart])
+
+  // the drawer's code is fetched while the browser is idle, so the first open is instant
+  useEffect(() => {
+    const warm = () => {
+      preloadRowDrawer().catch(() => {
+        // a failed warm-up is harmless: opening the drawer loads it again and reports the error then
+      })
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(warm)
+      return () => window.cancelIdleCallback(id)
+    }
+    const timer = window.setTimeout(warm, 1500)
+    return () => window.clearTimeout(timer)
+  }, [])
   // a tick from an earlier run is ignored, so the timer restarts at 0 on each run
   const elapsed = timerStart && tick && tick.startedAt === timerStart ? tick.now - timerStart : 0
 

@@ -195,7 +195,6 @@ export interface RelationInfo {
   name: string
   kind: RelationKind
   estimatedRows: number | null
-  totalBytes: number
   comment: string | null
   isPartition: boolean
   /** name of the partitioned table this one is a partition of (same schema) */

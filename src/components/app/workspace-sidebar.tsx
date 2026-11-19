@@ -61,6 +61,7 @@ import {
 } from '@/components/ui/combobox'
 import { Group as ButtonGroup } from '@/components/ui/group'
 import { SelectButton } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Sidebar,
   SidebarContent,
@@ -73,7 +74,6 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSkeleton,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
@@ -487,11 +487,27 @@ export function WorkspaceSidebar({
 
       <SidebarContent className="gap-0 pb-2">
         {objects.isPending ? (
-          <div className="flex flex-col gap-1 p-2">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SidebarMenuSkeleton className="h-7" key={i} showIcon />
-            ))}
-          </div>
+          // the first group of the real list, with its label and item classes (RelationGroup, RelationItem)
+          <SidebarGroup aria-busy="true" className="py-1">
+            <span className="sr-only">Loading objects</span>
+            <SidebarGroupLabel className="h-7 w-full gap-1 text-[0.7rem] tracking-wider">
+              <Skeleton className="size-3.5 rounded-sm" />
+              <Skeleton className="h-2.5 w-14" />
+              <Skeleton className="ms-auto me-5 h-2.5 w-3" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-px">
+                {SKELETON_ITEM_WIDTHS.map((width, i) => (
+                  <SidebarMenuItem key={i}>
+                    <div className="flex h-7 w-full items-center gap-2 overflow-hidden rounded-lg p-2 pe-7 text-sm">
+                      <Skeleton className="size-3.5 shrink-0 rounded-sm" />
+                      <Skeleton className={cn('h-3', width)} />
+                    </div>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         ) : objects.error ? (
           <p className="px-4 py-3 text-destructive-foreground text-xs">{objects.error.message}</p>
         ) : total === 0 ? (
@@ -698,6 +714,9 @@ function NavItem({
     </SidebarMenuItem>
   )
 }
+
+// name bar widths for the loading list; the rows themselves keep the real height
+const SKELETON_ITEM_WIDTHS = ['w-3/5', 'w-1/2', 'w-2/3', 'w-2/5', 'w-3/4', 'w-1/2', 'w-1/3', 'w-3/5']
 
 function GroupHeader({ id, label, count, open }: { id: string; label: string; count: number; open: boolean }) {
   const setCollapsed = useAppStore((s) => s.setGroupCollapsed)

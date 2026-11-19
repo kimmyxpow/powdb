@@ -9,7 +9,7 @@ import {
   RefreshCwIcon,
   SquareTerminalIcon,
 } from 'lucide-react'
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { signalBackendFn } from '@/api/activity.functions'
 import type { ActivityRow } from '@/server/activity.server'
@@ -35,6 +35,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { toastManager } from '@/components/ui/toast'
 import { ConfirmDialog } from '@/components/app/confirm-dialog'
+import { useInView } from '@/hooks/use-in-view'
 import { useRetained } from '@/hooks/use-retained'
 import { activityQuery } from '@/lib/activity-queries'
 import { formatDuration } from '@/lib/format'
@@ -59,6 +60,7 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
   const [paused, setPaused] = useState(false)
   const [detail, setDetail] = useState<ActivityRow | null>(null)
   const [pending, setPending] = useState<Pending | null>(null)
+  const [listRef, inView] = useInView<HTMLDivElement>()
 
   // Until the connection loads, treat it as read-only so no action fires by mistake.
   const { data: conn } = useQuery(connectionQuery(connectionId))
@@ -73,8 +75,16 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
     refetch,
   } = useQuery({
     ...activityQuery(connectionId, database, allDatabases),
-    refetchInterval: paused ? false : REFRESH_MS,
+    refetchInterval: paused || !inView ? false : REFRESH_MS,
   })
+
+  // TanStack Query does not refetch when the interval turns back on, so catch up here.
+  const wasInView = useRef(inView)
+  useEffect(() => {
+    const was = wasInView.current
+    wasInView.current = inView
+    if (inView && !was) void refetch()
+  }, [inView, refetch])
 
   const visible = rows?.filter((r) => !hideIdle || r.state !== 'idle')
 
@@ -110,7 +120,7 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
   const confirm = confirmContent(pending)
 
   return (
-    <Frame>
+    <Frame ref={listRef}>
       <FrameHeader className="flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col gap-0.5">
           <div className="flex items-center gap-2">
@@ -153,10 +163,9 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
         )}
 
         {isPending && !error ? (
-          <div className="flex flex-col gap-2 p-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton className="h-8 w-full" key={i} />
-            ))}
+          // the box of the empty state (p-6 around one text-sm line), the usual result with "Hide idle" on
+          <div aria-busy="true" className="p-6">
+            <Skeleton className="mx-auto h-5 w-44" />
           </div>
         ) : visible && visible.length > 0 ? (
           <Table className="min-w-[46rem]">
