@@ -67,7 +67,8 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { shortcut, useHotkey } from '@/hooks/use-hotkey'
 import { useFloatingBar } from '@/hooks/use-floating-bar'
 import { useMediaQuery } from '@/hooks/use-media-query'
-import { copyText, exportRows, toTsv } from '@/lib/export'
+import { exportRows, toTsv } from '@/lib/export'
+import { copyWithToast } from '@/components/app/copy-feedback'
 import type { ExportFormat } from '@/lib/export'
 import { countLabel, formatCount, formatDuration } from '@/lib/format'
 import { useProductionGuard } from '@/lib/production-guard'
@@ -665,6 +666,14 @@ export function TableData({
   }
 
   // ---- shortcuts ------------------------------------------------------------------
+  // A refresh that finds no change looks like nothing happened, so it reports back.
+  const refreshRows = () => {
+    void Promise.all([rowsQ.refetch(), countQ.refetch()]).then(([rows, count]) => {
+      const failed = rows.error ?? count.error
+      if (failed) toastManager.add({ type: 'error', title: 'Could not refresh', description: failed.message })
+      else toastManager.add({ type: 'success', title: 'Data refreshed', timeout: 1500 })
+    })
+  }
   // always on in a table (a value being typed in the row panel is not staged until it is committed)
   useHotkey('mod+s', saveSoon, { allowInInputs: true })
   useHotkey('mod+z', () => history.undo(), { skipInInputs: true, enabled: history.canUndo })
@@ -672,14 +681,7 @@ export function TableData({
   useHotkey('mod+y', () => history.redo(), { skipInInputs: true, enabled: history.canRedo })
   useHotkey('mod+f', () => searchRef.current?.focus(), { allowInInputs: true })
   useHotkey('alt+shift+n', () => editable && addRow(), { allowInInputs: true, enabled: editable })
-  useHotkey(
-    'alt+shift+r',
-    () => {
-      void rowsQ.refetch()
-      void countQ.refetch()
-    },
-    { allowInInputs: true },
-  )
+  useHotkey('alt+shift+r', refreshRows, { allowInInputs: true })
 
   // ---- navigation helpers ---------------------------------------------------------
   const onNavigateForeignKey = (fk: { schema: string; table: string; column: string }, value: string) => {
@@ -784,11 +786,11 @@ export function TableData({
     if (!result) return
     const fields = result.fields.map((f, i) => ({ name: f.name, kind: columns[i]?.kind ?? f.kind }))
     if (format === 'copy') {
-      void copyText(toTsv(fields, result.rows))
-      toastManager.add({
-        title: `Copied ${countLabel(result.rows.length, 'row')}`,
-        description: 'Ready to paste into any spreadsheet.',
-      })
+      void copyWithToast(
+        toTsv(fields, result.rows),
+        `Copied ${countLabel(result.rows.length, 'row')}`,
+        'Ready to paste into any spreadsheet.',
+      )
       return
     }
     exportRows(format, table, displayQualified(schema, table), fields, result.rows)
@@ -912,17 +914,7 @@ export function TableData({
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger
-                render={
-                  <Button
-                    aria-label="Refresh"
-                    onClick={() => {
-                      void rowsQ.refetch()
-                      void countQ.refetch()
-                    }}
-                    size="icon-sm"
-                    variant="ghost"
-                  />
-                }
+                render={<Button aria-label="Refresh" onClick={refreshRows} size="icon-sm" variant="ghost" />}
               >
                 <RefreshCwIcon className={cn(rowsQ.isFetching && 'animate-spin')} />
               </TooltipTrigger>
@@ -944,8 +936,7 @@ export function TableData({
               onCopy={() => exportData('copy')}
               onCopyQuery={() => {
                 if (!result) return
-                void copyText(result.sql)
-                toastManager.add({ type: 'success', title: 'Query copied', description: result.sql })
+                void copyWithToast(result.sql, 'Query copied', result.sql)
               }}
               onExport={(format) => exportData(format)}
               wholeTable={{ label: hasFilters ? 'All matching rows' : 'Whole table', onExport: exportWholeTable }}
@@ -1089,15 +1080,15 @@ export function TableData({
                   <Button
                     onClick={() => {
                       const picked = rows.filter((r) => selected.has(r.id))
-                      void copyText(
+                      void copyWithToast(
                         toTsv(
                           columns,
                           picked.map((r) =>
                             r.values.map((v) => (typeof v === 'object' && v !== null ? null : (v ?? null))),
                           ),
                         ),
+                        `Copied ${countLabel(picked.length, 'row')}`,
                       )
-                      toastManager.add({ title: `Copied ${countLabel(picked.length, 'row')}` })
                     }}
                     size="sm"
                     variant="ghost"

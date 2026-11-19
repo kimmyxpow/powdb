@@ -38,10 +38,11 @@ import { Input } from '@/components/ui/input'
 import { Kbd } from '@/components/ui/kbd'
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { anchoredToastManager } from '@/components/ui/toast'
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { shortcut } from '@/hooks/use-hotkey'
-import { copyText, rowToObject } from '@/lib/export'
+import { rowToObject } from '@/lib/export'
+import { copyWithAnchoredToast } from '@/components/app/copy-feedback'
+import { CopyButton } from '@/components/app/copy-button'
 import { cellToText } from '@/lib/format'
 import { isZoned, toLocalTimestamptz } from '@/lib/time'
 import { validateValue } from '@/lib/validate'
@@ -190,21 +191,25 @@ export function RowDrawer({
             {status === 'new' ? 'Discard row' : status === 'deleted' ? 'Restore row' : 'Delete row'}
           </Button>
         )}
-        <Button
-          onClick={() => {
-            if (!shownRow) return
-            const obj = rowToObject(
-              shown.columns,
-              shownRow.values.map((v) => (v === undefined || isDefaultMarker(v) ? null : v)) as Cell[],
-            )
-            void copyText(JSON.stringify(obj, null, 2))
-          }}
+        <CopyButton
+          label="Copy JSON"
           size="sm"
+          text={
+            shownRow
+              ? JSON.stringify(
+                  rowToObject(
+                    shown.columns,
+                    shownRow.values.map((v) => (v === undefined || isDefaultMarker(v) ? null : v)) as Cell[],
+                  ),
+                  null,
+                  2,
+                )
+              : ''
+          }
           variant="ghost"
         >
-          <CopyIcon aria-hidden="true" />
           Copy JSON
-        </Button>
+        </CopyButton>
       </div>
       <div className="flex gap-1">
         <Tooltip>
@@ -425,13 +430,11 @@ function FieldRow({
             aria-label="Copy value"
             disabled={isNull || isDefault}
             onClick={(e) => {
-              void copyText(isNull || isDefault ? '' : cellToText(value as Cell))
-              anchoredToastManager.add({
-                title: 'Copied',
-                positionerProps: { anchor: e.currentTarget, side: 'top', sideOffset: 4 },
-                timeout: 1200,
-                data: { tooltipStyle: true },
-              })
+              void copyWithAnchoredToast(
+                isNull || isDefault ? '' : cellToText(value as Cell),
+                e.currentTarget,
+                'Copied',
+              )
             }}
             size="icon-xs"
             variant="ghost"

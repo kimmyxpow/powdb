@@ -35,7 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toastManager } from '@/components/ui/toast'
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { buildConnectionUrl, looksLikeUrl } from '@/lib/connection-url'
-import { copyText } from '@/lib/export'
+import { copyWithToast } from '@/components/app/copy-feedback'
 import { timeAgo } from '@/lib/format'
 import { useAiAccessDialog } from '@/lib/ai-access-dialog'
 import { connectionsQuery, keys } from '@/lib/queries'
@@ -299,14 +299,9 @@ function ConnectionCard({
               Duplicate
             </MenuItem>
             <MenuItem
-              onClick={() => {
-                void copyText(buildConnectionUrl(conn))
-                toastManager.add({
-                  type: 'success',
-                  title: 'Connection URL copied',
-                  description: 'Password not included.',
-                })
-              }}
+              onClick={() =>
+                void copyWithToast(buildConnectionUrl(conn), 'Connection URL copied', 'Password not included.')
+              }
             >
               <LinkIcon aria-hidden="true" />
               Copy URL

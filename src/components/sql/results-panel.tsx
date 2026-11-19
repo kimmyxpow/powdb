@@ -17,9 +17,9 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs'
 import { Kbd, KbdGroup } from '@/components/ui/kbd'
 import { Spinner } from '@/components/ui/spinner'
-import { toastManager } from '@/components/ui/toast'
 import { isMac, modKey } from '@/hooks/use-hotkey'
-import { copyText, exportRows, toTsv } from '@/lib/export'
+import { exportRows, toTsv } from '@/lib/export'
+import { copyWithToast } from '@/components/app/copy-feedback'
 import { countLabel, formatCount, formatDuration } from '@/lib/format'
 import type { Cell, ExecuteResult, Sort, StatementResult } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -232,8 +232,7 @@ export function ResultsPanel({
     if (!current) return
     const fields = current.fields.map((f) => ({ name: f.name, kind: f.kind }))
     if (format === 'copy') {
-      void copyText(toTsv(fields, current.rows))
-      toastManager.add({ title: `Copied ${countLabel(current.rows.length, 'row')}` })
+      void copyWithToast(toTsv(fields, current.rows), `Copied ${countLabel(current.rows.length, 'row')}`)
       return
     }
     exportRows(format, 'query-result', 'query_result', fields, current.rows)

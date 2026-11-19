@@ -106,17 +106,28 @@ function downloadFile(filename: string, content: string, mime: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export async function copyText(text: string): Promise<void> {
+/** Copies text. Resolves to false when the browser blocked both ways of copying. */
+export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
+    return true
   } catch {
-    const ta = document.createElement('textarea')
-    ta.value = text
-    ta.style.position = 'fixed'
-    ta.style.opacity = '0'
-    document.body.appendChild(ta)
+    return copyWithTextarea(text)
+  }
+}
+
+function copyWithTextarea(text: string): boolean {
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.style.position = 'fixed'
+  ta.style.opacity = '0'
+  document.body.appendChild(ta)
+  try {
     ta.select()
-    document.execCommand('copy')
+    return document.execCommand('copy')
+  } catch {
+    return false
+  } finally {
     ta.remove()
   }
 }

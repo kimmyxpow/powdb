@@ -14,8 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs'
-import { toastManager } from '@/components/ui/toast'
-import { copyText } from '@/lib/export'
+import { copyWithToast } from '@/components/app/copy-feedback'
 import { countLabel, formatBytes, relationKindLabel } from '@/lib/format'
 import { connectionQuery, countQuery, relationDdlQuery, relationDetailsQuery, rowsQuery } from '@/lib/queries'
 import { displayQualified } from '@/lib/sql'
@@ -251,10 +250,7 @@ function DdlView({
         <div className="flex gap-1">
           <Button
             disabled={!data}
-            onClick={() => {
-              void copyText(data ?? '')
-              toastManager.add({ type: 'success', title: 'DDL copied' })
-            }}
+            onClick={() => void copyWithToast(data ?? '', 'DDL copied')}
             size="sm"
             variant="ghost"
           >

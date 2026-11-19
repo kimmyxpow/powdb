@@ -83,7 +83,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { useHotkey } from '@/hooks/use-hotkey'
 import { useRetained } from '@/hooks/use-retained'
 import { useSelectedSchema } from '@/hooks/use-selected-schema'
-import { copyText } from '@/lib/export'
+import { copyWithToast } from '@/components/app/copy-feedback'
 import { formatBytes, formatCount, relationKindLabel } from '@/lib/format'
 import { useExportDatabaseDialog } from '@/lib/export-database-dialog'
 import { useRestoreDatabaseDialog } from '@/lib/restore-database-dialog'
@@ -804,18 +804,17 @@ function RelationItem({
     {
       label: 'Copy name',
       icon: CopyIcon,
-      onClick: () => {
-        void copyText(rel.name)
-        toastManager.add({ title: 'Copied', description: rel.name, timeout: 1500 })
-      },
+      onClick: () => void copyWithToast(rel.name, 'Name copied', rel.name),
     },
     {
       label: 'Copy qualified name',
       icon: CopyIcon,
-      onClick: () => {
-        void copyText(qualifiedName(rel.schema, rel.name))
-        toastManager.add({ title: 'Copied', description: qualifiedName(rel.schema, rel.name), timeout: 1500 })
-      },
+      onClick: () =>
+        void copyWithToast(
+          qualifiedName(rel.schema, rel.name),
+          'Qualified name copied',
+          qualifiedName(rel.schema, rel.name),
+        ),
     },
     ...(writable
       ? [

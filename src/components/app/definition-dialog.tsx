@@ -13,8 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
-import { toastManager } from '@/components/ui/toast'
-import { copyText } from '@/lib/export'
+import { copyWithToast } from '@/components/app/copy-feedback'
 import { definitionQuery } from '@/lib/queries'
 import { useRetained } from '@/hooks/use-retained'
 import { useAppStore } from '@/lib/store'
@@ -69,14 +68,7 @@ export function DefinitionDialog({
           </div>
         </DialogPanel>
         <DialogFooter>
-          <Button
-            disabled={!data}
-            onClick={() => {
-              void copyText(data ?? '')
-              toastManager.add({ type: 'success', title: 'Definition copied' })
-            }}
-            variant="ghost"
-          >
+          <Button disabled={!data} onClick={() => void copyWithToast(data ?? '', 'Definition copied')} variant="ghost">
             <CopyIcon aria-hidden="true" />
             Copy
           </Button>

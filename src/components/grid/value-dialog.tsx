@@ -13,8 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { toastManager } from '@/components/ui/toast'
-import { copyText } from '@/lib/export'
+import { copyWithToast } from '@/components/app/copy-feedback'
 import { Kbd } from '@/components/ui/kbd'
 import { shortcut } from '@/hooks/use-hotkey'
 import { validateValue } from '@/lib/validate'
@@ -243,14 +242,7 @@ export function ValueDialog({
         </DialogPanel>
         <DialogFooter className="sm:justify-between">
           <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                void copyText(isNull ? '' : text)
-                toastManager.add({ title: 'Value copied', timeout: 1500 })
-              }}
-              size="sm"
-              variant="ghost"
-            >
+            <Button onClick={() => void copyWithToast(isNull ? '' : text, 'Value copied')} size="sm" variant="ghost">
               <CopyIcon aria-hidden="true" />
               Copy
             </Button>

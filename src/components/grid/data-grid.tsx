@@ -39,8 +39,9 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from '@/c
 import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from '@/components/ui/menu'
 import { Popover, PopoverPopup } from '@/components/ui/popover'
 import { anchoredToastManager } from '@/components/ui/toast'
+import { copyWithAnchoredToast } from '@/components/app/copy-feedback'
 import { isMac, shortcut } from '@/hooks/use-hotkey'
-import { copyText, rowToObject, toTsv } from '@/lib/export'
+import { rowToObject, toTsv } from '@/lib/export'
 import { cellToText, countLabel } from '@/lib/format'
 import type { Cell, Sort } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -394,25 +395,18 @@ export function DataGrid({
   const copyValue = (pos: Pos) => {
     const v = rows[pos.row]?.values[pos.col]
     const text = v === undefined || isDefaultMarker(v) ? '' : cellToText(v)
-    void copyText(text)
-    anchoredToastManager.add({
-      title: 'Copied',
-      positionerProps: { anchor: cellElement(pos), side: 'top', sideOffset: 6 },
-      timeout: 1200,
-      data: { tooltipStyle: true },
-    })
+    void copyWithAnchoredToast(text, cellElement(pos), 'Copied')
   }
 
   const copySelectedRows = () => {
     const picked = rows.filter((r) => selectedRows?.has(r.id))
     const data = picked.map((r) => r.values.map((v) => (v === undefined || isDefaultMarker(v) ? null : v)) as Cell[])
-    void copyText(toTsv(columns, data))
-    anchoredToastManager.add({
-      title: `Copied ${countLabel(picked.length, 'row')}`,
-      positionerProps: { anchor: scrollRef.current, side: 'top', sideOffset: 6 },
-      timeout: 1500,
-      data: { tooltipStyle: true },
-    })
+    void copyWithAnchoredToast(
+      toTsv(columns, data),
+      scrollRef.current,
+      `Copied ${countLabel(picked.length, 'row')}`,
+      1500,
+    )
   }
 
   const toggleRow = (index: number, shift: boolean) => {
@@ -867,7 +861,11 @@ export function DataGrid({
                     columns,
                     menuCell.row.values.map((v) => (v === undefined || isDefaultMarker(v) ? null : v)),
                   )
-                  void copyText(JSON.stringify(obj, null, 2))
+                  void copyWithAnchoredToast(
+                    JSON.stringify(obj, null, 2),
+                    cellElement(menuCell.pos),
+                    'Row copied as JSON',
+                  )
                 }}
               >
                 <CopyIcon aria-hidden="true" />
@@ -1086,6 +1084,7 @@ function HeaderCell({
   // Ends the drag in progress, if any. Kept so that unmounting mid-drag can end it too.
   const endDrag = useRef<(() => void) | null>(null)
   useEffect(() => () => endDrag.current?.(), [])
+  const headerRef = useRef<HTMLDivElement>(null)
 
   const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -1128,6 +1127,7 @@ function HeaderCell({
         onSort && 'cursor-pointer select-none hover:bg-accent/60',
       )}
       onClick={(e) => onSort?.(e.shiftKey)}
+      ref={headerRef}
       role="columnheader"
       style={{ width }}
       title={title}
@@ -1184,7 +1184,7 @@ function HeaderCell({
             </MenuItem>
           )}
           <MenuSeparator />
-          <MenuItem onClick={() => void copyText(column.name)}>
+          <MenuItem onClick={() => void copyWithAnchoredToast(column.name, headerRef.current, 'Column name copied')}>
             <CopyIcon aria-hidden="true" />
             Copy column name
           </MenuItem>

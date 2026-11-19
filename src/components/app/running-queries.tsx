@@ -78,6 +78,14 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
 
   const visible = rows?.filter((r) => !hideIdle || r.state !== 'idle')
 
+  // A refresh that finds no change looks like nothing happened, so it reports back.
+  const refreshNow = () => {
+    void refetch().then((res) => {
+      if (res.error) toastManager.add({ type: 'error', title: 'Could not refresh', description: res.error.message })
+      else toastManager.add({ type: 'success', title: 'Queries refreshed', timeout: 1500 })
+    })
+  }
+
   const signal = useMutation({
     mutationFn: ({ row, action }: Pending) =>
       signalBackendFn({ data: { connectionId, database, pid: row.pid, action } }),
@@ -131,13 +139,7 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
           >
             {paused ? <PlayIcon aria-hidden="true" /> : <PauseIcon aria-hidden="true" />}
           </Button>
-          <Button
-            aria-label="Refresh"
-            disabled={isFetching}
-            onClick={() => void refetch()}
-            size="icon-sm"
-            variant="ghost"
-          >
+          <Button aria-label="Refresh" disabled={isFetching} onClick={refreshNow} size="icon-sm" variant="ghost">
             <RefreshCwIcon aria-hidden="true" className={cn(isFetching && 'animate-spin')} />
           </Button>
         </div>
