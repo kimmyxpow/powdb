@@ -28,7 +28,7 @@ jobs:
       contents: read
       id-token: write # lets npm verify that this workflow is publishing (trusted publishing)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -45,7 +45,7 @@ jobs:
       - name: Build the npm package
         run: bun run build:npm
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
