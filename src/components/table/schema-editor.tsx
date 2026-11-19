@@ -362,8 +362,10 @@ export function ColumnDialog({
             aria-invalid={Boolean(touched && nameIssue) || undefined}
             autoFocus
             className="font-mono text-[13px]"
-            onBlur={() => setTouched(true)}
-            onChange={(e) => set({ name: e.target.value })}
+            onChange={(e) => {
+              setTouched(true)
+              set({ name: e.target.value })
+            }}
             placeholder="e.g. status"
             size="sm"
             spellCheck={false}
@@ -1180,8 +1182,10 @@ export function CreateObjectDialog({
                 aria-invalid={Boolean(touched && tableIssue) || undefined}
                 autoFocus
                 className="font-mono text-[13px]"
-                onBlur={() => setTouched(true)}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setTouched(true)
+                  setName(e.target.value)
+                }}
                 placeholder="e.g. invoices"
                 size="sm"
                 spellCheck={false}
@@ -1292,8 +1296,10 @@ export function CreateObjectDialog({
                 aria-invalid={Boolean(schemaTouched && schemaIssue) || undefined}
                 autoFocus
                 className="font-mono text-[13px]"
-                onBlur={() => setSchemaTouched(true)}
-                onChange={(e) => setSchemaName(e.target.value)}
+                onChange={(e) => {
+                  setSchemaTouched(true)
+                  setSchemaName(e.target.value)
+                }}
                 placeholder="e.g. billing"
                 size="sm"
                 spellCheck={false}
