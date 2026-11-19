@@ -131,7 +131,8 @@ function initialState(conn?: ConnectionInfo | null, url?: string): FormState {
         ssl: conn.ssl,
         readOnly: conn.readOnly,
         production: conn.production === true,
-        aiAccess: conn.aiAccess,
+        // a read-only connection never gives AI write access
+        aiAccess: conn.readOnly && conn.aiAccess === 'write' ? 'read' : conn.aiAccess,
         ...SSH_EMPTY,
         ssh: Boolean(conn.ssh),
         sshHost: conn.ssh?.host ?? '',
@@ -189,7 +190,7 @@ function toInput(s: FormState, hadSsh: boolean): ConnectionInput {
     ssl: s.ssl,
     readOnly: s.readOnly,
     production: s.production,
-    aiAccess: s.aiAccess,
+    aiAccess: s.readOnly && s.aiAccess === 'write' ? 'read' : s.aiAccess,
     ssh: s.ssh ? sshInputOf(s) : hadSsh ? null : undefined,
   }
 }
@@ -662,7 +663,14 @@ export function ConnectionDialog({
                     Every session starts read-only. Great for production databases.
                   </span>
                 </span>
-                <Switch checked={state.readOnly} disabled={managed} onCheckedChange={(v) => set('readOnly', v)} />
+                <Switch
+                  checked={state.readOnly}
+                  disabled={managed}
+                  onCheckedChange={(v) => {
+                    set('readOnly', v)
+                    if (v && state.aiAccess === 'write') set('aiAccess', 'read')
+                  }}
+                />
               </Label>
 
               <Field>
@@ -681,7 +689,11 @@ export function ConnectionDialog({
                   </SelectTrigger>
                   <SelectPopup alignItemWithTrigger={false}>
                     {AI_ACCESS_ITEMS.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
+                      <SelectItem
+                        disabled={state.readOnly && item.value === 'write'}
+                        key={item.value}
+                        value={item.value}
+                      >
                         {item.label}
                       </SelectItem>
                     ))}
@@ -689,9 +701,7 @@ export function ConnectionDialog({
                 </Select>
                 <FieldDescription>
                   {AI_ACCESS_ITEMS.find((item) => item.value === state.aiAccess)?.help}
-                  {state.readOnly &&
-                    state.aiAccess !== 'off' &&
-                    ' This connection is read-only, so AI is read-only too.'}
+                  {state.readOnly && ' Read and write needs read-only mode off.'}
                 </FieldDescription>
               </Field>
             </section>
