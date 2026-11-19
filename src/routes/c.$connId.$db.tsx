@@ -163,7 +163,8 @@ function WorkspaceHeader({
   return (
     <header
       className={cn(
-        'flex h-12 shrink-0 items-center gap-2 border-b px-3',
+        // a container: the header's width depends on the sidebar, so its parts size by it, not by the screen
+        '@container/header flex h-12 shrink-0 items-center gap-2 border-b px-3',
         production && 'border-t-2 border-t-destructive',
       )}
     >
@@ -172,9 +173,9 @@ function WorkspaceHeader({
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <Breadcrumb className="min-w-0 shrink">
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="min-w-0">
+            <BreadcrumbItem className="min-w-4.5">
               <BreadcrumbLink
-                className="flex min-w-0 items-center gap-1.5"
+                className="flex min-w-4.5 items-center gap-1.5"
                 render={<Link params={{ connId: connection.id, db: database }} to="/c/$connId/$db" />}
               >
                 <ConnectionAvatar
@@ -188,8 +189,8 @@ function WorkspaceHeader({
             {params.schema && params.table ? (
               <>
                 <BreadcrumbSeparator />
-                <BreadcrumbItem className="max-sm:hidden">
-                  <span className="text-muted-foreground">{params.schema}</span>
+                <BreadcrumbItem className="min-w-0 max-sm:hidden">
+                  <span className="truncate text-muted-foreground">{params.schema}</span>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="max-sm:hidden" />
                 <BreadcrumbItem className="min-w-0">
@@ -209,7 +210,7 @@ function WorkspaceHeader({
       </div>
 
       <Button
-        className="hidden w-56 justify-start font-normal text-muted-foreground md:flex lg:w-72"
+        className="hidden w-56 justify-start font-normal text-muted-foreground @3xl/header:flex @5xl/header:w-72"
         onClick={onOpenPalette}
         size="sm"
         variant="outline"
@@ -221,7 +222,13 @@ function WorkspaceHeader({
       <Tooltip>
         <TooltipTrigger
           render={
-            <Button aria-label="Search" className="md:hidden" onClick={onOpenPalette} size="icon-sm" variant="ghost" />
+            <Button
+              aria-label="Search"
+              className="@3xl/header:hidden"
+              onClick={onOpenPalette}
+              size="icon-sm"
+              variant="ghost"
+            />
           }
         >
           <SearchIcon />

@@ -57,7 +57,7 @@ import type { ValueDialogState } from './value-dialog'
 const ROW_H = 32
 const HEADER_H = 34
 const OPEN_W = 28
-const MIN_W = 56
+const MIN_W = 88
 const MAX_INITIAL_W = 420
 const TIP_DELAY = 400
 
@@ -1148,53 +1148,57 @@ function HeaderCell({
           </span>
         )}
       </span>
-      {/* column menu: floats over the end of the header on hover, so nothing moves */}
-      <Menu>
-        <MenuTrigger
-          render={
-            <Button
-              aria-label={`${column.name} column menu`}
-              className="absolute top-1/2 right-2.5 z-10 -translate-y-1/2 bg-grid-header opacity-0 shadow-xs/5 group-hover/h:opacity-100 data-popup-open:opacity-100 sm:size-6"
-              onClick={(e) => e.stopPropagation()}
-              size="icon-xs"
-              variant="outline"
-            />
-          }
-        >
-          <ChevronDownIcon />
-        </MenuTrigger>
-        <MenuPopup align="end" className="min-w-48" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-          {onSortDirection && (
-            <>
-              <MenuItem onClick={() => onSortDirection('asc')}>
-                <ArrowUpIcon aria-hidden="true" />
-                Sort ascending
+      {/* column menu: a cap over the end of the header, shown on hover, so nothing moves;
+          its faded left edge hides the type label under it without a hard cut */}
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center bg-grid-header ps-5 pe-2.5 opacity-0 group-focus-within/h:opacity-100 group-hover/h:opacity-100 has-data-popup-open:opacity-100 [mask-image:linear-gradient(to_right,transparent,black_1.25rem)]">
+        {onSort && <span aria-hidden="true" className="absolute inset-0 bg-accent/60" />}
+        <Menu>
+          <MenuTrigger
+            render={
+              <Button
+                aria-label={`${column.name} column menu`}
+                className="pointer-events-auto relative bg-background shadow-xs/5 dark:bg-background sm:size-6"
+                onClick={(e) => e.stopPropagation()}
+                size="icon-xs"
+                variant="outline"
+              />
+            }
+          >
+            <ChevronDownIcon />
+          </MenuTrigger>
+          <MenuPopup align="end" className="min-w-48" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            {onSortDirection && (
+              <>
+                <MenuItem onClick={() => onSortDirection('asc')}>
+                  <ArrowUpIcon aria-hidden="true" />
+                  Sort ascending
+                </MenuItem>
+                <MenuItem onClick={() => onSortDirection('desc')}>
+                  <ArrowDownIcon aria-hidden="true" />
+                  Sort descending
+                </MenuItem>
+              </>
+            )}
+            {onFilter && (
+              <MenuItem onClick={onFilter}>
+                <FilterIcon aria-hidden="true" />
+                Filter by {column.name}…
               </MenuItem>
-              <MenuItem onClick={() => onSortDirection('desc')}>
-                <ArrowDownIcon aria-hidden="true" />
-                Sort descending
+            )}
+            <MenuSeparator />
+            <MenuItem onClick={() => void copyWithAnchoredToast(column.name, headerRef.current, 'Column name copied')}>
+              <CopyIcon aria-hidden="true" />
+              Copy column name
+            </MenuItem>
+            {onHide && (
+              <MenuItem onClick={onHide}>
+                <EyeOffIcon aria-hidden="true" />
+                Hide column
               </MenuItem>
-            </>
-          )}
-          {onFilter && (
-            <MenuItem onClick={onFilter}>
-              <FilterIcon aria-hidden="true" />
-              Filter by {column.name}…
-            </MenuItem>
-          )}
-          <MenuSeparator />
-          <MenuItem onClick={() => void copyWithAnchoredToast(column.name, headerRef.current, 'Column name copied')}>
-            <CopyIcon aria-hidden="true" />
-            Copy column name
-          </MenuItem>
-          {onHide && (
-            <MenuItem onClick={onHide}>
-              <EyeOffIcon aria-hidden="true" />
-              Hide column
-            </MenuItem>
-          )}
-        </MenuPopup>
-      </Menu>
+            )}
+          </MenuPopup>
+        </Menu>
+      </div>
       <div
         aria-hidden="true"
         className="absolute top-0 right-0 z-10 h-full w-2 cursor-col-resize after:absolute after:inset-y-1.5 after:right-0 after:w-0.5 after:rounded-full after:bg-transparent hover:after:bg-ring"

@@ -855,6 +855,7 @@ export function TableData({
     enumValues: c.enumValues,
   }))
   const hasFilters = filters.length > 0 || Boolean(search.where) || Boolean(search.q)
+  const hasChips = filters.length > 0 || Boolean(search.where) || sort.length > 0
 
   // Column widths, types, key icons and the "Add row" button all depend on the
   // table metadata; render the view once both rows and metadata are here so
@@ -905,31 +906,7 @@ export function TableData({
             startColumn={filterStart}
             where={search.where}
           />
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-            {filters.map((f, i) => (
-              <FilterChip
-                key={`${f.column}-${f.op}-${i}`}
-                label={describeFilter(f)}
-                onClick={openFilterFromChip}
-                onRemove={() => onSearchChange({ filters: filters.filter((_, j) => j !== i), page: undefined })}
-              />
-            ))}
-            {search.where && (
-              <FilterChip
-                label={`WHERE ${search.where}`}
-                onClick={openFilterFromChip}
-                onRemove={() => onSearchChange({ where: undefined, page: undefined })}
-              />
-            )}
-            {sort.map((s) => (
-              <FilterChip
-                key={`sort-${s.column}`}
-                label={`${s.column} ${s.direction === 'asc' ? '↑' : '↓'}`}
-                muted
-                onRemove={() => onSearchChange({ sort: sort.filter((x) => x.column !== s.column) })}
-              />
-            ))}
-          </div>
+          <div className="flex-1" />
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger
@@ -992,6 +969,34 @@ export function TableData({
             )}
           </div>
         </div>
+
+        {hasChips && (
+          <div className="flex flex-wrap items-center gap-1.5 border-b px-3 py-1.5">
+            {filters.map((f, i) => (
+              <FilterChip
+                key={`${f.column}-${f.op}-${i}`}
+                label={describeFilter(f)}
+                onClick={openFilterFromChip}
+                onRemove={() => onSearchChange({ filters: filters.filter((_, j) => j !== i), page: undefined })}
+              />
+            ))}
+            {search.where && (
+              <FilterChip
+                label={`WHERE ${search.where}`}
+                onClick={openFilterFromChip}
+                onRemove={() => onSearchChange({ where: undefined, page: undefined })}
+              />
+            )}
+            {sort.map((s) => (
+              <FilterChip
+                key={`sort-${s.column}`}
+                label={`${s.column} ${s.direction === 'asc' ? '↑' : '↓'}`}
+                muted
+                onRemove={() => onSearchChange({ sort: sort.filter((x) => x.column !== s.column) })}
+              />
+            ))}
+          </div>
+        )}
 
         {/* grid, and the row panel next to it on wide screens */}
         <div className="flex min-h-0 flex-1">
@@ -1391,18 +1396,22 @@ function FilterChip({
   muted?: boolean
 }) {
   return (
-    <Group className="max-w-64">
+    <Group className="min-w-0 max-w-full sm:max-w-96">
       <Button
-        className={cn('min-w-0 font-mono text-xs', muted && 'border-dashed text-muted-foreground')}
+        className={cn(
+          'min-w-0 shrink overflow-hidden font-mono text-xs',
+          muted && 'border-dashed text-muted-foreground',
+        )}
         onClick={onClick}
         size="xs"
+        title={label}
         variant={muted ? 'outline' : 'secondary'}
       >
         <span className="truncate">{label}</span>
       </Button>
       <Button
         aria-label={`Remove ${label}`}
-        className={cn(muted && 'border-dashed text-muted-foreground')}
+        className={cn('shrink-0', muted && 'border-dashed text-muted-foreground')}
         onClick={onRemove}
         size="icon-xs"
         variant={muted ? 'outline' : 'secondary'}
