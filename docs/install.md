@@ -27,11 +27,12 @@ If they are installed somewhere else, set `POWVIEW_PG_DUMP` to the `pg_dump` pat
 You need [Docker](https://docs.docker.com/get-docker/).
 
 ```bash
-docker run -d --name powview -p 127.0.0.1:3333:3333 -v powview-data:/data \
+docker run -d --name powview --restart unless-stopped -p 127.0.0.1:3333:3333 -v powview-data:/data \
   --add-host host.docker.internal:host-gateway ghcr.io/powroom/powview:latest
 ```
 
 - The port is bound to `127.0.0.1`, so only this computer can reach pow/view.
+- `--restart unless-stopped` starts pow/view again after a reboot or a Docker restart, unless you stopped it yourself with `docker stop powview`. Already running without it? Add it with `docker update --restart unless-stopped powview`.
 - Your connections, account, tokens, and logs are saved in the `powview-data` volume. They stay after a restart.
 - `--add-host` lets pow/view reach databases on your computer through `host.docker.internal`.
 - The image works on amd64 and arm64, including Apple Silicon Macs.

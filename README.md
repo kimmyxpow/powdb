@@ -17,7 +17,7 @@ pow/view opens at http://127.0.0.1:3333. It runs on Bun. If Bun is missing, `pow
 **With Docker** (needs [Docker](https://docs.docker.com/get-docker/)):
 
 ```bash
-docker run -d --name powview -p 127.0.0.1:3333:3333 -v powview-data:/data \
+docker run -d --name powview --restart unless-stopped -p 127.0.0.1:3333:3333 -v powview-data:/data \
   --add-host host.docker.internal:host-gateway ghcr.io/powroom/powview:latest
 ```
 
