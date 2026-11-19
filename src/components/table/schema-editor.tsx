@@ -35,6 +35,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { Label } from '@/components/ui/label'
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { toastManager } from '@/components/ui/toast'
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
@@ -45,10 +46,12 @@ import {
   addConstraintSql,
   alterColumnSql,
   createIndexSql,
+  createSchemaSql,
   createTableSql,
   ddlScript,
   nameProblem,
   renameTableSql,
+  schemaNameProblem,
   suggestIndexName,
   tableCommentSql,
 } from '@/lib/ddl'
@@ -120,6 +123,7 @@ function DdlDialog({
   children,
   wide,
   destructive,
+  successToast,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -134,6 +138,8 @@ function DdlDialog({
   children?: ReactNode
   wide?: boolean
   destructive?: boolean
+  /** replaces the default "Structure updated" toast */
+  successToast?: { title: string; description?: string }
 }) {
   const apply = useApplyDdl(target)
   const guard = useProductionGuard(target.connectionId, target.database)
@@ -164,9 +170,12 @@ function DdlDialog({
                 onSuccess: () => {
                   toastManager.add({
                     type: 'success',
-                    title: 'Structure updated',
+                    title: successToast?.title ?? 'Structure updated',
                     description:
-                      statements.length === 1 ? statements[0]!.split('\n')[0] : `${statements.length} changes applied`,
+                      successToast?.description ??
+                      (statements.length === 1
+                        ? statements[0]!.split('\n')[0]
+                        : `${statements.length} changes applied`),
                   })
                   onApplied?.()
                   onOpenChange(false)
@@ -1057,32 +1066,47 @@ const starterColumns = (): DraftColumn[] => [
   },
 ]
 
-export function CreateTableDialog({
+type DialogTab = 'table' | 'schema'
+
+/** One dialog for new objects: a table in the current schema, or a schema. */
+export function CreateObjectDialog({
   open,
   onOpenChange,
   target,
-  takenNames,
-  onCreated,
+  tableNames,
+  schemaNames,
+  onTableCreated,
+  onSchemaCreated,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   target: DdlTarget
-  takenNames: string[]
-  onCreated?: (name: string) => void
+  tableNames: string[]
+  schemaNames: string[]
+  onTableCreated?: (name: string) => void
+  onSchemaCreated?: (name: string) => void
 }) {
+  const [tab, setTab] = useState<DialogTab>('table')
   const [name, setName] = useState('')
   const [comment, setComment] = useState('')
   const [cols, setCols] = useState<DraftColumn[]>(starterColumns)
   const [touched, setTouched] = useState(false)
+  const [schemaName, setSchemaName] = useState('')
+  const [schemaComment, setSchemaComment] = useState('')
+  const [schemaTouched, setSchemaTouched] = useState(false)
   const { options, enums } = useTypeOptions(target)
   const [wasOpen, setWasOpen] = useState(false)
   if (open !== wasOpen) {
     setWasOpen(open)
     if (open) {
+      setTab('table')
       setName('')
       setComment('')
       setCols(starterColumns())
       setTouched(false)
+      setSchemaName('')
+      setSchemaComment('')
+      setSchemaTouched(false)
     }
   }
 
@@ -1098,7 +1122,7 @@ export function CreateTableDialog({
         return next
       }),
     )
-  const tableIssue = nameProblem(name, takenNames)
+  const tableIssue = nameProblem(name, tableNames)
   const colIssues = cols.map(
     (c, i) =>
       nameProblem(
@@ -1109,129 +1133,186 @@ export function CreateTableDialog({
   const firstIssue = tableIssue
     ? `Table name: ${tableIssue}`
     : (colIssues.find(Boolean) ?? (cols.length ? null : 'Add a column'))
-  const statements = firstIssue ? [] : createTableSql(target.schema, name, cols, comment, enums)
+  const tableStatements = firstIssue ? [] : createTableSql(target.schema, name, cols, comment, enums)
+
+  const schemaIssue = schemaNameProblem(schemaName, schemaNames)
+  const schemaStatements = schemaIssue ? [] : createSchemaSql(schemaName, schemaComment)
+
+  const isTable = tab === 'table'
 
   return (
     <DdlDialog
-      applyLabel="Create table"
+      applyLabel={isTable ? 'Create table' : 'Create schema'}
       description={
-        <>
-          In schema <span className="font-mono text-foreground">{target.schema}</span>. Columns and keys can be changed
-          later.
-        </>
+        isTable ? (
+          <>
+            In schema <span className="font-mono text-foreground">{target.schema}</span>. Columns and keys can be
+            changed later.
+          </>
+        ) : (
+          'Tables, views and other objects can then be created in it.'
+        )
       }
-      onApplied={() => onCreated?.(name.trim())}
+      onApplied={() => (isTable ? onTableCreated?.(name.trim()) : onSchemaCreated?.(schemaName.trim()))}
       onOpenChange={onOpenChange}
       open={open}
-      problem={firstIssue}
-      statements={statements}
+      problem={isTable ? firstIssue : schemaIssue ? `Schema name: ${schemaIssue}` : null}
+      statements={isTable ? tableStatements : schemaStatements}
+      successToast={
+        isTable
+          ? undefined
+          : { title: 'Schema created', description: `${schemaName.trim()} is ready for tables and views.` }
+      }
       target={target}
-      title="New table"
+      title={isTable ? 'New table' : 'New schema'}
       wide
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field>
-          <FieldLabel>Table name</FieldLabel>
-          <Input
-            aria-invalid={Boolean(touched && tableIssue) || undefined}
-            autoFocus
-            className="font-mono text-[13px]"
-            onBlur={() => setTouched(true)}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. invoices"
-            size="sm"
-            spellCheck={false}
-            value={name}
-          />
-          <Problem>{touched && tableIssue}</Problem>
-        </Field>
-        <Field>
-          <FieldLabel>Comment</FieldLabel>
-          <Input onChange={(e) => setComment(e.target.value)} placeholder="Optional" size="sm" value={comment} />
-        </Field>
-      </div>
-      <div className="flex flex-col gap-2">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] items-end gap-2 px-0.5 text-muted-foreground text-xs">
-          <span>Column</span>
-          <span>Type</span>
-          <span>Default</span>
-          <span className="w-9 text-center">Key</span>
-          <span className="w-12 text-center">NULL</span>
-          <span className="w-7" />
-        </div>
-        {cols.map((c, i) => (
-          <div
-            className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] items-center gap-2"
-            key={c.rowId}
-          >
-            <Input
-              aria-invalid={Boolean(c.name !== '' && colIssues[i]) || undefined}
-              aria-label="Column name"
-              className="font-mono text-[13px]"
-              onChange={(e) => update(i, { name: e.target.value })}
-              placeholder="name"
-              size="sm"
-              spellCheck={false}
-              value={c.name}
-            />
-            <TypeInput onChange={(type) => update(i, { type })} options={options} value={c.type} />
-            <Input
-              aria-label="Default"
-              className="font-mono text-[13px]"
-              disabled={c.identity}
-              onChange={(e) => update(i, { defaultValue: e.target.value })}
-              placeholder={c.identity ? 'Automatic' : 'None'}
-              size="sm"
-              spellCheck={false}
-              value={c.defaultValue}
-            />
-            <Tooltip>
-              <TooltipTrigger render={<span className="flex w-9 justify-center" />}>
-                <Checkbox
-                  aria-label="Primary key"
-                  checked={Boolean(c.primaryKey)}
-                  onCheckedChange={(primaryKey) => update(i, { primaryKey })}
-                />
-              </TooltipTrigger>
-              <TooltipPopup>Primary key{c.identity ? ' · auto-numbered' : ''}</TooltipPopup>
-            </Tooltip>
-            <span className="flex w-12 justify-center">
-              <Switch
-                aria-label="Allow NULL"
-                checked={c.nullable}
-                disabled={c.primaryKey}
-                onCheckedChange={(nullable) => update(i, { nullable })}
+      <Tabs className="gap-4" onValueChange={(v) => setTab(v as DialogTab)} value={tab}>
+        <TabsList>
+          <TabsTab value="table">Table</TabsTab>
+          <TabsTab value="schema">Schema</TabsTab>
+        </TabsList>
+        <TabsPanel className="flex flex-col gap-4" value="table">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel>Table name</FieldLabel>
+              <Input
+                aria-invalid={Boolean(touched && tableIssue) || undefined}
+                autoFocus
+                className="font-mono text-[13px]"
+                onBlur={() => setTouched(true)}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. invoices"
+                size="sm"
+                spellCheck={false}
+                value={name}
               />
-            </span>
-            <Button
-              aria-label={`Remove column ${c.name || i + 1}`}
-              disabled={cols.length === 1}
-              onClick={() => setCols((cs) => cs.filter((_, j) => j !== i))}
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              <Trash2Icon />
-            </Button>
+              <Problem>{touched && tableIssue}</Problem>
+            </Field>
+            <Field>
+              <FieldLabel>Comment</FieldLabel>
+              <Input onChange={(e) => setComment(e.target.value)} placeholder="Optional" size="sm" value={comment} />
+            </Field>
           </div>
-        ))}
-        <div>
-          <Button
-            onClick={() =>
-              setCols((cs) => [
-                ...cs,
-                { rowId: crypto.randomUUID(), name: '', type: 'text', nullable: true, defaultValue: '', comment: '' },
-              ])
-            }
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <PlusIcon aria-hidden="true" />
-            Add column
-          </Button>
-        </div>
-      </div>
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] items-end gap-2 px-0.5 text-muted-foreground text-xs">
+              <span>Column</span>
+              <span>Type</span>
+              <span>Default</span>
+              <span className="w-9 text-center">Key</span>
+              <span className="w-12 text-center">NULL</span>
+              <span className="w-7" />
+            </div>
+            {cols.map((c, i) => (
+              <div
+                className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] items-center gap-2"
+                key={c.rowId}
+              >
+                <Input
+                  aria-invalid={Boolean(c.name !== '' && colIssues[i]) || undefined}
+                  aria-label="Column name"
+                  className="font-mono text-[13px]"
+                  onChange={(e) => update(i, { name: e.target.value })}
+                  placeholder="name"
+                  size="sm"
+                  spellCheck={false}
+                  value={c.name}
+                />
+                <TypeInput onChange={(type) => update(i, { type })} options={options} value={c.type} />
+                <Input
+                  aria-label="Default"
+                  className="font-mono text-[13px]"
+                  disabled={c.identity}
+                  onChange={(e) => update(i, { defaultValue: e.target.value })}
+                  placeholder={c.identity ? 'Automatic' : 'None'}
+                  size="sm"
+                  spellCheck={false}
+                  value={c.defaultValue}
+                />
+                <Tooltip>
+                  <TooltipTrigger render={<span className="flex w-9 justify-center" />}>
+                    <Checkbox
+                      aria-label="Primary key"
+                      checked={Boolean(c.primaryKey)}
+                      onCheckedChange={(primaryKey) => update(i, { primaryKey })}
+                    />
+                  </TooltipTrigger>
+                  <TooltipPopup>Primary key{c.identity ? ' · auto-numbered' : ''}</TooltipPopup>
+                </Tooltip>
+                <span className="flex w-12 justify-center">
+                  <Switch
+                    aria-label="Allow NULL"
+                    checked={c.nullable}
+                    disabled={c.primaryKey}
+                    onCheckedChange={(nullable) => update(i, { nullable })}
+                  />
+                </span>
+                <Button
+                  aria-label={`Remove column ${c.name || i + 1}`}
+                  disabled={cols.length === 1}
+                  onClick={() => setCols((cs) => cs.filter((_, j) => j !== i))}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Trash2Icon />
+                </Button>
+              </div>
+            ))}
+            <div>
+              <Button
+                onClick={() =>
+                  setCols((cs) => [
+                    ...cs,
+                    {
+                      rowId: crypto.randomUUID(),
+                      name: '',
+                      type: 'text',
+                      nullable: true,
+                      defaultValue: '',
+                      comment: '',
+                    },
+                  ])
+                }
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <PlusIcon aria-hidden="true" />
+                Add column
+              </Button>
+            </div>
+          </div>
+        </TabsPanel>
+        <TabsPanel className="flex flex-col gap-4" value="schema">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel>Schema name</FieldLabel>
+              <Input
+                aria-invalid={Boolean(schemaTouched && schemaIssue) || undefined}
+                autoFocus
+                className="font-mono text-[13px]"
+                onBlur={() => setSchemaTouched(true)}
+                onChange={(e) => setSchemaName(e.target.value)}
+                placeholder="e.g. billing"
+                size="sm"
+                spellCheck={false}
+                value={schemaName}
+              />
+              <Problem>{schemaTouched && schemaIssue}</Problem>
+            </Field>
+            <Field>
+              <FieldLabel>Comment</FieldLabel>
+              <Input
+                onChange={(e) => setSchemaComment(e.target.value)}
+                placeholder="Optional"
+                size="sm"
+                value={schemaComment}
+              />
+            </Field>
+          </div>
+        </TabsPanel>
+      </Tabs>
     </DdlDialog>
   )
 }

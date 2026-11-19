@@ -77,7 +77,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import { CreateTableDialog, TableSettingsDialog } from '@/components/table/schema-editor'
+import { CreateObjectDialog, TableSettingsDialog } from '@/components/table/schema-editor'
 import { toastManager } from '@/components/ui/toast'
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { useHotkey } from '@/hooks/use-hotkey'
@@ -381,7 +381,7 @@ export function WorkspaceSidebar({
                 <TooltipTrigger
                   render={
                     <Button
-                      aria-label="New table"
+                      aria-label="New table or schema"
                       onClick={() => setCreateOpen(true)}
                       size="icon-sm"
                       variant="outline"
@@ -390,7 +390,7 @@ export function WorkspaceSidebar({
                 >
                   <PlusIcon aria-hidden="true" className="size-3.5" />
                 </TooltipTrigger>
-                <TooltipPopup>New table in {schema}</TooltipPopup>
+                <TooltipPopup>New table or schema</TooltipPopup>
               </Tooltip>
             )}
             <Tooltip>
@@ -635,17 +635,19 @@ export function WorkspaceSidebar({
         relation={relationAction?.kind === 'rename' ? relationAction.relation : null}
         siblings={(objects.data?.relations ?? []).map((r) => r.name)}
       />
-      <CreateTableDialog
-        onCreated={(name) =>
+      <CreateObjectDialog
+        onOpenChange={setCreateOpen}
+        onSchemaCreated={(name) => setSchema(name)}
+        onTableCreated={(name) =>
           void navigate({
             to: '/c/$connId/$db/t/$schema/$table',
             params: { connId: connectionId, db: database, schema, table: name },
             search: { tab: 'structure' },
           })
         }
-        onOpenChange={setCreateOpen}
         open={createOpen}
-        takenNames={(objects.data?.relations ?? []).map((r) => r.name)}
+        schemaNames={visibleSchemas.map((s) => s.name)}
+        tableNames={(objects.data?.relations ?? []).map((r) => r.name)}
         target={{ connectionId, database, schema }}
       />
     </Sidebar>

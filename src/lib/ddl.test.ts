@@ -4,10 +4,12 @@ import {
   addConstraintSql,
   alterColumnSql,
   createIndexSql,
+  createSchemaSql,
   createTableSql,
   ddlScript,
   defaultExpression,
   describedColumnSql,
+  schemaNameProblem,
 } from './ddl'
 
 const col = (over: Partial<Parameters<typeof addColumnSql>[2]> = {}) => ({
@@ -115,5 +117,36 @@ describe('describedColumnSql (catalog columns to CREATE TABLE lines)', () => {
     expect(describedColumnSql({ ...base, generated: 'v', defaultValue: '(a * 2)' })).toBe(
       '  "b" integer GENERATED ALWAYS AS ((a * 2))',
     )
+  })
+})
+
+describe('schemas', () => {
+  test('CREATE SCHEMA with a plain name', () => {
+    expect(createSchemaSql('billing')).toEqual(['CREATE SCHEMA "billing"'])
+  })
+
+  test('names are trimmed and quoted, with double quotes and mixed case kept', () => {
+    expect(createSchemaSql('  My"Schema  ')).toEqual(['CREATE SCHEMA "My""Schema"'])
+    expect(createSchemaSql('Billing')).toEqual(['CREATE SCHEMA "Billing"'])
+  })
+
+  test('a comment adds COMMENT ON SCHEMA, with single quotes escaped', () => {
+    expect(createSchemaSql('billing', "Owner's invoices")).toEqual([
+      'CREATE SCHEMA "billing"',
+      `COMMENT ON SCHEMA "billing" IS 'Owner''s invoices'`,
+    ])
+  })
+
+  test('a blank comment gives one statement', () => {
+    expect(createSchemaSql('billing', '   ')).toEqual(['CREATE SCHEMA "billing"'])
+  })
+
+  test('schemaNameProblem: empty, taken, pg_ prefix, valid', () => {
+    expect(schemaNameProblem('  ')).toBe('Required')
+    expect(schemaNameProblem('billing', ['billing'])).toBe('Already used')
+    expect(schemaNameProblem('pg_temp')).toBe('Names starting with pg_ are reserved')
+    // PostgreSQL only reserves the lowercase prefix
+    expect(schemaNameProblem('PG_custom')).toBeNull()
+    expect(schemaNameProblem('billing', ['sales'])).toBeNull()
   })
 })

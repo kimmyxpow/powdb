@@ -237,6 +237,22 @@ export function nameProblem(name: string, taken: readonly string[] = []): string
   return null
 }
 
+/** CREATE SCHEMA, plus a COMMENT ON SCHEMA when a comment is given. */
+export function createSchemaSql(name: string, comment = ''): string[] {
+  const target = `SCHEMA ${quoteIdent(name.trim())}`
+  const out = [`CREATE ${target}`]
+  if (comment.trim()) out.push(commentSql(target, comment))
+  return out
+}
+
+/** Why a schema name cannot be used, or null. PostgreSQL reserves names that start with pg_. */
+export function schemaNameProblem(name: string, taken: readonly string[] = []): string | null {
+  const problem = nameProblem(name, taken)
+  if (problem !== null) return problem
+  if (name.trim().startsWith('pg_')) return 'Names starting with pg_ are reserved'
+  return null
+}
+
 /**
  * One column line of a CREATE TABLE, rebuilt from the catalog. Generated columns are
  * 's' (STORED, PostgreSQL 12+) or 'v' (VIRTUAL, PostgreSQL 18+). Before 18 a column
