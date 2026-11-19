@@ -642,7 +642,11 @@ export function TableData({
   // starts empty: the layout effect below sets it on the first commit, before any save can be requested
   const saveRef = useRef<(() => void) | null>(null)
   useLayoutEffect(() => {
-    saveRef.current = () => dirty && save()
+    saveRef.current = () => {
+      if (dirty) save()
+      else
+        toastManager.add({ type: 'info', title: 'Nothing to save', description: 'This table has no unsaved changes.' })
+    }
   })
   const saveSoon = () => {
     const el = document.activeElement

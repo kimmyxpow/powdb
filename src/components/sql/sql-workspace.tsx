@@ -225,13 +225,22 @@ function SqlWorkspaceInner({
       const ws = useAppStore.getState().sql[connectionId]
       const tab = ws?.tabs.find((t) => t.id === tabId)
       if (ws?.activeId !== tabId || !tab) return
+      if (!tab.sql.trim()) {
+        toastManager.add({ type: 'info', title: 'Nothing to format', description: 'Write a query first.' })
+        return
+      }
       const formatted = formatSql(tab.sql, {
         language: 'postgresql',
         keywordCase: 'upper',
         tabWidth: 2,
         linesBetweenQueries: 1,
       })
-      editorRef.current?.setValue(formatted)
+      // an unchanged editor would look like Format did nothing
+      if (formatted === tab.sql) {
+        toastManager.add({ type: 'info', title: 'Already formatted', timeout: 1500 })
+      } else {
+        editorRef.current?.setValue(formatted)
+      }
       editorRef.current?.focus()
     }
     try {
