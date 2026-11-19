@@ -9,10 +9,13 @@ import { formatHostKeyFingerprint, tunnelKey, type ResolvedSsh } from './ssh-set
  * SSH tunnels. pow/view opens an SSH connection to a bastion and forwards a local port to
  * PostgreSQL through it: pg connects to 127.0.0.1:<port>, the bastion connects to the database.
  * One tunnel per connection. Settings are compared with a fingerprint, so a change starts a new one.
+ * When no database socket uses a tunnel for TUNNEL_IDLE_MS, its SSH session closes. The local port
+ * stays, and the next socket reconnects SSH.
  */
 
 const KEEPALIVE_MS = 15_000
 const READY_TIMEOUT_MS = 15_000
+const TUNNEL_IDLE_MS = 5 * 60_000
 
 export interface TunnelEndpoint {
   host: '127.0.0.1'
@@ -32,6 +35,8 @@ interface Tunnel {
   client: Client | null
   connecting: Promise<Client> | null
   closed: boolean
+  /** closes the SSH session when no socket has used the tunnel for a while */
+  idleTimer: ReturnType<typeof setTimeout> | null
   /** set when the host key check refuses the server */
   hostKeyError?: string
   /** the host key seen on this connection (SHA256:...) */
@@ -41,6 +46,8 @@ interface Tunnel {
 interface Slot {
   key: string
   ready: Promise<Tunnel>
+  /** the tunnel once it is ready, so the status can be read synchronously */
+  tunnel?: Tunnel
 }
 
 const globalTunnels = globalThis as unknown as { __powviewTunnels?: Map<string, Slot> }
@@ -238,9 +245,37 @@ function probeForward(client: Client, dbHost: string, dbPort: number): Promise<v
 // Local forwarding server
 // ---------------------------------------------------------------------------
 
+function cancelIdle(t: Tunnel) {
+  if (t.idleTimer) clearTimeout(t.idleTimer)
+  t.idleTimer = null
+}
+
+function scheduleIdle(t: Tunnel) {
+  cancelIdle(t)
+  t.idleTimer = setTimeout(() => closeIdleSsh(t), TUNNEL_IDLE_MS)
+  t.idleTimer.unref?.()
+}
+
+/** Ends the SSH session of a tunnel nobody uses. The local server keeps listening for the next socket. */
+function closeIdleSsh(t: Tunnel) {
+  t.idleTimer = null
+  if (t.closed || t.sockets.size > 0 || !t.client) return
+  const client = t.client
+  // cleared first, so lost() ignores the close event and no warning is logged
+  t.client = null
+  client.end()
+  console.info(
+    `[powview] ssh tunnel for ${t.name}: closed after ${TUNNEL_IDLE_MS / 60_000} idle minutes; it reconnects when needed`,
+  )
+}
+
 function handleSocket(t: Tunnel, sock: net.Socket) {
+  cancelIdle(t)
   t.sockets.add(sock)
-  sock.on('close', () => t.sockets.delete(sock))
+  sock.on('close', () => {
+    t.sockets.delete(sock)
+    if (t.sockets.size === 0) scheduleIdle(t)
+  })
   sock.on('error', () => sock.destroy())
   liveClient(t)
     .then((client) => {
@@ -286,6 +321,7 @@ async function startTunnel(opts: StartOptions): Promise<Tunnel> {
     client: null,
     connecting: null,
     closed: false,
+    idleTimer: null,
   }
   t.server.on('connection', (sock) => handleSocket(t, sock))
   await new Promise<void>((resolve, reject) => {
@@ -303,11 +339,13 @@ async function startTunnel(opts: StartOptions): Promise<Tunnel> {
     closeEntry(t)
     throw err
   }
+  scheduleIdle(t)
   return t
 }
 
 function closeEntry(t: Tunnel) {
   t.closed = true
+  cancelIdle(t)
   t.server.close()
   for (const socket of t.sockets) socket.destroy()
   t.sockets.clear()
@@ -342,10 +380,15 @@ export async function ensureTunnel(conn: ConnectionConfig): Promise<TunnelEndpoi
       // check the database is reachable from the SSH server once, so a wrong host or port
       // gives a clear message instead of pg's "Connection terminated unexpectedly"
       probe: true,
-    }).catch((err: unknown) => {
-      if (slots.get(conn.id) === next) slots.delete(conn.id)
-      throw err
     })
+      .then((t: Tunnel) => {
+        next.tunnel = t
+        return t
+      })
+      .catch((err: unknown) => {
+        if (slots.get(conn.id) === next) slots.delete(conn.id)
+        throw err
+      })
     slots.set(conn.id, next)
     slot = next
     if (previous)
@@ -356,7 +399,15 @@ export async function ensureTunnel(conn: ConnectionConfig): Promise<TunnelEndpoi
   }
   const t = await slot.ready
   await liveClient(t)
+  // a session reopened here may get no socket, so it closes again when idle
+  if (t.sockets.size === 0) scheduleIdle(t)
   return { host: '127.0.0.1', port: t.port }
+}
+
+/** True when the connection's tunnel is up and its SSH session is open. */
+export function tunnelOpen(connectionId: string): boolean {
+  const t = slots.get(connectionId)?.tunnel
+  return Boolean(t && !t.closed && t.client !== null)
 }
 
 /** Stops the tunnel of a connection (its settings changed, or the connection was removed). */

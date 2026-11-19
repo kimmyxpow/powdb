@@ -2,7 +2,7 @@ import pg from 'pg'
 import type { ConnectionConfig, PgErrorInfo, SslMode } from '@/lib/types'
 import { redactSecrets } from '@/lib/redact'
 import { getConnection, resolvePassword } from './store.server'
-import { closeTunnel, ensureTunnel, type TunnelEndpoint } from './tunnel.server'
+import { closeTunnel, ensureTunnel, tunnelOpen, type TunnelEndpoint } from './tunnel.server'
 
 /** Type parsers that keep values exactly as PostgreSQL prints them (lossless), except booleans. */
 export const rawTypes = {
@@ -110,6 +110,16 @@ export async function closePools(connectionId: string): Promise<void> {
   }
   await Promise.all(closing)
   await closeTunnel(connectionId)
+}
+
+/** Ids of the connections with a checked-out database connection or an open SSH session. */
+export function connectedIds(): string[] {
+  const ids = new Set<string>()
+  for (const [key, entry] of pools) {
+    const id = key.slice(0, key.indexOf('::'))
+    if (entry.pool.totalCount > 0 || tunnelOpen(id)) ids.add(id)
+  }
+  return [...ids]
 }
 
 /** The one way to get a pool for a connection. Every query path (UI, SQL editor, REST, MCP, introspection) comes through here. */

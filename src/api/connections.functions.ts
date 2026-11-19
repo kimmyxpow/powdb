@@ -42,6 +42,23 @@ export const deleteConnectionFn = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+/** Ids of the connections that are open now (a database connection or an SSH session). */
+export const connectedConnectionsFn = createServerFn({ method: 'GET' }).handler(async (): Promise<string[]> => {
+  const { connectedIds } = await import('@/server/pool.server')
+  return connectedIds()
+})
+
+/** Closes the database connections and the SSH session of a connection now. It connects again when opened. */
+export const disconnectConnectionFn = createServerFn({ method: 'POST' })
+  .validator(connectionValidators().connectionId)
+  .handler(async ({ data }) => {
+    const { getConnection } = await import('@/server/store.server')
+    const { closePools } = await import('@/server/pool.server')
+    await getConnection(data.id)
+    await closePools(data.id)
+    return { ok: true }
+  })
+
 export const touchConnectionFn = createServerFn({ method: 'POST' })
   .validator(connectionValidators().connectionId)
   .handler(async ({ data }) => {

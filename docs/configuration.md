@@ -82,6 +82,7 @@ If a database can only be reached from another server (a bastion), connect throu
 - **Test connection** also goes through the tunnel. It shows the SSH host key fingerprint.
 - pow/view remembers the host key the first time. If it later changes, the connection is refused with a warning. If the change is expected, remove the SSH settings and add them again.
 - Passwords and private keys are stored encrypted, the same as database passwords.
+- Database connections that stay idle for a minute are closed. An SSH tunnel with no database connections closes its SSH session after 5 minutes and reconnects when needed. To close both right away, choose **Disconnect** in the connection menu.
 
 Connections from `powview.yaml` use an `ssh` block. Choose exactly one login method: `password_env`, `private_key_file` (a path inside the container, read when the connection opens), or `private_key_env`.
 

@@ -26,10 +26,12 @@ import {
   TablePropertiesIcon,
   Trash2Icon,
   TypeIcon,
+  UnplugIcon,
   UploadIcon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Fragment, useRef, useState } from 'react'
+import { disconnectConnectionFn } from '@/api/connections.functions'
 import { executeSqlFn } from '@/api/explorer.functions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -130,6 +132,22 @@ export function WorkspaceSidebar({
   const databaseTriggerRef = useRef<HTMLButtonElement>(null)
   const schemaTriggerRef = useRef<HTMLButtonElement>(null)
   const queryClient = useQueryClient()
+
+  // Home first, so the open pages stop querying before the connection closes.
+  const disconnect = async () => {
+    try {
+      await navigate({ to: '/' })
+      await disconnectConnectionFn({ data: { id: connectionId } })
+      void queryClient.invalidateQueries({ queryKey: keys.connected() })
+      toastManager.add({
+        type: 'success',
+        title: 'Disconnected',
+        description: `${connection.name} connects again when you open it.`,
+      })
+    } catch (err) {
+      toastManager.add({ type: 'error', title: 'Disconnect failed', description: (err as Error).message })
+    }
+  }
   const setExportOpen = useExportDatabaseDialog((s) => s.setOpen)
   const setRestoreOpen = useRestoreDatabaseDialog((s) => s.setOpen)
 
@@ -283,6 +301,10 @@ export function WorkspaceSidebar({
                 <MenuItem onClick={() => void navigate({ to: '/' })}>
                   <HomeIcon aria-hidden="true" />
                   All connections
+                </MenuItem>
+                <MenuItem onClick={() => void disconnect()}>
+                  <UnplugIcon aria-hidden="true" />
+                  Disconnect
                 </MenuItem>
               </MenuPopup>
             </Menu>

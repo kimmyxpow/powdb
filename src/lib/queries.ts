@@ -1,5 +1,5 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
-import { getConnectionFn, listConnectionsFn } from '@/api/connections.functions'
+import { connectedConnectionsFn, getConnectionFn, listConnectionsFn } from '@/api/connections.functions'
 import { authStateFn } from '@/api/session.functions'
 import { listTokensFn } from '@/api/tokens.functions'
 import { updateInfoFn } from '@/api/update.functions'
@@ -23,6 +23,8 @@ import type { Filter, Sort } from './types'
 export const keys = {
   connections: () => ['connections'] as const,
   connection: (id: string) => ['connections', id] as const,
+  /** ids of the open connections; under the connections prefix, so it refreshes with them */
+  connected: () => ['connections', '~connected'] as const,
   /** prefix for everything that belongs to one database */
   db: (id: string, db: string) => ['c', id, db] as const,
   databases: (id: string) => ['c', id, '~databases'] as const,
@@ -34,6 +36,14 @@ export const connectionsQuery = () =>
     queryKey: keys.connections(),
     queryFn: () => listConnectionsFn(),
     staleTime: 5_000,
+  })
+
+export const connectedConnectionsQuery = () =>
+  queryOptions({
+    queryKey: keys.connected(),
+    queryFn: () => connectedConnectionsFn(),
+    refetchInterval: 15_000,
+    staleTime: 0,
   })
 
 export const connectionQuery = (id: string) =>

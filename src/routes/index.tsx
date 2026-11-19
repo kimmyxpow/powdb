@@ -15,10 +15,11 @@ import {
   ShieldAlertIcon,
   ShieldCheckIcon,
   Trash2Icon,
+  UnplugIcon,
 } from 'lucide-react'
 import { useState } from 'react'
 import type { ReactElement } from 'react'
-import { deleteConnectionFn } from '@/api/connections.functions'
+import { deleteConnectionFn, disconnectConnectionFn } from '@/api/connections.functions'
 import { ConnectionAvatar, Logo } from '@/components/app/brand'
 import { ConfirmDialog } from '@/components/app/confirm-dialog'
 import { ConnectionDialog } from '@/components/app/connection-dialog'
@@ -38,7 +39,7 @@ import { buildConnectionUrl, looksLikeUrl } from '@/lib/connection-url'
 import { copyWithToast } from '@/components/app/copy-feedback'
 import { timeAgo } from '@/lib/format'
 import { useAiAccessDialog } from '@/lib/ai-access-dialog'
-import { connectionsQuery, keys } from '@/lib/queries'
+import { connectedConnectionsQuery, connectionsQuery, keys } from '@/lib/queries'
 import type { ConnectionInfo } from '@/lib/types'
 
 export const Route = createFileRoute('/')({
@@ -50,6 +51,7 @@ function Home() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: connections, isPending, error } = useQuery(connectionsQuery())
+  const { data: connectedIds } = useQuery(connectedConnectionsQuery())
   const [dialog, setDialog] = useState<{ open: boolean; connection: ConnectionInfo | null; url?: string }>({
     open: false,
     connection: null,
@@ -66,6 +68,19 @@ function Home() {
       setToDelete(null)
     },
     onError: (err) => toastManager.add({ type: 'error', title: 'Delete failed', description: err.message }),
+  })
+
+  const disconnectMutation = useMutation({
+    mutationFn: (conn: ConnectionInfo) => disconnectConnectionFn({ data: { id: conn.id } }),
+    onSuccess: (_result, conn) => {
+      void queryClient.invalidateQueries({ queryKey: keys.connected() })
+      toastManager.add({
+        type: 'success',
+        title: 'Disconnected',
+        description: `${conn.name} connects again when you open it.`,
+      })
+    },
+    onError: (err) => toastManager.add({ type: 'error', title: 'Disconnect failed', description: err.message }),
   })
 
   const connect = (conn: ConnectionInfo) => navigate({ to: '/c/$connId', params: { connId: conn.id } })
@@ -148,9 +163,11 @@ function Home() {
               {isPending && [0, 1].map((i) => <Skeleton className="h-28 rounded-2xl" key={i} />)}
               {(connections ?? []).map((conn) => (
                 <ConnectionCard
+                  connected={connectedIds?.includes(conn.id) ?? false}
                   connection={conn}
                   key={conn.id}
                   onConnect={() => connect(conn)}
+                  onDisconnect={() => disconnectMutation.mutate(conn)}
                   onDelete={() => setToDelete(conn)}
                   onDuplicate={() =>
                     setDialog({
@@ -245,17 +262,21 @@ function QuickConnect({ onSubmit, className }: { onSubmit: (url: string) => void
 }
 
 function ConnectionCard({
+  connected,
   connection: conn,
   onConnect,
   onEdit,
   onDuplicate,
   onDelete,
+  onDisconnect,
 }: {
+  connected: boolean
   connection: ConnectionInfo
   onConnect: () => void
   onEdit: () => void
   onDuplicate: () => void
   onDelete: () => void
+  onDisconnect: () => void
 }) {
   const managed = Boolean(conn.managed)
   return (
@@ -269,7 +290,20 @@ function ConnectionCard({
       <div className="pointer-events-none relative flex items-start gap-3">
         <ConnectionAvatar className="size-10 text-sm" color={conn.color} name={conn.name} />
         <div className="min-w-0 flex-1">
-          <div className="truncate font-medium">{conn.name}</div>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate font-medium">{conn.name}</span>
+            {/* the dot is only as wide as its own box, so the name and the menu do not move */}
+            {connected && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={<span className="pointer-events-auto size-2 shrink-0 rounded-full bg-success" />}
+                >
+                  <span className="sr-only">Connected</span>
+                </TooltipTrigger>
+                <TooltipPopup>Connected. Idle connections close after a minute.</TooltipPopup>
+              </Tooltip>
+            )}
+          </div>
           <div className="truncate font-mono text-muted-foreground text-xs">
             {conn.user}@{conn.host}:{conn.port}/{conn.database}
           </div>
@@ -305,6 +339,10 @@ function ConnectionCard({
             >
               <LinkIcon aria-hidden="true" />
               Copy URL
+            </MenuItem>
+            <MenuItem disabled={!connected} onClick={onDisconnect}>
+              <UnplugIcon aria-hidden="true" />
+              Disconnect
             </MenuItem>
             <MenuSeparator />
             <ManagedTip managed={managed}>
