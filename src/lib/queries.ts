@@ -17,6 +17,7 @@ import {
   serverInfoFn,
   completionSchemaFn,
   databaseOverviewFn,
+  databaseHealthFn,
 } from '@/api/explorer.functions'
 import type { Filter, Sort } from './types'
 
@@ -168,6 +169,14 @@ export const overviewQuery = (connectionId: string, database: string) =>
   queryOptions({
     queryKey: [...keys.db(connectionId, database), 'overview'],
     queryFn: () => databaseOverviewFn({ data: { connectionId, database } }),
+  })
+
+/** Statistics-based health checks of the database. Refetched at most every 30 seconds. */
+export const healthQuery = (connectionId: string, database: string) =>
+  queryOptions({
+    queryKey: [...keys.db(connectionId, database), 'health'],
+    queryFn: () => databaseHealthFn({ data: { connectionId, database } }),
+    staleTime: 30_000,
   })
 
 /** Rows of a referenced table matching `search`, for picking a foreign key value. */

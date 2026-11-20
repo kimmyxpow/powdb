@@ -1,6 +1,6 @@
 # Configuration
 
-How to set up pow/view: environment variables, connections in `powview.yaml`, SSH tunnels, login, production mode, and file size limits.
+How to set up pow/view: environment variables, connections in `powview.yaml`, SSH tunnels, login, production mode, slow query statistics, and file size limits.
 
 ## Environment variables
 
@@ -164,6 +164,15 @@ Inside a container, `localhost` is the container itself. For a database running 
 - The database must listen on `0.0.0.0` or on the Docker bridge address, not only on `127.0.0.1`.
 - For a database in another container, use a port published through `host.docker.internal`, or connect both containers to the same Docker network.
 - The development stack (`docker-compose.yml`) uses the demo database (`postgres:5432`). Run either that stack or `bun run demo:db`, not both. See [Development](development.md#demo-database).
+
+## Slow queries (pg_stat_statements)
+
+The Health section of a database overview lists the slowest queries. Postgres collects them with the `pg_stat_statements` extension, which is not on by default. To turn it on in the database you connect to:
+
+1. Add `pg_stat_statements` to `shared_preload_libraries` in `postgresql.conf`, then restart Postgres.
+2. Run `CREATE EXTENSION pg_stat_statements;` in that database.
+
+Until then, the Health section explains what to do. The other checks (unused indexes, tables that need VACUUM, and big tables read in full) do not need the extension. The demo database already has it on.
 
 ## File size limits
 

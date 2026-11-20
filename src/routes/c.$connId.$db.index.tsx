@@ -12,6 +12,7 @@ import {
   EyeIcon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { DatabaseHealth } from '@/components/app/database-health'
 import { RunningQueries } from '@/components/app/running-queries'
 import { relationIcons } from '@/components/app/relation-icons'
 import { Badge } from '@/components/ui/badge'
@@ -245,6 +246,8 @@ function Overview() {
             </Frame>
           </div>
         </div>
+
+        <DatabaseHealth connectionId={connId} database={db} />
       </div>
     </div>
   )

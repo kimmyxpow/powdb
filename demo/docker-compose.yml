@@ -10,6 +10,8 @@ services:
       POSTGRES_USER: demo
       POSTGRES_PASSWORD: demo
       POSTGRES_DB: shop
+    # pg_stat_statements records query timings for the Health section of the database overview
+    command: ['postgres', '-c', 'shared_preload_libraries=pg_stat_statements']
     ports:
       - '127.0.0.1:55432:5432'
     volumes:

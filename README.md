@@ -67,7 +67,7 @@ Click **Add connection**, then paste a connection URL, such as `postgresql://use
 
 **Other**
 
-- Command palette (Ctrl/⌘+K) to jump to any table or view. The database overview shows size, biggest tables, active sessions, and extensions. Cancel or stop queries that are running on the server.
+- Command palette (Ctrl/⌘+K) to jump to any table or view. The database overview shows size, biggest tables, active sessions, and extensions. Cancel or stop queries that are running on the server. The Health section of the overview lists slow queries, unused indexes, tables that need VACUUM, and big tables read in full, with the SQL to fix each one.
 - Connect AI agents such as Claude Code or Cursor. You choose what each one can do. See [AI and API](docs/ai-and-api.md).
 - Dark mode, and a layout that works on a phone.
 

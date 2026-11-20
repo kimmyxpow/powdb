@@ -3,11 +3,12 @@ import type { RefCallback } from 'react'
 
 /**
  * Reports whether the element given to the returned ref intersects the viewport.
- * Starts as `true` so the first fetch is not delayed and server rendering works.
+ * Starts as `initial` (true by default) so the first fetch is not delayed and server rendering works.
+ * Pass false to wait until the element is seen in the viewport.
  */
-export function useInView<T extends Element>(): [RefCallback<T>, boolean] {
+export function useInView<T extends Element>(initial = true): [RefCallback<T>, boolean] {
   const [node, setNode] = useState<T | null>(null)
-  const [inView, setInView] = useState(true)
+  const [inView, setInView] = useState(initial)
 
   useEffect(() => {
     if (!node) return

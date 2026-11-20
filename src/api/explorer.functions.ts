@@ -12,6 +12,7 @@ import type {
   SchemaObjects,
   ServerInfo,
 } from '@/lib/types'
+import type { DatabaseHealth } from '@/server/health.server'
 import { explorerValidators } from './validators'
 
 export const serverInfoFn = createServerFn({ method: 'GET' })
@@ -159,4 +160,11 @@ export const databaseOverviewFn = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const { getDatabaseOverview } = await import('@/server/introspect.server')
     return getDatabaseOverview(data.connectionId, data.database)
+  })
+
+export const databaseHealthFn = createServerFn({ method: 'GET' })
+  .validator(explorerValidators().target)
+  .handler(async ({ data }): Promise<DatabaseHealth> => {
+    const { getDatabaseHealth } = await import('@/server/health.server')
+    return getDatabaseHealth(data.connectionId, data.database)
   })
