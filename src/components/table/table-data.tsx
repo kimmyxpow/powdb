@@ -73,16 +73,18 @@ import { countLabel, formatCount, formatDuration } from '@/lib/format'
 import { useProductionGuard } from '@/lib/production-guard'
 import type { ProductionRequest } from '@/lib/production-guard'
 import { countQuery, keys, rowsQuery, schemaObjectsQuery } from '@/lib/queries'
+import { currentViewState, existingHiddenColumns } from '@/lib/saved-views'
 import { displayQualified } from '@/lib/sql'
 import { useAppStore } from '@/lib/store'
 import { isZoned, localZoneName, sameTimestamptz } from '@/lib/time'
-import type { Cell, Filter, RelationDetails, RowKey, Sort } from '@/lib/types'
+import type { Cell, Filter, RelationDetails, RowKey, SavedViewState, Sort } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { describeFilter, FilterPopover } from './filter-popover'
 import { ImportCsvDialog } from './import-csv-dialog'
 import { buildChanges, changeRowIds, emptyPending, pendingStats, previewSql, savedRowIndex } from './pending'
 import type { PendingChanges } from './pending'
 import { LazyRowDrawer, preloadRowDrawer } from './row-drawer-lazy'
+import { SavedViewsPopover } from './saved-views-popover'
 import { TableDataSkeleton } from './table-data-skeleton'
 import { LookupContext, columnSpec } from '@/components/grid/value-editors'
 import type { PendingHistory } from '@/hooks/use-pending-history'
@@ -854,6 +856,24 @@ export function TableData({
     typeName: c.udtName,
     enumValues: c.enumValues,
   }))
+  // a saved view sets the filters, sort, search and hidden columns together
+  // (hidden columns the table no longer has are dropped)
+  const applySavedView = (state: SavedViewState) => {
+    onSearchChange({
+      sort: state.sort.length ? state.sort : undefined,
+      filters: state.filters.length ? state.filters : undefined,
+      where: state.where ?? undefined,
+      q: state.q ?? undefined,
+      page: undefined,
+    })
+    setHiddenColumns(
+      viewKey,
+      existingHiddenColumns(
+        state.hiddenColumns,
+        columns.map((c) => c.name),
+      ),
+    )
+  }
   const hasFilters = filters.length > 0 || Boolean(search.where) || Boolean(search.q)
   const hasChips = filters.length > 0 || Boolean(search.where) || sort.length > 0
 
@@ -905,6 +925,12 @@ export function TableData({
             open={filterOpen}
             startColumn={filterStart}
             where={search.where}
+          />
+          <SavedViewsPopover
+            current={currentViewState(search, hiddenNames ?? [])}
+            key={viewKey}
+            onApply={applySavedView}
+            target={{ connectionId, database, schema, table }}
           />
           <div className="flex-1" />
           <div className="flex items-center gap-1">

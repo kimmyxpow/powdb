@@ -46,7 +46,7 @@ Click **Add connection**, then paste a connection URL, such as `postgresql://use
 
 **Data**
 
-- A fast grid for big tables, with resizable columns. Sort, filter, and search the text in all columns.
+- A fast grid for big tables, with resizable columns. Sort, filter, and search the text in all columns. Save the filters, sort, search, and hidden columns of a table as a saved view under a name, and open it again in one click.
 - Edit cells, add, duplicate, or delete rows, then review the SQL and save it all in one transaction. Undo and redo.
 - A details panel for one row. Right-click a cell to copy it, filter by its value, or open the row it points to.
 

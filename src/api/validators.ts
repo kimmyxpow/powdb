@@ -101,26 +101,60 @@ export function savedQueryValidators() {
   }
 }
 
+/** A filter condition, as the table page sends it. */
+const filterSchema = s.object({
+  column: s.string(),
+  op: s.enum(FILTER_OPERATORS),
+  value: s.string().optional(),
+})
+
+/** A sort column, as the table page sends it. */
+const sortSchema = s.object({ column: s.string(), direction: s.enum(['asc', 'desc']) })
+
+/** The saved view inputs. The limits match saved-views.server.ts (the server checks them again). */
+export function savedViewValidators() {
+  const target = s.object({
+    connectionId: s.string(),
+    database: s.string(),
+    schema: s.string(),
+    table: s.string(),
+  })
+  const nameSchema = s.string().trim().min(1, 'Name is required.').max(80, 'Name must be 80 characters or fewer.')
+  const textSchema = s.string().max(10_000, 'The text is too long (max 10,000 characters).')
+  const state = s.object({
+    sort: s.array(sortSchema).max(20, 'Too many sort columns (max 20).'),
+    filters: s.array(filterSchema).max(50, 'Too many filters (max 50).'),
+    where: textSchema.nullable(),
+    q: textSchema.nullable(),
+    hiddenColumns: s.array(s.string()).max(2000, 'Too many hidden columns (max 2000).'),
+  })
+  return {
+    listSavedViews: target,
+    createSavedView: target.extend({ name: nameSchema, state }),
+    updateSavedView: s.object({
+      id: s.string(),
+      patch: s.object({
+        name: nameSchema.optional(),
+        state: state.optional(),
+      }),
+    }),
+    deleteSavedView: s.object({ id: s.string() }),
+  }
+}
+
 export function explorerValidators() {
   const target = s.object({ connectionId: s.string(), database: s.string() })
 
   const cell = s.union([s.string(), s.boolean(), s.null()])
   const editValue = s.union([cell, s.object({ default: s.literal(true) })])
 
-  const filter = s.object({
-    column: s.string(),
-    op: s.enum(FILTER_OPERATORS),
-    value: s.string().optional(),
-  })
-  const sort = s.object({ column: s.string(), direction: s.enum(['asc', 'desc']) })
-
   const rowsRequest = target.extend({
     schema: s.string(),
     table: s.string(),
     page: s.number().int().min(1),
     pageSize: s.number().int().min(1).max(5000),
-    sort: s.array(sort),
-    filters: s.array(filter),
+    sort: s.array(sortSchema),
+    filters: s.array(filterSchema),
     where: s.string().optional(),
     search: s.string().optional(),
   })

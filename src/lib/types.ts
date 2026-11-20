@@ -507,3 +507,27 @@ export interface SavedQuery {
   createdAt: string
   updatedAt: string
 }
+
+/** The table view state a saved view keeps: the filters, sort, search and hidden columns of a table. */
+export interface SavedViewState {
+  sort: Sort[]
+  filters: Filter[]
+  /** SQL condition, null when there is none */
+  where: string | null
+  /** search text, null when there is none */
+  q: string | null
+  hiddenColumns: string[]
+}
+
+/** A table view saved under a name. It belongs to one table of one connection and database. */
+export interface SavedView {
+  id: string
+  name: string
+  connectionId: string
+  database: string
+  schema: string
+  table: string
+  state: SavedViewState
+  createdAt: string
+  updatedAt: string
+}
