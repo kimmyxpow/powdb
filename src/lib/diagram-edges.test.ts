@@ -134,6 +134,20 @@ describe('diagram edges', () => {
     expect(parallel.map((e) => e.fk).sort()).toEqual(['orders_billing_fk', 'orders_user_fk'])
   })
 
+  test('edge bounds contain both endpoints and the curve', () => {
+    const diagram = shop()
+    const edges = buildDiagramEdges(layoutSchemaDiagram(diagram), diagram)
+    for (const e of edges) {
+      const b = e.bounds
+      for (const p of [e.from, e.to, e.mid]) {
+        expect(p.x).toBeGreaterThanOrEqual(b.x)
+        expect(p.x).toBeLessThanOrEqual(b.x + b.width)
+        expect(p.y).toBeGreaterThanOrEqual(b.y)
+        expect(p.y).toBeLessThanOrEqual(b.y + b.height)
+      }
+    }
+  })
+
   test('endpoints are exactly the anchors of the FK row and the referenced row', () => {
     const diagram = shop()
     const nodes = layoutSchemaDiagram(diagram)

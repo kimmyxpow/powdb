@@ -14,7 +14,16 @@ import {
 import { Button } from '@/components/ui/button'
 import type { SchemaDiagram } from '@/lib/diagram'
 import { buildDiagramEdges, manyMarker, oneMarker, type DiagramEdge } from '@/lib/diagram-edges'
-import { diagramBounds, placeNodes, type DiagramNode, type Point, type Positions } from '@/lib/diagram-layout'
+import {
+  diagramBounds,
+  placeNodes,
+  rectsIntersect,
+  visibleRect,
+  type DiagramNode,
+  type Point,
+  type Positions,
+  type Rect,
+} from '@/lib/diagram-layout'
 import { DiagramMinimap } from './diagram-minimap'
 import { TableNode } from './table-node'
 
@@ -23,6 +32,8 @@ const MAX_ZOOM = 2
 const FIT_PADDING = 40
 const DRAG_THRESHOLD = 3
 const WHEEL_ZOOM_RATE = 0.002
+// below this zoom, cards drop their column rows and edges drop crow's feet: too small to read anyway
+const COMPACT_ZOOM = 0.45
 
 interface View {
   x: number
@@ -117,11 +128,12 @@ type EdgeTone = 'normal' | 'active' | 'dim'
 interface EdgeViewProps {
   edge: DiagramEdge
   tone: EdgeTone
+  compact: boolean
   onHover: (id: string | null) => void
 }
 
 const EdgeView = memo(
-  function EdgeView({ edge, tone, onHover }: EdgeViewProps) {
+  function EdgeView({ edge, tone, compact, onHover }: EdgeViewProps) {
     const color = tone === 'active' ? 'var(--primary)' : 'var(--muted-foreground)'
     const opacity = tone === 'active' ? 1 : tone === 'dim' ? 0.12 : 0.6
     const width = tone === 'active' ? 1.75 : 1.25
@@ -152,15 +164,22 @@ const EdgeView = memo(
           stroke="transparent"
           strokeWidth={12}
         />
-        {manyMarker(edge.from, edge.fromSide).map((points) => (
-          <polyline key={points} fill="none" points={points} stroke="currentColor" strokeWidth={width} />
-        ))}
+        {!compact &&
+          manyMarker(edge.from, edge.fromSide).map((points) => (
+            <polyline key={points} fill="none" points={points} stroke="currentColor" strokeWidth={width} />
+          ))}
         <polygon fill="currentColor" points={oneMarker(edge.to, edge.toSide)} />
       </g>
     )
   },
+  // compare what is drawn, not identity: every drag frame rebuilds the edge objects
   (a, b) =>
     a.edge.id === b.edge.id &&
+    a.edge.fk === b.edge.fk &&
+    a.edge.fromTable === b.edge.fromTable &&
+    a.edge.fromColumn === b.edge.fromColumn &&
+    a.edge.toTable === b.edge.toTable &&
+    a.edge.toColumn === b.edge.toColumn &&
     a.edge.path === b.edge.path &&
     a.edge.fromSide === b.edge.fromSide &&
     a.edge.toSide === b.edge.toSide &&
@@ -168,7 +187,9 @@ const EdgeView = memo(
     a.edge.from.y === b.edge.from.y &&
     a.edge.to.x === b.edge.to.x &&
     a.edge.to.y === b.edge.to.y &&
-    a.tone === b.tone,
+    a.tone === b.tone &&
+    a.compact === b.compact &&
+    a.onHover === b.onHover,
 )
 
 export function DiagramCanvas({
@@ -458,6 +479,11 @@ export function DiagramCanvas({
   const dot = 20 * view.k
   const bounds = diagramBounds(placed)
 
+  // only what is near the viewport is mounted; the full sets above still drive layout, fit and the minimap
+  const viewRect = visibleRect(view, size)
+  const isVisible = (box: Rect) => viewRect === null || rectsIntersect(box, viewRect)
+  const compact = view.k < COMPACT_ZOOM
+
   return (
     <div
       aria-label="Schema diagram. Drag to pan, Ctrl or Cmd with the wheel to zoom, plus and minus keys to zoom, 0 to fit."
@@ -488,15 +514,19 @@ export function DiagramCanvas({
           height={1}
           width={1}
         >
-          {edges.map((edge) => (
-            <EdgeView edge={edge} key={edge.id} onHover={setHoverEdge} tone={tone(edge)} />
-          ))}
+          {edges
+            .filter((edge) => isVisible(edge.bounds))
+            .map((edge) => (
+              <EdgeView compact={compact} edge={edge} key={edge.id} onHover={setHoverEdge} tone={tone(edge)} />
+            ))}
         </svg>
 
         {autoNodes.map((node) => {
           const p = placedById.get(node.id)!
+          if (!isVisible(p)) return null
           return (
             <TableNode
+              compact={compact}
               dimmed={related !== null && !related.has(node.id)}
               key={node.id}
               node={node}

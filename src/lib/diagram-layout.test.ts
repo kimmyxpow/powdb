@@ -9,6 +9,8 @@ import {
   diagramBounds,
   layoutSchemaDiagram,
   placeNodes,
+  rectsIntersect,
+  visibleRect,
   type DiagramNode,
 } from './diagram-layout'
 
@@ -408,5 +410,24 @@ describe('diagram layout', () => {
   test('placeNodes with saved positions for none of the current tables uses the auto layout', () => {
     const auto = layoutSchemaDiagram(shop())
     expect(placeNodes(auto, { 'public.gone': { x: 1, y: 1 } })).toBe(auto)
+  })
+
+  test('visibleRect is the viewport in diagram units, grown by half a viewport on each side', () => {
+    // zoom 2, scrolled so that diagram point (100, 50) is at the top-left corner
+    expect(visibleRect({ x: -200, y: -100, k: 2 }, { width: 400, height: 200 })).toEqual({
+      x: 100 - 100,
+      y: 50 - 50,
+      width: 400,
+      height: 200,
+    })
+    // no size yet: no culling
+    expect(visibleRect({ x: 0, y: 0, k: 1 }, { width: 0, height: 0 })).toBeNull()
+  })
+
+  test('rectsIntersect ignores boxes that only touch', () => {
+    const a = { x: 0, y: 0, width: 10, height: 10 }
+    expect(rectsIntersect(a, { x: 9, y: 9, width: 5, height: 5 })).toBe(true)
+    expect(rectsIntersect(a, { x: 10, y: 0, width: 5, height: 5 })).toBe(false)
+    expect(rectsIntersect(a, { x: 0, y: -20, width: 5, height: 20 })).toBe(false)
   })
 })

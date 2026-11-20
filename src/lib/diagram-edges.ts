@@ -1,5 +1,5 @@
 import type { SchemaDiagram } from './diagram'
-import { anchorFor, nodeIdOf, type DiagramNode, type Point, type Side } from './diagram-layout'
+import { anchorFor, nodeIdOf, type DiagramNode, type Point, type Rect, type Side } from './diagram-layout'
 
 export interface DiagramEdge {
   id: string
@@ -17,6 +17,8 @@ export interface DiagramEdge {
   toSide: Side
   /** point at the middle of the curve, for the hover label */
   mid: Point
+  /** box around the curve and its markers, for culling */
+  bounds: Rect
 }
 
 // Loops stay outside the cards; curves reach out this far before turning.
@@ -24,6 +26,8 @@ const LOOP_REACH = 28
 const LOOP_EXTRA_MAX = 60
 const CURVE_MIN = 32
 const CURVE_MAX = 160
+// crow's foot and hit stroke reach a little past the curve
+const EDGE_PAD = 12
 
 const outward = (side: Side): number => (side === 'right' ? 1 : -1)
 const round = (n: number): number => Math.round(n * 100) / 100
@@ -70,7 +74,7 @@ export function buildDiagramEdges(nodes: DiagramNode[], diagram: SchemaDiagram):
       if (usedIds.has(id)) id = `${id}#${i}`
       usedIds.add(id)
 
-      const { path, mid } = curve(from, fromSide, to, toSide, loop)
+      const { path, mid, bounds } = curve(from, fromSide, to, toSide, loop)
       edges.push({
         id,
         fk: fk.name,
@@ -84,13 +88,20 @@ export function buildDiagramEdges(nodes: DiagramNode[], diagram: SchemaDiagram):
         fromSide,
         toSide,
         mid,
+        bounds,
       })
     }
   }
   return edges
 }
 
-function curve(from: Point, fromSide: Side, to: Point, toSide: Side, loop: boolean): { path: string; mid: Point } {
+function curve(
+  from: Point,
+  fromSide: Side,
+  to: Point,
+  toSide: Side,
+  loop: boolean,
+): { path: string; mid: Point; bounds: Rect } {
   const o1 = outward(fromSide)
   const o2 = outward(toSide)
   let c1: Point
@@ -110,7 +121,12 @@ function curve(from: Point, fromSide: Side, to: Point, toSide: Side, loop: boole
     x: (from.x + 3 * c1.x + 3 * c2.x + to.x) / 8,
     y: (from.y + 3 * c1.y + 3 * c2.y + to.y) / 8,
   }
-  return { path, mid }
+  // a cubic lies inside the hull of its four points
+  const x0 = Math.min(from.x, c1.x, c2.x, to.x) - EDGE_PAD
+  const y0 = Math.min(from.y, c1.y, c2.y, to.y) - EDGE_PAD
+  const x1 = Math.max(from.x, c1.x, c2.x, to.x) + EDGE_PAD
+  const y1 = Math.max(from.y, c1.y, c2.y, to.y) + EDGE_PAD
+  return { path, mid, bounds: { x: x0, y: y0, width: x1 - x0, height: y1 - y0 } }
 }
 
 /**

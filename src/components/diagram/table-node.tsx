@@ -11,6 +11,8 @@ interface TableNodeProps {
   y: number
   selected: boolean
   dimmed: boolean
+  /** low zoom: header only, with a plain body instead of the column rows (same box) */
+  compact: boolean
   onOpen: (schema: string, table: string) => void
 }
 
@@ -19,7 +21,7 @@ const BORDER_SHADOW = '0 0 0 1px var(--border), 0 1px 2px rgb(0 0 0 / 0.06)'
 const SELECTED_SHADOW = '0 0 0 2px var(--primary)'
 
 /** A table card: header (drag handle) and one row per visible column. */
-export const TableNode = memo(function TableNode({ node, x, y, selected, dimmed, onOpen }: TableNodeProps) {
+export const TableNode = memo(function TableNode({ node, x, y, selected, dimmed, compact, onOpen }: TableNodeProps) {
   const ghost = node.kind === 'ghost'
   const Icon = node.kind === 'ghost' ? LinkIcon : relationIcons[node.kind]
 
@@ -58,30 +60,36 @@ export const TableNode = memo(function TableNode({ node, x, y, selected, dimmed,
         </Button>
       </div>
 
-      {node.columns.map((col) => (
-        <div
-          key={col.name}
-          className="flex items-center gap-1.5 px-2.5 text-xs"
-          data-column={col.name}
-          data-table={node.id}
-          style={{ height: CARD_ROW_HEIGHT }}
-        >
-          <span className="flex size-3 shrink-0 items-center justify-center">
-            {col.isPrimaryKey ? (
-              <KeyRoundIcon aria-label="Primary key" className="size-3" />
-            ) : col.isForeignKey ? (
-              <LinkIcon aria-label="Foreign key" className="size-3 text-muted-foreground" />
-            ) : null}
-          </span>
-          <span className="min-w-0 flex-1 truncate font-mono">{col.name}</span>
-          {col.type && <span className="max-w-[45%] shrink truncate text-muted-foreground">{col.type}</span>}
-        </div>
-      ))}
+      {compact ? (
+        <div className="bg-muted" data-compact-body="" style={{ height: node.height - CARD_HEADER_HEIGHT }} />
+      ) : (
+        <>
+          {node.columns.map((col) => (
+            <div
+              key={col.name}
+              className="flex items-center gap-1.5 px-2.5 text-xs"
+              data-column={col.name}
+              data-table={node.id}
+              style={{ height: CARD_ROW_HEIGHT }}
+            >
+              <span className="flex size-3 shrink-0 items-center justify-center">
+                {col.isPrimaryKey ? (
+                  <KeyRoundIcon aria-label="Primary key" className="size-3" />
+                ) : col.isForeignKey ? (
+                  <LinkIcon aria-label="Foreign key" className="size-3 text-muted-foreground" />
+                ) : null}
+              </span>
+              <span className="min-w-0 flex-1 truncate font-mono">{col.name}</span>
+              {col.type && <span className="max-w-[45%] shrink truncate text-muted-foreground">{col.type}</span>}
+            </div>
+          ))}
 
-      {node.hiddenColumns > 0 && (
-        <div className="flex items-center px-2.5 text-muted-foreground text-xs" style={{ height: CARD_ROW_HEIGHT }}>
-          +{node.hiddenColumns} more columns
-        </div>
+          {node.hiddenColumns > 0 && (
+            <div className="flex items-center px-2.5 text-muted-foreground text-xs" style={{ height: CARD_ROW_HEIGHT }}>
+              +{node.hiddenColumns} more columns
+            </div>
+          )}
+        </>
       )}
     </div>
   )

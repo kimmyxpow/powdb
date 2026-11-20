@@ -370,3 +370,29 @@ export function diagramBounds(nodes: DiagramNode[]): { x: number; y: number; wid
   }
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
+
+export interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
+ * The diagram-space rectangle a viewport shows, grown by half its size on every side so cards
+ * are mounted before they scroll in. Null while the viewport has no size yet (render everything).
+ */
+export function visibleRect(
+  view: { x: number; y: number; k: number },
+  size: { width: number; height: number },
+): Rect | null {
+  if (size.width <= 0 || size.height <= 0) return null
+  const w = size.width / view.k
+  const h = size.height / view.k
+  return { x: -view.x / view.k - w / 2, y: -view.y / view.k - h / 2, width: w * 2, height: h * 2 }
+}
+
+/** True when the two boxes overlap (touching edges do not count). */
+export function rectsIntersect(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+}
