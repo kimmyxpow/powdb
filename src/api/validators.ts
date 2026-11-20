@@ -130,6 +130,7 @@ export function savedViewValidators() {
   })
   return {
     listSavedViews: target,
+    listSavedViewsForDatabase: s.object({ connectionId: s.string(), database: s.string() }),
     createSavedView: target.extend({ name: nameSchema, state }),
     updateSavedView: s.object({
       id: s.string(),

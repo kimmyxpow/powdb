@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import type { SavedViewState } from '@/lib/types'
-import { currentViewState, existingHiddenColumns, isEmptyViewState, sameViewState } from './saved-views'
+import {
+  currentViewState,
+  existingHiddenColumns,
+  isEmptyViewState,
+  sameViewState,
+  savedViewSearch,
+} from './saved-views'
 
 const empty: SavedViewState = { sort: [], filters: [], where: null, q: null, hiddenColumns: [] }
 
@@ -126,5 +132,32 @@ describe('existingHiddenColumns', () => {
 
   test('removes duplicates', () => {
     expect(existingHiddenColumns(['a', 'a'], ['a', 'b'])).toEqual(['a'])
+  })
+})
+
+describe('savedViewSearch', () => {
+  test('an empty state gives an empty search', () => {
+    expect(savedViewSearch(empty)).toEqual({})
+  })
+
+  test('only the parts that are set are kept, and hidden columns are not part of the search', () => {
+    expect(
+      savedViewSearch({
+        sort: [{ column: 'id', direction: 'desc' }],
+        filters: [],
+        where: null,
+        q: 'needle',
+        hiddenColumns: ['notes'],
+      }),
+    ).toEqual({ sort: [{ column: 'id', direction: 'desc' }], q: 'needle' })
+  })
+
+  test('filters and SQL condition are copied', () => {
+    const state: SavedViewState = {
+      ...empty,
+      filters: [{ column: 'total', op: 'gt', value: '10' }],
+      where: 'a > 1',
+    }
+    expect(savedViewSearch(state)).toEqual({ filters: [{ column: 'total', op: 'gt', value: '10' }], where: 'a > 1' })
   })
 })

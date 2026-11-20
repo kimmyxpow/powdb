@@ -9,6 +9,13 @@ export const listSavedViewsFn = createServerFn({ method: 'GET' })
     return listSavedViews(data)
   })
 
+export const listSavedViewsForDatabaseFn = createServerFn({ method: 'GET' })
+  .validator(savedViewValidators().listSavedViewsForDatabase)
+  .handler(async ({ data }): Promise<SavedView[]> => {
+    const { listSavedViewsForDatabase } = await import('@/server/saved-views.server')
+    return listSavedViewsForDatabase(data)
+  })
+
 export const createSavedViewFn = createServerFn({ method: 'POST' })
   .validator(savedViewValidators().createSavedView)
   .handler(async ({ data }): Promise<SavedView> => {

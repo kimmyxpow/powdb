@@ -45,6 +45,7 @@ import { toastManager } from '@/components/ui/toast'
 import { countLabel, relationKindLabel } from '@/lib/format'
 import { allRelationsQuery, connectionsQuery, databasesQuery, keys } from '@/lib/queries'
 import { firstLine, savedQueriesQuery } from '@/lib/saved-queries'
+import { databaseSavedViewsQuery, savedViewSearch } from '@/lib/saved-views'
 import { useAiAccessDialog } from '@/lib/ai-access-dialog'
 import { useExportDatabaseDialog } from '@/lib/export-database-dialog'
 import { useRestoreDatabaseDialog } from '@/lib/restore-database-dialog'
@@ -121,6 +122,7 @@ export function CommandPalette({
   const queryClient = useQueryClient()
   const openSqlTab = useAppStore((s) => s.openSqlTab)
   const openSavedQuery = useAppStore((s) => s.openSavedQuery)
+  const setHiddenColumns = useAppStore((s) => s.setHiddenColumns)
   const setAiAccessOpen = useAiAccessDialog((s) => s.setOpen)
   const setExportOpen = useExportDatabaseDialog((s) => s.setOpen)
   const setRestoreOpen = useRestoreDatabaseDialog((s) => s.setOpen)
@@ -131,6 +133,8 @@ export function CommandPalette({
   const { data: databases } = useQuery(databasesQuery(connectionId))
   const { data: connections } = useQuery(connectionsQuery())
   const { data: savedQueries } = useQuery(savedQueriesQuery(connectionId))
+  // only fetched while the palette is open
+  const { data: savedViews } = useQuery({ ...databaseSavedViewsQuery(connectionId, database), enabled: open })
 
   // the query is cleared once the dialog has finished closing (see onOpenChangeComplete)
   const close = () => onOpenChange(false)
@@ -182,6 +186,23 @@ export function CommandPalette({
       run: () => {
         openSavedQuery(connectionId, query)
         void navigate({ to: '/c/$connId/$db/sql', params: { connId: connectionId, db: database } })
+      },
+    }))
+
+    const views: PaletteItem[] = (savedViews ?? []).map((view) => ({
+      id: `view:${view.id}`,
+      label: view.name,
+      detail: view.schema === 'public' ? view.table : `${view.schema}.${view.table}`,
+      keywords: view.table,
+      icon: BookmarkIcon,
+      run: () => {
+        // the same key the table page uses for its hidden columns
+        setHiddenColumns(`${connectionId}:${database}:${view.schema}.${view.table}`, view.state.hiddenColumns)
+        void navigate({
+          to: '/c/$connId/$db/t/$schema/$table',
+          params: { connId: connectionId, db: database, schema: view.schema, table: view.table },
+          search: savedViewSearch(view.state),
+        })
       },
     }))
 
@@ -311,6 +332,7 @@ export function CommandPalette({
     return [
       { value: 'Tables & views', items: rank(tables, q ? 30 : 8) },
       { value: 'Saved queries', items: rank(saved, q ? 20 : 8) },
+      { value: 'Saved views', items: rank(views, q ? 20 : 8) },
       { value: 'Actions', items: rank(actions, 20) },
       { value: 'Databases', items: rank(dbs, 10) },
       { value: 'Connections', items: rank(conns, 10) },
@@ -322,11 +344,13 @@ export function CommandPalette({
     databases,
     connections,
     savedQueries,
+    savedViews,
     connectionId,
     database,
     navigate,
     openSqlTab,
     openSavedQuery,
+    setHiddenColumns,
     queryClient,
     setAiAccessOpen,
     setExportOpen,

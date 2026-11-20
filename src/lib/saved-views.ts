@@ -1,5 +1,11 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
-import { createSavedViewFn, deleteSavedViewFn, listSavedViewsFn, updateSavedViewFn } from '@/api/saved-views.functions'
+import {
+  createSavedViewFn,
+  deleteSavedViewFn,
+  listSavedViewsForDatabaseFn,
+  listSavedViewsFn,
+  updateSavedViewFn,
+} from '@/api/saved-views.functions'
 import type { TableSearch } from '@/components/table/table-data'
 import type { SavedViewState } from '@/lib/types'
 
@@ -10,6 +16,14 @@ export const savedViewsQuery = (connectionId: string, database: string, schema: 
   queryOptions({
     queryKey: [ROOT, connectionId, database, schema, table] as const,
     queryFn: () => listSavedViewsFn({ data: { connectionId, database, schema, table } }),
+    staleTime: 30_000,
+  })
+
+/** The views of every table in one database. The key is a prefix of the per-table keys, not equal to them. */
+export const databaseSavedViewsQuery = (connectionId: string, database: string) =>
+  queryOptions({
+    queryKey: [ROOT, connectionId, database] as const,
+    queryFn: () => listSavedViewsForDatabaseFn({ data: { connectionId, database } }),
     staleTime: 30_000,
   })
 
@@ -95,6 +109,21 @@ export function currentViewState(search: TableSearch, hiddenColumns: readonly st
     q: text(search.q),
     hiddenColumns: [...hiddenColumns],
   }
+}
+
+/**
+ * The table page search that shows a view. An empty part is left out of the search (the same
+ * rule as applySavedView in table-data.tsx). The page and tab are not set, so the view opens on the first page.
+ */
+export function savedViewSearch(state: SavedViewState): TableSearch {
+  const search: TableSearch = {}
+  if (state.sort.length) search.sort = state.sort
+  if (state.filters.length) search.filters = state.filters
+  const where = text(state.where)
+  if (where !== null) search.where = where
+  const q = text(state.q)
+  if (q !== null) search.q = q
+  return search
 }
 
 /** True when the state has no filter, sort, search, SQL condition or hidden column. */

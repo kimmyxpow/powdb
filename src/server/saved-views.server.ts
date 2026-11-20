@@ -86,6 +86,26 @@ export function isSameTable(view: SavedView, target: SavedViewTarget): boolean {
   )
 }
 
+/** A connection and database. Views of every table in it match. */
+export interface SavedViewDatabaseTarget {
+  connectionId: string
+  database: string
+}
+
+/**
+ * The views of one database, sorted by table (schema, then table name) and then by view name,
+ * all case-insensitive. Returns a new array.
+ */
+export function viewsForDatabase(views: SavedView[], target: SavedViewDatabaseTarget): SavedView[] {
+  const compare = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' })
+  return views
+    .filter((view) => view.connectionId === target.connectionId && view.database === target.database)
+    .sort(
+      (a, b) =>
+        compare(a.schema, b.schema) || compare(a.table, b.table) || compare(a.name, b.name) || a.id.localeCompare(b.id),
+    )
+}
+
 /** The views of one table, sorted by name (case-insensitive). Returns a new array. */
 export function viewsForTable(views: SavedView[], target: SavedViewTarget): SavedView[] {
   return views
@@ -190,6 +210,10 @@ function exclusive<T>(task: () => Promise<T>): Promise<T> {
 
 export async function listSavedViews(target: SavedViewTarget): Promise<SavedView[]> {
   return viewsForTable(await readViews(), target)
+}
+
+export async function listSavedViewsForDatabase(target: SavedViewDatabaseTarget): Promise<SavedView[]> {
+  return viewsForDatabase(await readViews(), target)
 }
 
 export function createSavedView(input: SavedViewCreate): Promise<SavedView> {

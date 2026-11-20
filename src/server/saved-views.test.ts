@@ -81,6 +81,23 @@ describe('pure helpers', () => {
     expect(list[0]!.id).toBe('1')
   })
 
+  test('viewsForDatabase keeps one database and sorts by table, then by name, ignoring case', () => {
+    const list = [
+      view({ id: '1', name: 'zeta', schema: 'public', table: 'orders' }),
+      view({ id: '2', name: 'Alpha', schema: 'public', table: 'users' }),
+      view({ id: '3', name: 'beta', schema: 'public', table: 'orders' }),
+      view({ id: '4', name: 'gamma', schema: 'archive', table: 'orders' }),
+      view({ id: '5', name: 'delta', schema: 'public', table: 'Accounts' }),
+      view({ id: '6', name: 'other db', database: 'other' }),
+      view({ id: '7', name: 'other conn', connectionId: 'c2', table: 'accounts' }),
+    ]
+    const dbTarget = { connectionId: 'c1', database: 'shop' }
+    // archive.orders, public.Accounts, public.orders (beta before zeta), public.users (Alpha)
+    expect(sv.viewsForDatabase(list, dbTarget).map((v) => v.id)).toEqual(['4', '5', '3', '1', '2'])
+    // the input is not reordered
+    expect(list[0]!.id).toBe('1')
+  })
+
   test('assertUniqueName rejects another view with the same name, ignoring case', () => {
     const list = [view({ id: '1', name: 'Open orders' })]
     expect(() => sv.assertUniqueName(list, target, 'open ORDERS')).toThrow(
@@ -192,6 +209,14 @@ describe('file-backed store (temp data dir)', () => {
     await expect(sv.createSavedView({ ...target, name: 'One more', state: emptyState })).rejects.toThrow(
       'already has 50 saved views',
     )
+  })
+
+  test('listSavedViewsForDatabase returns the views of every table in the database', async () => {
+    const orders = await sv.createSavedView({ ...target, name: 'Open', state: emptyState })
+    const users = await sv.createSavedView({ ...target, table: 'users', name: 'Active', state: emptyState })
+    await sv.createSavedView({ ...target, database: 'other', name: 'Elsewhere', state: emptyState })
+    const listed = await sv.listSavedViewsForDatabase({ connectionId: target.connectionId, database: target.database })
+    expect(listed.map((v) => v.id)).toEqual([orders.id, users.id])
   })
 
   test('unknown ids throw Saved view not found.', async () => {
