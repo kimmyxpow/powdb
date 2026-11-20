@@ -120,6 +120,7 @@ function DdlDialog({
   applyLabel,
   target,
   onApplied,
+  onInvalidSubmit,
   children,
   wide,
   destructive,
@@ -140,6 +141,8 @@ function DdlDialog({
   destructive?: boolean
   /** replaces the default "Structure updated" toast */
   successToast?: { title: string; description?: string }
+  /** Enter pressed while blocked: lets the dialog reveal the field's problem */
+  onInvalidSubmit?: () => void
 }) {
   const apply = useApplyDdl(target)
   const guard = useProductionGuard(target.connectionId, target.database)
@@ -156,9 +159,20 @@ function DdlDialog({
       <DialogPopup className={wide ? 'sm:max-w-3xl' : 'sm:max-w-xl'}>
         <form
           className="contents"
+          // Enter in a field does not submit while the Apply button is disabled, so it is caught here
+          onKeyDown={(e) => {
+            const field = e.target as HTMLElement
+            if (e.key !== 'Enter' || !blocked || e.nativeEvent.isComposing || field.tagName !== 'INPUT') return
+            if (field.getAttribute('aria-expanded') === 'true') return
+            e.preventDefault()
+            onInvalidSubmit?.()
+          }}
           onSubmit={(e) => {
             e.preventDefault()
-            if (blocked) return
+            if (blocked) {
+              onInvalidSubmit?.()
+              return
+            }
             void guard({
               action:
                 statements.length === 1 ? 'Run one structure change' : `Run ${statements.length} structure changes`,
@@ -199,8 +213,9 @@ function DdlDialog({
             )}
             <div className="flex flex-col gap-1.5">
               <span className="text-muted-foreground text-xs">SQL that will run</span>
-              <div className="overflow-hidden rounded-lg border bg-muted/30">
-                <SqlCodeView maxHeight="12rem" value={sql || '-- fill in the form'} />
+              {/* fixed height: the dialog keeps its size as the SQL grows, and the box scrolls */}
+              <div className="h-40 shrink-0 overflow-hidden rounded-lg border bg-muted/30">
+                <SqlCodeView className="h-full" value={sql || '-- fill in the form'} />
               </div>
             </div>
           </DialogPanel>
@@ -348,6 +363,7 @@ export function ColumnDialog({
           </>
         )
       }
+      onInvalidSubmit={() => setTouched(true)}
       onOpenChange={onOpenChange}
       open={open}
       problem={touched || draft.name ? (nameIssue ?? typeIssue) : nameIssue && 'Give the column a name'}
@@ -792,117 +808,122 @@ export function ConstraintDialog({
           </SelectPopup>
         </Select>
       </Field>
-      {type === 'foreign' && (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field>
-              <FieldLabel>Column</FieldLabel>
-              <Select
-                items={columns.map((c) => ({ label: c, value: c }))}
-                onValueChange={(v) => setCols(v ? [v as string] : [])}
-                value={cols[0] ?? null}
-              >
-                <SelectTrigger className="font-mono text-[13px]" size="sm">
-                  <SelectValue placeholder="Pick a column" />
-                </SelectTrigger>
-                <SelectPopup alignItemWithTrigger={false}>
-                  {columns.map((c) => (
-                    <SelectItem className="font-mono text-[13px]" key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectPopup>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel>Refers to table</FieldLabel>
-              <Select
-                items={tableItems}
-                onValueChange={(v) => {
-                  const [schema, t] = String(v).split('\u0000')
-                  setRef(schema && t ? { schema, table: t } : null)
-                }}
-                value={ref ? `${ref.schema}\u0000${ref.table}` : null}
-              >
-                <SelectTrigger className="font-mono text-[13px]" size="sm">
-                  <SelectValue placeholder={relations.isPending ? 'Loading…' : 'Pick a table'} />
-                </SelectTrigger>
-                <SelectPopup alignItemWithTrigger={false}>
-                  {tableItems.map((t) => (
-                    <SelectItem className="font-mono text-[13px]" key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectPopup>
-              </Select>
-            </Field>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field>
-              <FieldLabel>Column in that table</FieldLabel>
-              <Select
-                disabled={!refDetails.data}
-                items={(refDetails.data?.columns ?? []).map((c) => ({ label: c.name, value: c.name }))}
-                onValueChange={(v) => setRefCol(String(v ?? ''))}
-                value={refCol || null}
-              >
-                <SelectTrigger className="font-mono text-[13px]" size="sm">
-                  <SelectValue placeholder="Pick a column" />
-                </SelectTrigger>
-                <SelectPopup alignItemWithTrigger={false}>
-                  {(refDetails.data?.columns ?? []).map((c) => (
-                    <SelectItem className="font-mono text-[13px]" key={c.name} value={c.name}>
-                      <span className="flex items-center gap-1.5">
-                        {c.name}
-                        {c.isPrimaryKey && <KeyRoundIcon aria-label="Primary key" className="size-3 text-amber-500" />}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectPopup>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel>When that row is deleted</FieldLabel>
-              <Select
-                items={ACTIONS.map((a) => ({ label: ACTION_LABELS[a], value: a }))}
-                onValueChange={(v) => setOnDelete(v as ReferentialAction)}
-                value={onDelete}
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectPopup alignItemWithTrigger={false}>
-                  {ACTIONS.map((a) => (
-                    <SelectItem key={a} value={a}>
-                      {ACTION_LABELS[a]}
-                      <span className="ms-2 font-mono text-[11px] text-muted-foreground">{a}</span>
-                    </SelectItem>
-                  ))}
-                </SelectPopup>
-              </Select>
-            </Field>
-          </div>
-        </>
-      )}
-      {type === 'unique' && (
-        <Field className="w-full">
-          <FieldLabel>Columns</FieldLabel>
-          <ColumnPicker columns={columns} onChange={setCols} types={columnTypes} value={cols} />
-        </Field>
-      )}
-      {type === 'check' && (
-        <Field>
-          <FieldLabel>Condition</FieldLabel>
-          <Textarea
-            className="font-mono text-[13px]"
-            onChange={(e) => setExpression(e.target.value)}
-            placeholder="e.g. price >= 0"
-            rows={2}
-            spellCheck={false}
-            value={expression}
-          />
-        </Field>
-      )}
+      {/* as tall as the foreign key form, so switching kinds does not move the dialog */}
+      <div className="flex flex-col gap-4 max-sm:min-h-[8.25rem] sm:min-h-[7.5rem]">
+        {type === 'foreign' && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <FieldLabel>Column</FieldLabel>
+                <Select
+                  items={columns.map((c) => ({ label: c, value: c }))}
+                  onValueChange={(v) => setCols(v ? [v as string] : [])}
+                  value={cols[0] ?? null}
+                >
+                  <SelectTrigger className="font-mono text-[13px]" size="sm">
+                    <SelectValue placeholder="Pick a column" />
+                  </SelectTrigger>
+                  <SelectPopup alignItemWithTrigger={false}>
+                    {columns.map((c) => (
+                      <SelectItem className="font-mono text-[13px]" key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel>Refers to table</FieldLabel>
+                <Select
+                  items={tableItems}
+                  onValueChange={(v) => {
+                    const [schema, t] = String(v).split('\u0000')
+                    setRef(schema && t ? { schema, table: t } : null)
+                  }}
+                  value={ref ? `${ref.schema}\u0000${ref.table}` : null}
+                >
+                  <SelectTrigger className="font-mono text-[13px]" size="sm">
+                    <SelectValue placeholder={relations.isPending ? 'Loading…' : 'Pick a table'} />
+                  </SelectTrigger>
+                  <SelectPopup alignItemWithTrigger={false}>
+                    {tableItems.map((t) => (
+                      <SelectItem className="font-mono text-[13px]" key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <FieldLabel>Column in that table</FieldLabel>
+                <Select
+                  disabled={!refDetails.data}
+                  items={(refDetails.data?.columns ?? []).map((c) => ({ label: c.name, value: c.name }))}
+                  onValueChange={(v) => setRefCol(String(v ?? ''))}
+                  value={refCol || null}
+                >
+                  <SelectTrigger className="font-mono text-[13px]" size="sm">
+                    <SelectValue placeholder="Pick a column" />
+                  </SelectTrigger>
+                  <SelectPopup alignItemWithTrigger={false}>
+                    {(refDetails.data?.columns ?? []).map((c) => (
+                      <SelectItem className="font-mono text-[13px]" key={c.name} value={c.name}>
+                        <span className="flex items-center gap-1.5">
+                          {c.name}
+                          {c.isPrimaryKey && (
+                            <KeyRoundIcon aria-label="Primary key" className="size-3 text-amber-500" />
+                          )}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel>When that row is deleted</FieldLabel>
+                <Select
+                  items={ACTIONS.map((a) => ({ label: ACTION_LABELS[a], value: a }))}
+                  onValueChange={(v) => setOnDelete(v as ReferentialAction)}
+                  value={onDelete}
+                >
+                  <SelectTrigger size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectPopup alignItemWithTrigger={false}>
+                    {ACTIONS.map((a) => (
+                      <SelectItem key={a} value={a}>
+                        {ACTION_LABELS[a]}
+                        <span className="ms-2 font-mono text-[11px] text-muted-foreground">{a}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+            </div>
+          </>
+        )}
+        {type === 'unique' && (
+          <Field className="w-full">
+            <FieldLabel>Columns</FieldLabel>
+            <ColumnPicker columns={columns} onChange={setCols} types={columnTypes} value={cols} />
+          </Field>
+        )}
+        {type === 'check' && (
+          <Field>
+            <FieldLabel>Condition</FieldLabel>
+            <Textarea
+              className="font-mono text-[13px]"
+              onChange={(e) => setExpression(e.target.value)}
+              placeholder="e.g. price >= 0"
+              rows={2}
+              spellCheck={false}
+              value={expression}
+            />
+          </Field>
+        )}
+      </div>
       <Field>
         <FieldLabel>Name (optional)</FieldLabel>
         <Input
@@ -1156,6 +1177,7 @@ export function CreateObjectDialog({
         )
       }
       onApplied={() => (isTable ? onTableCreated?.(name.trim()) : onSchemaCreated?.(schemaName.trim()))}
+      onInvalidSubmit={() => (isTable ? setTouched(true) : setSchemaTouched(true))}
       onOpenChange={onOpenChange}
       open={open}
       problem={isTable ? firstIssue : schemaIssue ? `Schema name: ${schemaIssue}` : null}
@@ -1199,7 +1221,7 @@ export function CreateObjectDialog({
             </Field>
           </div>
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] items-end gap-2 px-0.5 text-muted-foreground text-xs">
+            <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] items-end gap-2 px-0.5 text-muted-foreground text-xs sm:grid">
               <span>Column</span>
               <span>Type</span>
               <span>Default</span>
@@ -1207,9 +1229,10 @@ export function CreateObjectDialog({
               <span className="w-12 text-center">NULL</span>
               <span className="w-7" />
             </div>
+            {/* Below sm each column is a card; from sm up the wrappers use `contents`, so the grid is the desktop row. */}
             {cols.map((c, i) => (
               <div
-                className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] items-center gap-2"
+                className="flex flex-col gap-2 rounded-lg border p-2.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto_auto] sm:items-center sm:rounded-none sm:border-0 sm:p-0"
                 key={c.rowId}
               >
                 <Input
@@ -1222,45 +1245,52 @@ export function CreateObjectDialog({
                   spellCheck={false}
                   value={c.name}
                 />
-                <TypeInput onChange={(type) => update(i, { type })} options={options} value={c.type} />
-                <Input
-                  aria-label="Default"
-                  className="font-mono text-[13px]"
-                  disabled={c.identity}
-                  onChange={(e) => update(i, { defaultValue: e.target.value })}
-                  placeholder={c.identity ? 'Automatic' : 'None'}
-                  size="sm"
-                  spellCheck={false}
-                  value={c.defaultValue}
-                />
-                <Tooltip>
-                  <TooltipTrigger render={<span className="flex w-9 justify-center" />}>
-                    <Checkbox
-                      aria-label="Primary key"
-                      checked={Boolean(c.primaryKey)}
-                      onCheckedChange={(primaryKey) => update(i, { primaryKey })}
-                    />
-                  </TooltipTrigger>
-                  <TooltipPopup>Primary key{c.identity ? ' · auto-numbered' : ''}</TooltipPopup>
-                </Tooltip>
-                <span className="flex w-12 justify-center">
-                  <Switch
-                    aria-label="Allow NULL"
-                    checked={c.nullable}
-                    disabled={c.primaryKey}
-                    onCheckedChange={(nullable) => update(i, { nullable })}
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2 sm:contents">
+                  <TypeInput onChange={(type) => update(i, { type })} options={options} value={c.type} />
+                  <Input
+                    aria-label="Default"
+                    className="font-mono text-[13px]"
+                    disabled={c.identity}
+                    onChange={(e) => update(i, { defaultValue: e.target.value })}
+                    placeholder={c.identity ? 'Automatic' : 'None'}
+                    size="sm"
+                    spellCheck={false}
+                    value={c.defaultValue}
                   />
-                </span>
-                <Button
-                  aria-label={`Remove column ${c.name || i + 1}`}
-                  disabled={cols.length === 1}
-                  onClick={() => setCols((cs) => cs.filter((_, j) => j !== i))}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <Trash2Icon />
-                </Button>
+                </div>
+                <div className="flex items-center gap-3 sm:contents">
+                  <Tooltip>
+                    <TooltipTrigger render={<span className="flex items-center gap-1.5 sm:w-9 sm:justify-center" />}>
+                      <Checkbox
+                        aria-label="Primary key"
+                        checked={Boolean(c.primaryKey)}
+                        onCheckedChange={(primaryKey) => update(i, { primaryKey })}
+                      />
+                      <span className="text-muted-foreground text-xs sm:hidden">Primary key</span>
+                    </TooltipTrigger>
+                    <TooltipPopup>Primary key{c.identity ? ' · auto-numbered' : ''}</TooltipPopup>
+                  </Tooltip>
+                  <span className="flex items-center gap-1.5 sm:w-12 sm:justify-center">
+                    <Switch
+                      aria-label="Allow NULL"
+                      checked={c.nullable}
+                      disabled={c.primaryKey}
+                      onCheckedChange={(nullable) => update(i, { nullable })}
+                    />
+                    <span className="text-muted-foreground text-xs sm:hidden">NULL</span>
+                  </span>
+                  <Button
+                    aria-label={`Remove column ${c.name || i + 1}`}
+                    className="ml-auto sm:ml-0"
+                    disabled={cols.length === 1}
+                    onClick={() => setCols((cs) => cs.filter((_, j) => j !== i))}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2Icon />
+                  </Button>
+                </div>
               </div>
             ))}
             <div>
@@ -1288,7 +1318,8 @@ export function CreateObjectDialog({
             </div>
           </div>
         </TabsPanel>
-        <TabsPanel className="flex flex-col gap-4" value="schema">
+        {/* as tall as the Table tab with its three starter columns (measured), so switching tabs does not resize the dialog */}
+        <TabsPanel className="flex min-h-[606px] flex-col gap-4 sm:min-h-[228px]" value="schema">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field>
               <FieldLabel>Schema name</FieldLabel>

@@ -18,6 +18,7 @@ import { Radio, RadioGroup } from '@/components/ui/radio-group'
 import { SegmentedControl, SegmentedControlItem } from '@/components/ui/segmented-control'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toastManager } from '@/components/ui/toast'
+import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   EXPORT_STATUS_PATH,
   PG_DUMP_MISSING_MESSAGE,
@@ -46,7 +47,8 @@ export function ExportDatabaseDialog({ connectionId, database }: { connectionId:
   const setOpen = useExportDatabaseDialog((s) => s.setOpen)
   return (
     <Dialog onOpenChange={setOpen} open={open}>
-      <DialogPopup className="sm:max-w-xl">
+      {/* fixed height from the start: a scope change must not resize it, and the panel scrolls inside */}
+      <DialogPopup className="sm:max-w-xl h-[min(48rem,calc(100dvh-2rem))] [&_[data-slot=scroll-area-content]]:h-full">
         {/* the form is unmounted when the dialog closes, so every open starts from the defaults */}
         {open && (
           <ExportForm
@@ -175,7 +177,7 @@ function ExportForm({
         </DialogDescription>
       </DialogHeader>
 
-      <DialogPanel className="flex flex-col gap-6">
+      <DialogPanel className="flex h-full flex-col gap-6">
         {missing ? (
           <Alert variant="error">
             <AlertDescription>{PG_DUMP_MISSING_MESSAGE}</AlertDescription>
@@ -217,7 +219,7 @@ function ExportForm({
           </RadioGroup>
 
           {choosing && (
-            <div className="mt-2 max-h-72 overflow-y-auto rounded-lg border">
+            <div className="mt-2 rounded-lg border">
               {schemas.isPending || relations.isPending ? (
                 <div className="flex flex-col gap-2 p-3">
                   <Skeleton className="h-4 w-2/3" />
@@ -308,10 +310,20 @@ function ExportForm({
           {available && status.data?.version ? `pg_dump ${status.data.version}` : ''}
         </span>
         <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
-        <Button disabled={!canExport} onClick={startExport}>
-          <DownloadIcon aria-hidden="true" />
-          Export
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              // a disabled button gets no pointer events: the wrapper shows why
+              <span className="inline-flex" />
+            }
+          >
+            <Button disabled={!canExport} onClick={startExport}>
+              <DownloadIcon aria-hidden="true" />
+              Export
+            </Button>
+          </TooltipTrigger>
+          {nothingChosen && <TooltipPopup>Pick at least one table</TooltipPopup>}
+        </Tooltip>
       </DialogFooter>
     </>
   )

@@ -10,13 +10,14 @@ import { Input } from '@/components/ui/input'
 import { toastManager } from '@/components/ui/toast'
 import { changePasswordFn, signOutFn } from '@/api/account.functions'
 import { authStateQuery } from '@/lib/queries'
+import { cn } from '@/lib/utils'
 import { FormError } from './auth-card'
 
 const MIN_PASSWORD = 8
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <section className="flex flex-col gap-3">
+    <section className={cn('flex flex-col gap-3', className)}>
       <h3 className="px-1 font-medium text-muted-foreground text-xs uppercase tracking-wide">{title}</h3>
       {children}
     </section>
@@ -99,7 +100,7 @@ export function AccountSettings() {
         </div>
       </Section>
 
-      <Section title="Change password">
+      <Section className="mt-auto" title="Change password">
         <form className="flex flex-col gap-4 rounded-xl border p-4" onSubmit={submit}>
           <p className="text-muted-foreground text-sm">
             Other devices and browsers will be signed out. This one stays signed in.

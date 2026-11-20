@@ -77,7 +77,7 @@ export function AiAccessDialog() {
           </TabsPanel>
 
           <TabsPanel className={PANEL} value="activity">
-            <div className="px-6 pb-6">
+            <div className="flex h-full flex-col px-6 pb-6">
               <ActivitySection />
             </div>
           </TabsPanel>

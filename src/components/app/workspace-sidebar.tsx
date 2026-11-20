@@ -78,6 +78,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { CreateObjectDialog, TableSettingsDialog } from '@/components/table/schema-editor'
 import { toastManager } from '@/components/ui/toast'
@@ -132,6 +133,15 @@ export function WorkspaceSidebar({
   const databaseTriggerRef = useRef<HTMLButtonElement>(null)
   const schemaTriggerRef = useRef<HTMLButtonElement>(null)
   const queryClient = useQueryClient()
+  const { isMobile, setOpenMobile } = useSidebar()
+  // On phones the sidebar is a sheet; close it before a dialog opens so the two do not stack.
+  const closeSheet = () => {
+    if (isMobile) setOpenMobile(false)
+  }
+  const openRelationAction = (action: RelationAction) => {
+    closeSheet()
+    setRelationAction(action)
+  }
 
   // Home first, so the open pages stop querying before the connection closes.
   const disconnect = async () => {
@@ -157,6 +167,7 @@ export function WorkspaceSidebar({
   const prefetchDefinition = (t: Pick<DefinitionTarget, 'kind' | 'oid'>) =>
     queryClient.prefetchQuery(definitionQuery(connectionId, database, t.kind, t.oid))
   const openDefinition = (t: DefinitionTarget) => {
+    closeSheet()
     requestedDefinition.current = t
     void queryClient
       .ensureQueryData(definitionQuery(connectionId, database, t.kind, t.oid))
@@ -244,412 +255,437 @@ export function WorkspaceSidebar({
     groups.types.length
 
   return (
-    <Sidebar>
-      <SidebarHeader className="gap-1.5 pb-0">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Menu>
-              <MenuTrigger render={<SidebarMenuButton className="data-popup-open:bg-sidebar-accent" size="lg" />}>
-                <ConnectionAvatar color={connection.color} name={connection.name} />
-                <span className="grid min-w-0 flex-1 text-left leading-tight">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <span className="truncate font-medium text-sidebar-accent-foreground">{connection.name}</span>
-                    {connection.production && (
-                      <Badge className="shrink-0" size="sm" variant="destructive">
-                        Production
-                      </Badge>
-                    )}
-                  </span>
-                  <span className="truncate text-xs">
-                    {connection.user}@{connection.host}
-                  </span>
-                </span>
-                <ChevronsUpDownIcon aria-hidden="true" className="ms-auto size-4 opacity-60" />
-              </MenuTrigger>
-              <MenuPopup align="start" className="w-(--anchor-width) min-w-64">
-                <MenuGroup>
-                  <MenuGroupLabel>Connections</MenuGroupLabel>
-                  {(connections ?? []).map((c) => (
-                    <MenuItem
-                      key={c.id}
-                      onClick={() => {
-                        if (c.id !== connectionId) {
-                          void navigate({ to: '/c/$connId', params: { connId: c.id } })
-                        }
-                      }}
-                    >
-                      <ConnectionAvatar className="size-5 rounded-md text-[0.6rem]" color={c.color} name={c.name} />
-                      <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                      {c.production && (
+    <>
+      <Sidebar>
+        <SidebarHeader className="gap-1.5 pb-0">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <Menu>
+                <MenuTrigger render={<SidebarMenuButton className="data-popup-open:bg-sidebar-accent" size="lg" />}>
+                  <ConnectionAvatar color={connection.color} name={connection.name} />
+                  <span className="grid min-w-0 flex-1 text-left leading-tight">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate font-medium text-sidebar-accent-foreground">{connection.name}</span>
+                      {connection.production && (
                         <Badge className="shrink-0" size="sm" variant="destructive">
                           Production
                         </Badge>
                       )}
-                      {c.id === connectionId && (
-                        <span className="flex shrink-0 items-center">
-                          <CheckIcon aria-hidden="true" className="size-4 opacity-80" />
-                        </span>
-                      )}
-                    </MenuItem>
-                  ))}
-                </MenuGroup>
-                <MenuSeparator />
-                <MenuItem onClick={onEditConnection}>
-                  <PencilIcon aria-hidden="true" />
-                  Edit connection
-                </MenuItem>
-                <MenuItem onClick={() => void navigate({ to: '/' })}>
-                  <HomeIcon aria-hidden="true" />
-                  All connections
-                </MenuItem>
-                <MenuItem onClick={() => void disconnect()}>
-                  <UnplugIcon aria-hidden="true" />
-                  Disconnect
-                </MenuItem>
-              </MenuPopup>
-            </Menu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-
-        <Combobox
-          autoHighlight
-          items={databaseNames}
-          onValueChange={(v) => {
-            if (v && v !== database) {
-              void navigate({ to: '/c/$connId/$db', params: { connId: connectionId, db: v } })
-            }
-          }}
-          value={database}
-        >
-          <ComboboxTrigger
-            ref={databaseTriggerRef}
-            render={<SelectButton aria-label="Database" className="bg-background" size="sm" />}
-          >
-            <span className="flex min-w-0 flex-1 items-center gap-2">
-              <DatabaseIcon aria-hidden="true" className="size-3.5 opacity-60" />
-              <span className="truncate">
-                <ComboboxValue />
-              </span>
-            </span>
-          </ComboboxTrigger>
-          <ComboboxPopup anchor={databaseTriggerRef} aria-label="Databases">
-            <div className="border-b p-2">
-              <ComboboxInput
-                className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
-                placeholder="Search databases…"
-                showTrigger={false}
-                startAddon={<SearchIcon />}
-              />
-            </div>
-            <ComboboxEmpty>No databases found.</ComboboxEmpty>
-            <ComboboxList>
-              {(name: string) => {
-                const size = databaseList.find((d) => d.name === name)?.size
-                return (
-                  <ComboboxItem key={name} value={name}>
-                    <span className="flex w-full items-center justify-between gap-4">
-                      <span className="truncate">{name}</span>
-                      {size != null && (
-                        <span className="text-muted-foreground text-xs tabular-nums">{formatBytes(size)}</span>
-                      )}
                     </span>
-                  </ComboboxItem>
-                )
-              }}
-            </ComboboxList>
-          </ComboboxPopup>
-        </Combobox>
-      </SidebarHeader>
+                    <span className="truncate text-xs">
+                      {connection.user}@{connection.host}
+                    </span>
+                  </span>
+                  <ChevronsUpDownIcon aria-hidden="true" className="ms-auto size-4 opacity-60" />
+                </MenuTrigger>
+                <MenuPopup align="start" className="w-(--anchor-width) min-w-64">
+                  <MenuGroup>
+                    <MenuGroupLabel>Connections</MenuGroupLabel>
+                    {(connections ?? []).map((c) => (
+                      <MenuItem
+                        key={c.id}
+                        onClick={() => {
+                          if (c.id !== connectionId) {
+                            void navigate({ to: '/c/$connId', params: { connId: c.id } })
+                          }
+                        }}
+                      >
+                        <ConnectionAvatar className="size-5 rounded-md text-[0.6rem]" color={c.color} name={c.name} />
+                        <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                        {c.production && (
+                          <Badge className="shrink-0" size="sm" variant="destructive">
+                            Production
+                          </Badge>
+                        )}
+                        {c.id === connectionId && (
+                          <span className="flex shrink-0 items-center">
+                            <CheckIcon aria-hidden="true" className="size-4 opacity-80" />
+                          </span>
+                        )}
+                      </MenuItem>
+                    ))}
+                  </MenuGroup>
+                  <MenuSeparator />
+                  <MenuItem
+                    onClick={() => {
+                      closeSheet()
+                      onEditConnection()
+                    }}
+                  >
+                    <PencilIcon aria-hidden="true" />
+                    Edit connection
+                  </MenuItem>
+                  <MenuItem onClick={() => void navigate({ to: '/' })}>
+                    <HomeIcon aria-hidden="true" />
+                    All connections
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      closeSheet()
+                      void disconnect()
+                    }}
+                  >
+                    <UnplugIcon aria-hidden="true" />
+                    Disconnect
+                  </MenuItem>
+                </MenuPopup>
+              </Menu>
+            </SidebarMenuItem>
+          </SidebarMenu>
 
-      <SidebarGroup className="pb-0">
-        <SidebarMenu className="gap-0.5">
-          <NavItem
-            icon={LayoutGridIcon}
-            label="Overview"
-            to="/c/$connId/$db"
-            params={{ connId: connectionId, db: database }}
-          />
-          <NavItem
-            icon={NetworkIcon}
-            label="Diagram"
-            to="/c/$connId/$db/diagram"
-            params={{ connId: connectionId, db: database }}
-          />
-          <NavItem
-            icon={SquareTerminalIcon}
-            label="SQL editor"
-            to="/c/$connId/$db/sql"
-            params={{ connId: connectionId, db: database }}
-          />
-        </SidebarMenu>
-      </SidebarGroup>
-
-      <div className="flex flex-col gap-2 px-2 pt-3 pb-1">
-        <Combobox autoHighlight items={schemaGroups} onValueChange={(v) => v && setSchema(v)} value={schema}>
-          <ButtonGroup className="w-full">
+          <Combobox
+            autoHighlight
+            items={databaseNames}
+            onValueChange={(v) => {
+              if (v && v !== database) {
+                void navigate({ to: '/c/$connId/$db', params: { connId: connectionId, db: v } })
+              }
+            }}
+            value={database}
+          >
             <ComboboxTrigger
-              ref={schemaTriggerRef}
-              render={<SelectButton aria-label="Schema" className="min-w-0 flex-1 bg-background" size="sm" />}
+              ref={databaseTriggerRef}
+              render={<SelectButton aria-label="Database" className="bg-background" size="sm" />}
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <BracesIcon aria-hidden="true" className="size-3.5 opacity-60" />
+                <DatabaseIcon aria-hidden="true" className="size-3.5 opacity-60" />
                 <span className="truncate">
                   <ComboboxValue />
                 </span>
               </span>
             </ComboboxTrigger>
-            {canWrite && (
+            <ComboboxPopup anchor={databaseTriggerRef} aria-label="Databases">
+              <div className="border-b p-2">
+                <ComboboxInput
+                  className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
+                  placeholder="Search databases…"
+                  showTrigger={false}
+                  startAddon={<SearchIcon />}
+                />
+              </div>
+              <ComboboxEmpty>No databases found.</ComboboxEmpty>
+              <ComboboxList>
+                {(name: string) => {
+                  const size = databaseList.find((d) => d.name === name)?.size
+                  return (
+                    <ComboboxItem key={name} value={name}>
+                      <span className="flex w-full items-center justify-between gap-4">
+                        <span className="truncate">{name}</span>
+                        {size != null && (
+                          <span className="text-muted-foreground text-xs tabular-nums">{formatBytes(size)}</span>
+                        )}
+                      </span>
+                    </ComboboxItem>
+                  )
+                }}
+              </ComboboxList>
+            </ComboboxPopup>
+          </Combobox>
+        </SidebarHeader>
+
+        <SidebarGroup className="pb-0">
+          <SidebarMenu className="gap-0.5">
+            <NavItem
+              icon={LayoutGridIcon}
+              label="Overview"
+              to="/c/$connId/$db"
+              params={{ connId: connectionId, db: database }}
+            />
+            <NavItem
+              icon={NetworkIcon}
+              label="Diagram"
+              to="/c/$connId/$db/diagram"
+              params={{ connId: connectionId, db: database }}
+            />
+            <NavItem
+              icon={SquareTerminalIcon}
+              label="SQL editor"
+              to="/c/$connId/$db/sql"
+              params={{ connId: connectionId, db: database }}
+            />
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <div className="flex flex-col gap-2 px-2 pt-3 pb-1">
+          <Combobox autoHighlight items={schemaGroups} onValueChange={(v) => v && setSchema(v)} value={schema}>
+            <ButtonGroup className="w-full">
+              <ComboboxTrigger
+                ref={schemaTriggerRef}
+                render={<SelectButton aria-label="Schema" className="min-w-0 flex-1 bg-background" size="sm" />}
+              >
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <BracesIcon aria-hidden="true" className="size-3.5 opacity-60" />
+                  <span className="truncate">
+                    <ComboboxValue />
+                  </span>
+                </span>
+              </ComboboxTrigger>
+              {canWrite && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        aria-label="New table or schema"
+                        onClick={() => {
+                          closeSheet()
+                          setCreateOpen(true)
+                        }}
+                        size="icon-sm"
+                        variant="outline"
+                      />
+                    }
+                  >
+                    <PlusIcon aria-hidden="true" className="size-3.5" />
+                  </TooltipTrigger>
+                  <TooltipPopup>New table or schema</TooltipPopup>
+                </Tooltip>
+              )}
               <Tooltip>
                 <TooltipTrigger
-                  render={
-                    <Button
-                      aria-label="New table or schema"
-                      onClick={() => setCreateOpen(true)}
-                      size="icon-sm"
-                      variant="outline"
-                    />
-                  }
+                  render={<Button aria-label="Refresh metadata" onClick={refresh} size="icon-sm" variant="outline" />}
                 >
-                  <PlusIcon aria-hidden="true" className="size-3.5" />
+                  <RefreshCwIcon aria-hidden="true" className={cn('size-3.5', objects.isFetching && 'animate-spin')} />
                 </TooltipTrigger>
-                <TooltipPopup>New table or schema</TooltipPopup>
+                <TooltipPopup>Refresh metadata</TooltipPopup>
               </Tooltip>
+            </ButtonGroup>
+            <ComboboxPopup anchor={schemaTriggerRef} aria-label="Schemas">
+              <div className="border-b p-2">
+                <ComboboxInput
+                  className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
+                  placeholder="Search schemas…"
+                  showTrigger={false}
+                  startAddon={<SearchIcon />}
+                />
+              </div>
+              <ComboboxEmpty>No schemas found.</ComboboxEmpty>
+              <ComboboxList>
+                {(group: { value: string; items: string[] }, index: number) => (
+                  <Fragment key={group.value}>
+                    <ComboboxGroup items={group.items}>
+                      <ComboboxGroupLabel>{group.value}</ComboboxGroupLabel>
+                      <ComboboxCollection>
+                        {(name: string) => (
+                          <ComboboxItem key={name} value={name}>
+                            <span className="flex w-full items-center justify-between gap-4">
+                              <span className="truncate">{name}</span>
+                              <span className="text-muted-foreground text-xs tabular-nums">
+                                {visibleSchemas.find((s) => s.name === name)?.relationCount}
+                              </span>
+                            </span>
+                          </ComboboxItem>
+                        )}
+                      </ComboboxCollection>
+                    </ComboboxGroup>
+                    {index < schemaGroups.length - 1 && <ComboboxSeparator />}
+                  </Fragment>
+                )}
+              </ComboboxList>
+            </ComboboxPopup>
+          </Combobox>
+          <InputGroup>
+            <InputGroupInput
+              aria-label="Filter objects"
+              onChange={(e) => setFilter(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setFilter('')
+                  e.currentTarget.blur()
+                }
+              }}
+              placeholder="Filter objects…"
+              ref={filterRef}
+              size="sm"
+              spellCheck={false}
+              value={filter}
+            />
+            <InputGroupAddon>
+              <SearchIcon aria-hidden="true" />
+            </InputGroupAddon>
+            {!filter && (
+              <InputGroupAddon align="inline-end">
+                <Kbd>/</Kbd>
+              </InputGroupAddon>
             )}
+          </InputGroup>
+        </div>
+
+        <SidebarContent className="gap-0 pb-2">
+          {objects.isPending ? (
+            // the first group of the real list, with its label and item classes (RelationGroup, RelationItem)
+            <SidebarGroup aria-busy="true" className="py-1">
+              <span className="sr-only">Loading objects</span>
+              <SidebarGroupLabel className="h-7 w-full gap-1 text-[0.7rem] tracking-wider">
+                <Skeleton className="size-3.5 rounded-sm" />
+                <Skeleton className="h-2.5 w-14" />
+                <Skeleton className="ms-auto me-5 h-2.5 w-3" />
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-px">
+                  {SKELETON_ITEM_WIDTHS.map((width, i) => (
+                    <SidebarMenuItem key={i}>
+                      <div className="flex h-7 w-full items-center gap-2 overflow-hidden rounded-lg p-2 pe-7 text-sm">
+                        <Skeleton className="size-3.5 shrink-0 rounded-sm" />
+                        <Skeleton className={cn('h-3', width)} />
+                      </div>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ) : objects.error ? (
+            <p className="px-4 py-3 text-destructive-foreground text-xs">{objects.error.message}</p>
+          ) : total === 0 ? (
+            <p className="px-4 py-6 text-center text-muted-foreground text-xs">
+              {needle ? `Nothing matches “${filter}”` : 'This schema is empty.'}
+            </p>
+          ) : (
+            <>
+              <RelationGroup
+                connectionId={connectionId}
+                onAction={openRelationAction}
+                database={database}
+                forceOpen={Boolean(needle)}
+                id="tables"
+                items={groups.tables}
+                label="Tables"
+                partitionsOf={groups.partitionsOf}
+                writable={canWrite}
+              />
+              <RelationGroup
+                connectionId={connectionId}
+                onAction={openRelationAction}
+                database={database}
+                forceOpen={Boolean(needle)}
+                id="views"
+                writable={canWrite}
+                items={groups.views}
+                label="Views"
+              />
+              <RelationGroup
+                connectionId={connectionId}
+                onAction={openRelationAction}
+                database={database}
+                forceOpen={Boolean(needle)}
+                id="matviews"
+                writable={canWrite}
+                items={groups.matviews}
+                label="Materialized views"
+              />
+              <RelationGroup
+                connectionId={connectionId}
+                onAction={openRelationAction}
+                database={database}
+                forceOpen={Boolean(needle)}
+                id="foreign"
+                writable={canWrite}
+                items={groups.foreign}
+                label="Foreign tables"
+              />
+              <ObjectGroup
+                forceOpen={Boolean(needle)}
+                icon={SquareFunctionIcon}
+                id="functions"
+                items={groups.functions.map((f: FunctionInfo) => ({
+                  key: String(f.oid),
+                  name: f.name,
+                  hint: f.kind === 'p' ? 'proc' : f.kind === 'a' ? 'agg' : undefined,
+                  title: `${f.name}(${f.args})${f.result ? ` → ${f.result}` : ''}`,
+                  onPrefetch: () => void prefetchDefinition({ kind: 'function', oid: f.oid }),
+                  onOpen: () =>
+                    openDefinition({
+                      kind: 'function',
+                      oid: f.oid,
+                      title: `${f.schema}.${f.name}(${f.args})`,
+                      subtitle: [
+                        f.kind === 'p' ? 'Procedure' : f.kind === 'a' ? 'Aggregate' : 'Function',
+                        f.language,
+                        f.result ? `returns ${f.result}` : null,
+                        f.comment,
+                      ]
+                        .filter(Boolean)
+                        .join(' · '),
+                    }),
+                }))}
+                label="Functions"
+              />
+              <ObjectGroup
+                forceOpen={Boolean(needle)}
+                icon={TypeIcon}
+                id="types"
+                items={groups.types.map((ty: TypeInfo) => ({
+                  key: String(ty.oid),
+                  name: ty.name,
+                  hint: ty.kind === 'e' ? 'enum' : ty.kind === 'd' ? 'domain' : ty.kind === 'r' ? 'range' : 'type',
+                  title: ty.labels ? ty.labels.join(', ') : ty.name,
+                  onPrefetch: () => void prefetchDefinition({ kind: 'type', oid: ty.oid }),
+                  onOpen: () =>
+                    openDefinition({
+                      kind: 'type',
+                      oid: ty.oid,
+                      title: `${ty.schema}.${ty.name}`,
+                      subtitle: ty.labels ? `Enum with ${ty.labels.length} values` : (ty.comment ?? undefined),
+                    }),
+                }))}
+                label="Types"
+              />
+            </>
+          )}
+        </SidebarContent>
+
+        <SidebarFooter className="border-sidebar-border border-t py-2">
+          <div className="grid grid-cols-2 gap-1.5 px-2 pb-2">
+            <Button
+              onClick={() => {
+                closeSheet()
+                setExportOpen(true)
+              }}
+              size="sm"
+              variant="outline"
+            >
+              <DownloadIcon aria-hidden="true" />
+              Backup
+            </Button>
             <Tooltip>
               <TooltipTrigger
-                render={<Button aria-label="Refresh metadata" onClick={refresh} size="icon-sm" variant="outline" />}
+                render={
+                  // a disabled button gets no pointer events: the wrapper shows why
+                  <span className="flex" />
+                }
               >
-                <RefreshCwIcon aria-hidden="true" className={cn('size-3.5', objects.isFetching && 'animate-spin')} />
+                <Button
+                  className="w-full"
+                  disabled={connection.readOnly}
+                  onClick={() => {
+                    closeSheet()
+                    setRestoreOpen(true)
+                  }}
+                  size="sm"
+                  variant="outline"
+                >
+                  <UploadIcon aria-hidden="true" />
+                  Restore
+                </Button>
               </TooltipTrigger>
-              <TooltipPopup>Refresh metadata</TooltipPopup>
+              {connection.readOnly && <TooltipPopup>This connection is read-only.</TooltipPopup>}
             </Tooltip>
-          </ButtonGroup>
-          <ComboboxPopup anchor={schemaTriggerRef} aria-label="Schemas">
-            <div className="border-b p-2">
-              <ComboboxInput
-                className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
-                placeholder="Search schemas…"
-                showTrigger={false}
-                startAddon={<SearchIcon />}
-              />
-            </div>
-            <ComboboxEmpty>No schemas found.</ComboboxEmpty>
-            <ComboboxList>
-              {(group: { value: string; items: string[] }, index: number) => (
-                <Fragment key={group.value}>
-                  <ComboboxGroup items={group.items}>
-                    <ComboboxGroupLabel>{group.value}</ComboboxGroupLabel>
-                    <ComboboxCollection>
-                      {(name: string) => (
-                        <ComboboxItem key={name} value={name}>
-                          <span className="flex w-full items-center justify-between gap-4">
-                            <span className="truncate">{name}</span>
-                            <span className="text-muted-foreground text-xs tabular-nums">
-                              {visibleSchemas.find((s) => s.name === name)?.relationCount}
-                            </span>
-                          </span>
-                        </ComboboxItem>
-                      )}
-                    </ComboboxCollection>
-                  </ComboboxGroup>
-                  {index < schemaGroups.length - 1 && <ComboboxSeparator />}
-                </Fragment>
-              )}
-            </ComboboxList>
-          </ComboboxPopup>
-        </Combobox>
-        <InputGroup>
-          <InputGroupInput
-            aria-label="Filter objects"
-            onChange={(e) => setFilter(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                setFilter('')
-                e.currentTarget.blur()
-              }
-            }}
-            placeholder="Filter objects…"
-            ref={filterRef}
-            size="sm"
-            spellCheck={false}
-            value={filter}
-          />
-          <InputGroupAddon>
-            <SearchIcon aria-hidden="true" />
-          </InputGroupAddon>
-          {!filter && (
-            <InputGroupAddon align="inline-end">
-              <Kbd>/</Kbd>
-            </InputGroupAddon>
-          )}
-        </InputGroup>
-      </div>
-
-      <SidebarContent className="gap-0 pb-2">
-        {objects.isPending ? (
-          // the first group of the real list, with its label and item classes (RelationGroup, RelationItem)
-          <SidebarGroup aria-busy="true" className="py-1">
-            <span className="sr-only">Loading objects</span>
-            <SidebarGroupLabel className="h-7 w-full gap-1 text-[0.7rem] tracking-wider">
-              <Skeleton className="size-3.5 rounded-sm" />
-              <Skeleton className="h-2.5 w-14" />
-              <Skeleton className="ms-auto me-5 h-2.5 w-3" />
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-px">
-                {SKELETON_ITEM_WIDTHS.map((width, i) => (
-                  <SidebarMenuItem key={i}>
-                    <div className="flex h-7 w-full items-center gap-2 overflow-hidden rounded-lg p-2 pe-7 text-sm">
-                      <Skeleton className="size-3.5 shrink-0 rounded-sm" />
-                      <Skeleton className={cn('h-3', width)} />
-                    </div>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ) : objects.error ? (
-          <p className="px-4 py-3 text-destructive-foreground text-xs">{objects.error.message}</p>
-        ) : total === 0 ? (
-          <p className="px-4 py-6 text-center text-muted-foreground text-xs">
-            {needle ? `Nothing matches “${filter}”` : 'This schema is empty.'}
-          </p>
-        ) : (
-          <>
-            <RelationGroup
-              connectionId={connectionId}
-              onAction={setRelationAction}
-              database={database}
-              forceOpen={Boolean(needle)}
-              id="tables"
-              items={groups.tables}
-              label="Tables"
-              partitionsOf={groups.partitionsOf}
-              writable={canWrite}
+          </div>
+          <div className="flex items-center gap-2 px-2 text-xs">
+            <span
+              aria-hidden="true"
+              className={cn('size-1.5 rounded-full', server ? 'bg-success' : 'bg-muted-foreground/40')}
             />
-            <RelationGroup
-              connectionId={connectionId}
-              onAction={setRelationAction}
-              database={database}
-              forceOpen={Boolean(needle)}
-              id="views"
-              writable={canWrite}
-              items={groups.views}
-              label="Views"
-            />
-            <RelationGroup
-              connectionId={connectionId}
-              onAction={setRelationAction}
-              database={database}
-              forceOpen={Boolean(needle)}
-              id="matviews"
-              writable={canWrite}
-              items={groups.matviews}
-              label="Materialized views"
-            />
-            <RelationGroup
-              connectionId={connectionId}
-              onAction={setRelationAction}
-              database={database}
-              forceOpen={Boolean(needle)}
-              id="foreign"
-              writable={canWrite}
-              items={groups.foreign}
-              label="Foreign tables"
-            />
-            <ObjectGroup
-              forceOpen={Boolean(needle)}
-              icon={SquareFunctionIcon}
-              id="functions"
-              items={groups.functions.map((f: FunctionInfo) => ({
-                key: String(f.oid),
-                name: f.name,
-                hint: f.kind === 'p' ? 'proc' : f.kind === 'a' ? 'agg' : undefined,
-                title: `${f.name}(${f.args})${f.result ? ` → ${f.result}` : ''}`,
-                onPrefetch: () => void prefetchDefinition({ kind: 'function', oid: f.oid }),
-                onOpen: () =>
-                  openDefinition({
-                    kind: 'function',
-                    oid: f.oid,
-                    title: `${f.schema}.${f.name}(${f.args})`,
-                    subtitle: [
-                      f.kind === 'p' ? 'Procedure' : f.kind === 'a' ? 'Aggregate' : 'Function',
-                      f.language,
-                      f.result ? `returns ${f.result}` : null,
-                      f.comment,
-                    ]
-                      .filter(Boolean)
-                      .join(' · '),
-                  }),
-              }))}
-              label="Functions"
-            />
-            <ObjectGroup
-              forceOpen={Boolean(needle)}
-              icon={TypeIcon}
-              id="types"
-              items={groups.types.map((ty: TypeInfo) => ({
-                key: String(ty.oid),
-                name: ty.name,
-                hint: ty.kind === 'e' ? 'enum' : ty.kind === 'd' ? 'domain' : ty.kind === 'r' ? 'range' : 'type',
-                title: ty.labels ? ty.labels.join(', ') : ty.name,
-                onPrefetch: () => void prefetchDefinition({ kind: 'type', oid: ty.oid }),
-                onOpen: () =>
-                  openDefinition({
-                    kind: 'type',
-                    oid: ty.oid,
-                    title: `${ty.schema}.${ty.name}`,
-                    subtitle: ty.labels ? `Enum with ${ty.labels.length} values` : (ty.comment ?? undefined),
-                  }),
-              }))}
-              label="Types"
-            />
-          </>
-        )}
-      </SidebarContent>
-
-      <SidebarFooter className="border-sidebar-border border-t py-2">
-        <div className="grid grid-cols-2 gap-1.5 px-2 pb-2">
-          <Button onClick={() => setExportOpen(true)} size="sm" variant="outline">
-            <DownloadIcon aria-hidden="true" />
-            Backup
-          </Button>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                // a disabled button gets no pointer events: the wrapper shows why
-                <span className="flex" />
-              }
-            >
-              <Button
-                className="w-full"
-                disabled={connection.readOnly}
-                onClick={() => setRestoreOpen(true)}
-                size="sm"
-                variant="outline"
-              >
-                <UploadIcon aria-hidden="true" />
-                Restore
-              </Button>
-            </TooltipTrigger>
-            {connection.readOnly && <TooltipPopup>This connection is read-only.</TooltipPopup>}
-          </Tooltip>
-        </div>
-        <div className="flex items-center gap-2 px-2 text-xs">
-          <span
-            aria-hidden="true"
-            className={cn('size-1.5 rounded-full', server ? 'bg-success' : 'bg-muted-foreground/40')}
-          />
-          <span className="truncate">{server ? `PostgreSQL ${server.versionShort}` : 'Connecting…'}</span>
-          {connection.readOnly && (
-            <Badge className="ms-auto" variant="warning">
-              <LockIcon aria-hidden="true" />
-              Read-only
-            </Badge>
-          )}
-        </div>
-      </SidebarFooter>
-      <SidebarRail />
+            <span className="truncate">{server ? `PostgreSQL ${server.versionShort}` : 'Connecting…'}</span>
+            {connection.readOnly && (
+              <Badge className="ms-auto" variant="warning">
+                <LockIcon aria-hidden="true" />
+                Read-only
+              </Badge>
+            )}
+          </div>
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
 
       <DefinitionDialog
         connectionId={connectionId}
@@ -688,7 +724,7 @@ export function WorkspaceSidebar({
         tableNames={(objects.data?.relations ?? []).map((r) => r.name)}
         target={{ connectionId, database, schema }}
       />
-    </Sidebar>
+    </>
   )
 }
 

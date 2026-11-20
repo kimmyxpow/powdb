@@ -120,7 +120,8 @@ function NumberSelect({
 type SettingsTab = 'general' | 'account'
 
 /** Every tab uses the same height, so switching tabs never moves the dialog. Each scrolls inside. */
-const PANEL = 'flex-none min-h-0'
+// the content fills the panel, so the account form's button can sit at the bottom
+const PANEL = 'flex-none min-h-0 [&_[data-slot=scroll-area-content]]:h-full'
 const PANEL_HEIGHT = { height: 'min(36rem, calc(100svh - 13rem))' }
 
 export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -143,7 +144,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             <GeneralSettings />
           </TabsPanel>
           <TabsPanel className={PANEL} style={PANEL_HEIGHT} value="account">
-            <DialogPanel className="flex flex-col gap-6">
+            <DialogPanel className="flex h-full flex-col gap-6">
               <AccountSettings />
             </DialogPanel>
           </TabsPanel>

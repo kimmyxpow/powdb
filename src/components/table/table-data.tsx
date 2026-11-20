@@ -1273,7 +1273,7 @@ export function TableData({
             )}
             {readOnly && <Badge variant="warning">read-only connection</Badge>}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 pointer-coarse:gap-2">
             <span
               className="me-2 text-right tabular-nums"
               style={{ minWidth: `${`${widestCount}–${widestCount} of ~${widestCount}`.length}ch` }}

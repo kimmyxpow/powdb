@@ -209,15 +209,14 @@ export function ImportCsvDialog({
       !isGenerated(c) && c.identity === '' && !c.nullable && c.defaultValue === null && choiceOf(c.name) === 'skip',
   )
 
-  const blocked = !file
-    ? 'Choose a file first'
-    : !sample
-      ? 'Reading the file'
-      : requiredMissing.length > 0
-        ? `${requiredMissing[0]!.name} is required and has no default.`
-        : mapping.length === 0
-          ? 'Map at least one column'
-          : null
+  // why the import cannot run yet: shown above the column list and on the Import button
+  const blockers =
+    requiredMissing.length > 0
+      ? requiredMissing.map((c) => `${c.name} is required and has no default.`)
+      : mapping.length === 0
+        ? ['Map at least one column.']
+        : []
+  const blocked = !file ? 'Choose a file first' : !sample ? 'Reading the file' : (blockers[0] ?? null)
 
   const pick = (picked: File) => {
     if (!/\.(csv|tsv|txt)$/i.test(picked.name) && !picked.type.startsWith('text/')) {
@@ -255,7 +254,11 @@ export function ImportCsvDialog({
       }}
       open={open}
     >
-      <DialogPopup className="sm:max-w-2xl" showCloseButton={!running}>
+      {/* fixed height from the start (the import preview grows to this size): the panel scrolls inside */}
+      <DialogPopup
+        className="sm:max-w-2xl h-[min(48rem,calc(100dvh-2rem))] [&_[data-slot=scroll-area-content]]:h-full"
+        showCloseButton={!running}
+      >
         <form
           className="contents"
           onSubmit={(e) => {
@@ -269,9 +272,9 @@ export function ImportCsvDialog({
               Add rows from a CSV file to {schema}.{table}. Nothing is saved unless every row goes in.
             </DialogDescription>
           </DialogHeader>
-          <DialogPanel className="flex flex-col gap-5">
+          <DialogPanel className="flex h-full flex-col gap-5">
             {!file ? (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-1 flex-col justify-center">
                 <button
                   className={cn(
                     'flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-8 text-center transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring',
@@ -418,6 +421,17 @@ export function ImportCsvDialog({
                   )}
                 </div>
 
+                {sample && blockers.length > 0 && (
+                  <Alert variant="warning">
+                    <CircleAlertIcon />
+                    <AlertDescription>
+                      {blockers.map((b) => (
+                        <div key={b}>{b}</div>
+                      ))}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="flex flex-col gap-2">
                   <span className="text-muted-foreground text-xs">Columns</span>
                   <div className="flex flex-col divide-y rounded-lg border">
@@ -458,17 +472,6 @@ export function ImportCsvDialog({
                     ))}
                   </div>
                 </div>
-
-                {requiredMissing.length > 0 && (
-                  <Alert variant="warning">
-                    <CircleAlertIcon />
-                    <AlertDescription>
-                      {requiredMissing.map((c) => (
-                        <div key={c.name}>{`${c.name} is required and has no default.`}</div>
-                      ))}
-                    </AlertDescription>
-                  </Alert>
-                )}
 
                 {importMutation.error && (
                   <Alert variant="error">

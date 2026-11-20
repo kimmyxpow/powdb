@@ -326,7 +326,7 @@ export function ConnectionDialog({
               </Alert>
             )}
 
-            <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+            <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto]">
               <Field>
                 <FieldLabel>Name</FieldLabel>
                 <Input
@@ -338,7 +338,7 @@ export function ConnectionDialog({
               </Field>
               <RadioGroupPrimitive
                 aria-label="Color"
-                className="flex h-9 items-center gap-1.5 sm:h-8"
+                className="flex h-9 items-center gap-2.5 sm:h-8 sm:gap-1.5 sm:pointer-coarse:gap-2.5"
                 disabled={managed}
                 onValueChange={(v) => set('color', v as ConnectionColor)}
                 value={state.color}
@@ -347,7 +347,7 @@ export function ConnectionDialog({
                   <RadioPrimitive.Root
                     aria-label={c}
                     className={cn(
-                      'size-5 cursor-pointer rounded-full outline-none ring-offset-2 ring-offset-background transition-shadow focus-visible:ring-2 data-checked:ring-2',
+                      'size-7 cursor-pointer sm:size-5 sm:pointer-coarse:size-7 rounded-full outline-none ring-offset-2 ring-offset-background transition-shadow focus-visible:ring-2 data-checked:ring-2',
                       colorClasses[c].dot,
                       colorClasses[c].ring,
                     )}
@@ -741,8 +741,9 @@ export function ConnectionDialog({
               </Alert>
             )}
           </DialogPanel>
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter className="max-sm:flex-col sm:justify-between">
             <Button
+              className="max-sm:w-full"
               disabled={!canSubmit}
               loading={testMutation.isPending}
               onClick={() => testMutation.mutate()}
@@ -752,9 +753,16 @@ export function ConnectionDialog({
               <PlugZapIcon aria-hidden="true" />
               Test connection
             </Button>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row">
-              <DialogClose render={<Button type="button" variant="ghost" />}>Cancel</DialogClose>
-              <Button disabled={!canSubmit || managed} loading={saveMutation.isPending} type="submit">
+            <div className="flex gap-2">
+              <DialogClose render={<Button className="max-sm:flex-1" type="button" variant="ghost" />}>
+                Cancel
+              </DialogClose>
+              <Button
+                className="max-sm:flex-1"
+                disabled={!canSubmit || managed}
+                loading={saveMutation.isPending}
+                type="submit"
+              >
                 {isEdit ? 'Save changes' : 'Save & connect'}
               </Button>
             </div>

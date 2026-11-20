@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Empty, EmptyDescription } from '@/components/ui/empty'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipPopup, TooltipTrigger } from '@/components/ui/tooltip'
 import { auditQuery } from '@/lib/activity-queries'
@@ -22,7 +23,7 @@ export function ActivitySection() {
   const { data: entries, isPending, error } = useQuery({ ...auditQuery(ACTIVITY_LIMIT), staleTime: 0 })
 
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex min-h-0 flex-1 flex-col gap-3">
       {error ? (
         <Box>
           <EmptyLine>{error.message}</EmptyLine>
@@ -32,9 +33,9 @@ export function ActivitySection() {
           <EmptyLine>Loading activity…</EmptyLine>
         </Box>
       ) : entries.length === 0 ? (
-        <Box>
-          <EmptyLine>No queries from AI tools yet.</EmptyLine>
-        </Box>
+        <Empty className="rounded-xl border">
+          <EmptyDescription>No queries from AI tools yet.</EmptyDescription>
+        </Empty>
       ) : (
         <Box>
           <Table>

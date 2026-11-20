@@ -57,6 +57,8 @@ import type { ValueDialogState } from './value-dialog'
 const ROW_H = 32
 const HEADER_H = 34
 const OPEN_W = 28
+// 18px checkbox, 7px outside it on touch: a 32px target inside the 52px row-number gutter
+const TOUCH_HIT = "pointer-coarse:after:absolute pointer-coarse:after:inset-[-7px] pointer-coarse:after:content-['']"
 const MIN_W = 88
 const MAX_INITIAL_W = 420
 const TIP_DELAY = 400
@@ -781,6 +783,7 @@ export function DataGrid({
                   <Checkbox
                     aria-label="Select all rows"
                     checked={allSelected}
+                    className={TOUCH_HIT}
                     indeterminate={someSelected}
                     onCheckedChange={(checked) =>
                       onSelectedRowsChange(checked ? new Set(rows.map((r) => r.id)) : new Set())
@@ -1310,7 +1313,7 @@ const GridRowView = memo(function GridRowView({
                 actions.onToggleSelect(index, e.shiftKey)
               }}
             >
-              <Checkbox aria-label={`Select row ${rowNumber}`} checked={selected} />
+              <Checkbox aria-label={`Select row ${rowNumber}`} checked={selected} className={TOUCH_HIT} />
             </span>
           </>
         ) : (
