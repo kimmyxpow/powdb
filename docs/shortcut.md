@@ -53,15 +53,16 @@ Unsaved changes stay as a draft until you press `Mod + S`, which saves them in o
 
 ## SQL editor
 
-| Shortcut              | What it does                           |
-| --------------------- | -------------------------------------- |
-| `Mod + Enter`         | Run the selection, or the whole script |
-| `Mod + Shift + Enter` | Run the statement under the cursor     |
-| `Mod + .`             | Cancel the running query               |
-| `Mod + S`             | Save the query                         |
-| `Shift + Alt + F`     | Format SQL                             |
-| `Ctrl + Space`        | Show suggestions (autocomplete)        |
-| `Tab`                 | Accept the highlighted suggestion      |
-| `Mod + /`             | Comment or uncomment lines             |
+| Shortcut              | What it does                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| `Mod + Enter`         | Run the selection, or the whole script                                             |
+| `Mod + Shift + Enter` | Run the statement under the cursor                                                 |
+| `Mod + E`             | Explain the selection, or the statement under the cursor (plan only, nothing runs) |
+| `Mod + .`             | Cancel the running query                                                           |
+| `Mod + S`             | Save the query                                                                     |
+| `Shift + Alt + F`     | Format SQL                                                                         |
+| `Ctrl + Space`        | Show suggestions (autocomplete)                                                    |
+| `Tab`                 | Accept the highlighted suggestion                                                  |
+| `Mod + /`             | Comment or uncomment lines                                                         |
 
 `Ctrl + Space` is the same on macOS. The editor uses Ctrl there, not ⌘.

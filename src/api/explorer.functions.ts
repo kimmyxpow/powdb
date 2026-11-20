@@ -4,6 +4,7 @@ import type {
   CountResult,
   DatabaseInfo,
   ExecuteResult,
+  ExplainResult,
   RelationDetails,
   RelationInfo,
   RowsResult,
@@ -125,6 +126,16 @@ export const executeSqlFn = createServerFn({ method: 'POST' })
     const { executeSql } = await import('@/server/execute.server')
     return executeSql(data.connectionId, data.database, data.sql, {
       maxRows: data.maxRows,
+      executionId: data.executionId,
+    })
+  })
+
+export const explainSqlFn = createServerFn({ method: 'POST' })
+  .validator(explorerValidators().explainSql)
+  .handler(async ({ data }): Promise<ExplainResult> => {
+    const { explainSql } = await import('@/server/execute.server')
+    return explainSql(data.connectionId, data.database, data.sql, {
+      analyze: data.analyze,
       executionId: data.executionId,
     })
   })

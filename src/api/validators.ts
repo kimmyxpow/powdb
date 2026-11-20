@@ -166,6 +166,11 @@ export function explorerValidators() {
       maxRows: s.number().int().min(1).max(50_000).default(1000),
       executionId: s.string(),
     }),
+    explainSql: target.extend({
+      sql: s.string().max(5_000_000),
+      analyze: s.boolean(),
+      executionId: s.string(),
+    }),
     cancelSql: s.object({ executionId: s.string() }),
   }
 }

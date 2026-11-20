@@ -491,6 +491,12 @@ export interface ExecuteResult {
   cancelled: boolean
 }
 
+/** A value from JSON, such as the plan Postgres returns. Typed so server functions can send it. */
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
+
+/** The result of an EXPLAIN run. `plan` is the JSON plan (null when Postgres gave none); `results` is always []. */
+export type ExplainResult = ExecuteResult & { plan: JsonValue | null; analyzed: boolean }
+
 /** A SQL query saved on the server. connectionId null = shown for every connection. */
 export interface SavedQuery {
   id: string

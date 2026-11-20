@@ -3,6 +3,7 @@ import {
   CircleAlertIcon,
   CheckIcon,
   HistoryIcon,
+  ListTreeIcon,
   PlayIcon,
   PlusIcon,
   SaveIcon,
@@ -14,7 +15,7 @@ import {
   XIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { cancelSqlFn, executeSqlFn } from '@/api/explorer.functions'
+import { cancelSqlFn, executeSqlFn, explainSqlFn } from '@/api/explorer.functions'
 import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Input } from '@/components/ui/input'
@@ -22,6 +23,7 @@ import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs'
 import { Group as ButtonGroup, GroupSeparator } from '@/components/ui/group'
 import { SplitPane } from '@/components/ui-extra/split-pane'
 import { Kbd } from '@/components/ui/kbd'
+import { Menu, MenuItem, MenuPopup, MenuShortcut, MenuTrigger } from '@/components/ui/menu'
 import { Popover, PopoverPopup, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toastManager } from '@/components/ui/toast'
@@ -33,7 +35,7 @@ import { completionSchemaQuery, keys } from '@/lib/queries'
 import { savedQueriesQuery, useUpdateSavedQuery } from '@/lib/saved-queries'
 import { ensureWorkspace, useAppStore } from '@/lib/store'
 import type { SqlTab, SqlWorkspace as SqlWorkspaceState } from '@/lib/store'
-import type { ExecuteResult, SavedQuery } from '@/lib/types'
+import type { ExecuteResult, ExplainResult, SavedQuery } from '@/lib/types'
 import { classifySql } from '@/lib/sql-safety'
 import { cn } from '@/lib/utils'
 import { SqlEditor } from './codemirror'
@@ -108,9 +110,11 @@ function SqlWorkspaceInner({
     return ns
   }, [completion])
 
-  const execute = async (mode: 'auto' | 'statement') => {
+  // 'explain' shows the plan only; 'analyze' runs the query inside a transaction that is rolled back
+  const execute = async (mode: 'auto' | 'statement' | 'explain' | 'analyze') => {
     const editor = editorRef.current
     if (!editor) return
+    const isExplain = mode === 'explain' || mode === 'analyze'
     let text: string
     let offset: number
     if (mode === 'statement') {
@@ -118,22 +122,38 @@ function SqlWorkspaceInner({
       if (!stmt) return
       text = stmt.text
       offset = stmt.from
+    } else if (isExplain) {
+      // the selection when there is one, otherwise the statement under the cursor
+      const r = editor.getRunText()
+      if (r.isSelection) {
+        text = r.text
+        offset = r.offset
+      } else {
+        const stmt = editor.getStatementAtCursor()
+        text = stmt?.text ?? ''
+        offset = stmt?.from ?? 0
+      }
     } else {
       const r = editor.getRunText()
       text = r.text
       offset = r.offset
     }
     if (!text.trim()) {
-      toastManager.add({ type: 'info', title: 'Nothing to run', description: 'Write a query first.' })
+      toastManager.add({
+        type: 'info',
+        title: isExplain ? 'Nothing to explain' : 'Nothing to run',
+        description: 'Write a query first.',
+      })
       return
     }
     const tabId = active.id
     if (runs[tabId]?.running) return
-    // read-only statements run at once; anything that may change data asks first on production
+    // read-only statements run at once; anything that may change data asks first on production.
+    // EXPLAIN without ANALYZE never runs the query, so only Explain Analyze asks.
     const safety = classifySql(text)
-    if (safety.changes) {
+    if (mode !== 'explain' && safety.changes) {
       const ok = await guard({
-        action: 'Run a query that changes data',
+        action: mode === 'analyze' ? 'Explain Analyze runs the query' : 'Run a query that changes data',
         sql: text.trim(),
         destructive: safety.destructive,
       })
@@ -148,7 +168,7 @@ function SqlWorkspaceInner({
     }))
     // The result handling is a closure rather than part of the try block: the React Compiler cannot
     // compile conditionals inside a try block. Anything it throws is still caught below.
-    const showResult = (result: ExecuteResult) => {
+    const showResult = (result: ExecuteResult | ExplainResult) => {
       setRuns((r) => ({ ...r, [tabId]: { running: false, result } }))
       if (result.error && editorRef.current && workspace.activeId === tabId) {
         if (result.error.position != null) {
@@ -162,27 +182,32 @@ function SqlWorkspaceInner({
           editor.showError({ from: offset + result.error.from, to: offset + result.error.to })
         }
       }
-      const rows = result.results.reduce((acc, s) => acc + (s.fields.length ? s.rows.length : (s.rowCount ?? 0)), 0)
-      addHistory(connectionId, {
-        sql: text.trim(),
-        database,
-        at: Date.now(),
-        durationMs: result.durationMs,
-        ok: !result.error,
-        rows,
-        error: result.error?.message,
-      })
-      const changedSomething = result.results.some((s) => s.command && !READ_ONLY_COMMANDS.has(s.command))
-      if (changedSomething) {
-        void queryClient.invalidateQueries({ queryKey: keys.db(connectionId, database) })
+      // EXPLAIN runs are not kept in history, and they change no data, so nothing is refreshed
+      if (!isExplain) {
+        const rows = result.results.reduce((acc, s) => acc + (s.fields.length ? s.rows.length : (s.rowCount ?? 0)), 0)
+        addHistory(connectionId, {
+          sql: text.trim(),
+          database,
+          at: Date.now(),
+          durationMs: result.durationMs,
+          ok: !result.error,
+          rows,
+          error: result.error?.message,
+        })
+        const changedSomething = result.results.some((s) => s.command && !READ_ONLY_COMMANDS.has(s.command))
+        if (changedSomething) {
+          void queryClient.invalidateQueries({ queryKey: keys.db(connectionId, database) })
+        }
       }
     }
+    // a closure, so the request choice stays out of the try block (see showResult)
+    const send = (): Promise<ExecuteResult | ExplainResult> => {
+      if (isExplain)
+        return explainSqlFn({ data: { connectionId, database, sql: text, analyze: mode === 'analyze', executionId } })
+      return executeSqlFn({ data: { connectionId, database, sql: text, maxRows, executionId } })
+    }
     try {
-      showResult(
-        await executeSqlFn({
-          data: { connectionId, database, sql: text, maxRows, executionId },
-        }),
-      )
+      showResult(await send())
     } catch (err) {
       // read outside the updater: the React Compiler cannot compile a catch variable captured by a closure
       const networkError = (err as Error).message
@@ -294,6 +319,7 @@ function SqlWorkspaceInner({
   useHotkey('mod+s', () => save(), { allowInInputs: true, enabled: !saveOpen })
   useHotkey('mod+enter', () => void execute('auto'), { allowInInputs: true })
   useHotkey('mod+shift+enter', () => void execute('statement'), { allowInInputs: true })
+  useHotkey('mod+e', () => void execute('explain'), { allowInInputs: true })
   useHotkey('mod+.', () => void cancel(), { allowInInputs: true, enabled: Boolean(run?.running) })
 
   return (
@@ -351,6 +377,29 @@ function SqlWorkspaceInner({
             <TooltipPopup>Run the statement under the cursor ({shortcut('↵', { shift: true })})</TooltipPopup>
           </Tooltip>
         </ButtonGroup>
+        <Menu>
+          <MenuTrigger render={<Button aria-label="Explain" disabled={run?.running} size="sm" variant="outline" />}>
+            <ListTreeIcon aria-hidden="true" />
+            <span className="max-md:hidden">Explain</span>
+          </MenuTrigger>
+          <MenuPopup align="start" className="min-w-72">
+            <MenuItem onClick={() => void execute('explain')}>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span>Explain</span>
+                <span className="text-muted-foreground text-xs">Shows the plan without running the query</span>
+              </span>
+              <MenuShortcut>{shortcut('E')}</MenuShortcut>
+            </MenuItem>
+            <MenuItem onClick={() => void execute('analyze')}>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span>Explain Analyze</span>
+                <span className="text-muted-foreground text-xs">
+                  Runs the query to measure real times. Changes are rolled back.
+                </span>
+              </span>
+            </MenuItem>
+          </MenuPopup>
+        </Menu>
         <Tooltip>
           <TooltipTrigger render={<Button onClick={() => void format()} size="sm" variant="ghost" />}>
             <WandSparklesIcon aria-hidden="true" />

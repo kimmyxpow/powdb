@@ -7,7 +7,7 @@ import {
   SquareTerminalIcon,
   TriangleAlertIcon,
 } from 'lucide-react'
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { ExportMenu } from '@/components/app/export-menu'
 import { DataGrid } from '@/components/grid/data-grid'
 import type { GridColumn, GridRow } from '@/components/grid/types'
@@ -20,8 +20,9 @@ import { Spinner } from '@/components/ui/spinner'
 import { isMac, modKey } from '@/hooks/use-hotkey'
 import { exportRows, toTsv } from '@/lib/export'
 import { copyWithToast } from '@/components/app/copy-feedback'
+import { PlanView, readPlan } from './plan-view'
 import { countLabel, formatCount, formatDuration } from '@/lib/format'
-import type { Cell, ExecuteResult, Sort, StatementResult } from '@/lib/types'
+import type { Cell, ExecuteResult, ExplainResult, Sort, StatementResult } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 const RUNNING_VIEW_DELAY_MS = 300
@@ -29,7 +30,7 @@ const RUNNING_VIEW_DELAY_MS = 300
 export interface RunState {
   running: boolean
   startedAt?: number
-  result?: ExecuteResult
+  result?: ExecuteResult | ExplainResult
   networkError?: string
 }
 
@@ -130,13 +131,23 @@ export function ResultsPanel({
   const rowResults = (result?.results ?? []).map((r, i) => ({ r, i })).filter(({ r }) => r.fields.length > 0)
   const [view, setView] = useState<string>('messages')
 
+  // an EXPLAIN result carries a plan; it is read once per result, and a bad plan becomes an error
+  const planRaw = result && 'plan' in result ? result.plan : null
+  const planState = useMemo(
+    () => (result && 'plan' in result && result.plan != null ? readPlan(result.plan, result.analyzed) : null),
+    [result],
+  )
+  const parsedPlan = planState && 'plan' in planState ? planState.plan : null
+  const planError = planState && 'error' in planState ? planState.error : null
+
   // pick the tab for each new result before paint, otherwise "Messages" flashes before the result grid
-  const [prevResult, setPrevResult] = useState<ExecuteResult | undefined | null>(null)
+  const [prevResult, setPrevResult] = useState<ExecuteResult | ExplainResult | undefined | null>(null)
   if (result !== prevResult) {
     setPrevResult(result)
     if (result) {
       const last = rowResults.at(-1)
-      setView(!result.error && last ? `r${last.i}` : 'messages')
+      if (parsedPlan) setView('plan')
+      else setView(!result.error && last ? `r${last.i}` : 'messages')
     }
   }
 
@@ -230,6 +241,13 @@ export function ResultsPanel({
           </span>
           <span className="flex items-center justify-center gap-2">
             <KbdGroup>
+              <Kbd>{modKey}</Kbd>
+              <Kbd>E</Kbd>
+            </KbdGroup>
+            explain the query plan
+          </span>
+          <span className="flex items-center justify-center gap-2">
+            <KbdGroup>
               <Kbd>{isMac ? '⇧' : 'Shift'}</Kbd>
               <Kbd>{isMac ? '⌥' : 'Alt'}</Kbd>
               <Kbd>F</Kbd>
@@ -263,6 +281,11 @@ export function ResultsPanel({
       <div className="flex items-center gap-1 border-b px-2 py-1">
         <Tabs className="min-w-0 flex-1" onValueChange={(v) => setView(v as string)} value={view}>
           <TabsList className="scrollbar-thin max-w-full justify-start overflow-x-auto" size="sm">
+            {parsedPlan && (
+              <TabsTab className="grow-0 text-xs" value="plan">
+                Plan
+              </TabsTab>
+            )}
             {rowResults.map(({ r, i }) => (
               <TabsTab className="grow-0 text-xs" key={i} value={`r${i}`}>
                 {rowResults.length > 1 ? `Result ${i + 1}` : 'Result'}
@@ -270,7 +293,7 @@ export function ResultsPanel({
               </TabsTab>
             ))}
             <TabsTab className="grow-0 text-xs" value="messages">
-              {result.error ? (
+              {result.error || planError ? (
                 <CircleAlertIcon className="size-3.5 text-destructive" />
               ) : result.notices.some((n) => n.severity === 'WARNING') ? (
                 <TriangleAlertIcon className="size-3.5 text-warning" />
@@ -294,7 +317,9 @@ export function ResultsPanel({
         )}
       </div>
 
-      {current ? (
+      {view === 'plan' && parsedPlan ? (
+        <PlanView plan={parsedPlan} raw={planRaw} />
+      ) : current ? (
         <div className="flex min-h-0 flex-1 flex-col">
           {current.truncated && (
             <div className="flex items-center gap-2 border-b bg-warning/8 px-3 py-1.5 text-warning-foreground text-xs">
@@ -307,6 +332,13 @@ export function ResultsPanel({
       ) : (
         <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-3 [scrollbar-gutter:stable]">
           <div className="flex flex-col gap-2">
+            {planError && (
+              <Alert variant="error">
+                <CircleAlertIcon />
+                <AlertTitle>Could not read the plan</AlertTitle>
+                <AlertDescription>{planError}</AlertDescription>
+              </Alert>
+            )}
             {result.error && (
               <Alert variant="error">
                 <CircleAlertIcon />
@@ -372,9 +404,11 @@ export function ResultsPanel({
                 </span>
               </div>
             ))}
-            {result.results.length === 0 && !result.error && result.notices.length === 0 && (
-              <p className="text-muted-foreground text-sm">Nothing to run.</p>
-            )}
+            {result.results.length === 0 &&
+              !result.error &&
+              result.notices.length === 0 &&
+              !parsedPlan &&
+              !planError && <p className="text-muted-foreground text-sm">Nothing to run.</p>}
           </div>
         </div>
       )}

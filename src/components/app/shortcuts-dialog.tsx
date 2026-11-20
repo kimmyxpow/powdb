@@ -93,6 +93,7 @@ const SECTIONS: Section[] = [
         rows: [
           { label: 'Run the selection or the whole script', keys: [['Mod', 'Enter']] },
           { label: 'Run the statement at the cursor', keys: [['Mod', 'Shift', 'Enter']] },
+          { label: 'Explain the selection or the statement at the cursor', keys: [['Mod', 'E']] },
           { label: 'Cancel the running query', keys: [['Mod', '.']] },
           { label: 'Save query', keys: [['Mod', 'S']] },
           { label: 'Format SQL', keys: [['Shift', 'Alt', 'F']] },

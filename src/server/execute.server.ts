@@ -1,6 +1,6 @@
 import pg from 'pg'
 import { splitStatements } from '@/lib/sql'
-import type { Cell, ExecuteResult, StatementResult } from '@/lib/types'
+import type { Cell, ExecuteResult, ExplainResult, JsonValue, StatementResult } from '@/lib/types'
 import { firstKeyword } from './cursor.server'
 import { readStatement } from './data.server'
 import { connectConfig, isPgError, pgErrorInfo, poolFor, watchClient } from './pool.server'
@@ -199,6 +199,116 @@ export async function executeSql(
   } finally {
     running.delete(options.executionId)
     connection.removeListener('readyForQuery', onReady)
+    client.removeListener('notice', onNotice)
+    client.release(broken)
+    out.durationMs = Math.round(performance.now() - started)
+  }
+  return out
+}
+
+/**
+ * Runs EXPLAIN (FORMAT JSON) for one statement and returns the plan. The EXPLAIN runs inside a
+ * transaction that is always rolled back, so ANALYZE measures real timings without keeping changes.
+ */
+export async function explainSql(
+  connectionId: string,
+  database: string,
+  sql: string,
+  options: { analyze: boolean; executionId: string },
+): Promise<ExplainResult> {
+  const out: ExplainResult = {
+    results: [],
+    error: null,
+    notices: [],
+    durationMs: 0,
+    rolledBack: false,
+    cancelled: false,
+    plan: null,
+    analyzed: options.analyze,
+  }
+  const statements = splitStatements(sql)
+  if (statements.length === 0) return out
+  if (statements.length > 1) {
+    out.error = {
+      message: 'Explain works on one statement at a time. Put the cursor in a statement or select it.',
+      statementIndex: -1,
+      from: 0,
+      to: 0,
+    }
+    return out
+  }
+
+  const stmt = statements[0]!
+  if (firstKeyword(stmt.text) === 'explain') {
+    out.error = {
+      message: 'Remove EXPLAIN from the statement. The Explain button adds it.',
+      statementIndex: 0,
+      from: stmt.from,
+      to: stmt.to,
+    }
+    return out
+  }
+
+  const prefix = options.analyze ? 'EXPLAIN (FORMAT JSON, ANALYZE true, BUFFERS true) ' : 'EXPLAIN (FORMAT JSON) '
+  const { conn, pool } = await poolFor(connectionId, database)
+  const readOnly = conn.readOnly === true
+  // If connect() fails nothing is checked out, so there is nothing to release.
+  const client = await pool.connect()
+  const started = performance.now()
+  const onNotice = (msg: { severity?: string; message?: string }) => {
+    out.notices.push({ severity: msg.severity ?? 'NOTICE', message: msg.message ?? '' })
+  }
+
+  let broken = false
+  try {
+    // Everything from here on is inside the try, so release() runs even if the setup throws.
+    client.on('notice', onNotice)
+
+    const entry: Running = {
+      pid: (client as unknown as { processID: number }).processID,
+      connectionId,
+      database,
+      cancelled: false,
+    }
+    running.set(options.executionId, entry)
+
+    await client.query(readOnly ? 'BEGIN READ ONLY' : 'BEGIN')
+    try {
+      // The extended protocol takes exactly one statement, so nothing can ride along after the EXPLAIN.
+      // pg supports queryMode, but @types/pg does not list it yet.
+      const config = { text: prefix + stmt.text, queryMode: 'extended' } as pg.QueryConfig
+      const res = await client.query<{ 'QUERY PLAN': JsonValue }>(config)
+      const doc = res.rows[0]?.['QUERY PLAN']
+      out.plan = Array.isArray(doc) ? (doc[0] ?? null) : null
+    } catch (err) {
+      const info = pgErrorInfo(err)
+      if (info.code === '57014' && entry.cancelled) out.cancelled = true
+      // Postgres counts positions in the prefixed text, so take the prefix out again.
+      const position =
+        info.position != null && info.position >= prefix.length ? stmt.from + info.position - prefix.length : undefined
+      out.error = {
+        ...info,
+        message: out.cancelled ? 'Query cancelled' : info.message,
+        position,
+        statementIndex: 0,
+        from: stmt.from,
+        to: stmt.to,
+      }
+      if (!isPgError(err)) broken = true
+    }
+
+    // Our own wrapper transaction is always dropped, and the session state is reset after it.
+    if (!broken) {
+      await client.query('ROLLBACK')
+      await client.query('DISCARD ALL')
+    }
+  } catch (err) {
+    broken = true
+    if (!out.error) {
+      out.error = { ...pgErrorInfo(err), statementIndex: -1, from: 0, to: 0 }
+    }
+  } finally {
+    running.delete(options.executionId)
     client.removeListener('notice', onNotice)
     client.release(broken)
     out.durationMs = Math.round(performance.now() - started)
