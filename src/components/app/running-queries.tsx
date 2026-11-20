@@ -157,7 +157,7 @@ export function RunningQueries({ connectionId, database }: { connectionId: strin
 
       <FramePanel className="p-0">
         {error && (
-          <Alert className="m-3" variant="error">
+          <Alert className="m-3 w-auto" variant="error">
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
         )}

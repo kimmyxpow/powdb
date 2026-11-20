@@ -494,8 +494,24 @@ export interface ExecuteResult {
 /** A value from JSON, such as the plan Postgres returns. Typed so server functions can send it. */
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
-/** The result of an EXPLAIN run. `plan` is the JSON plan (null when Postgres gave none); `results` is always []. */
-export type ExplainResult = ExecuteResult & { plan: JsonValue | null; analyzed: boolean }
+/**
+ * Why no plan is shown for a statement, when that is not an error. 'needs-values': Postgres could not plan
+ * the $n parameters. 'needs-values-analyze': Explain Analyze needs real values. 'needs-newer-postgres': a
+ * plain EXPLAIN needs PostgreSQL 16 or newer for the parameters.
+ */
+export type ExplainUnavailable = 'needs-values' | 'needs-values-analyze' | 'needs-newer-postgres'
+
+/**
+ * The result of an EXPLAIN run. `plan` is the JSON plan (null when Postgres gave none); `results` is always [].
+ * `generic` is true when the plan was made with EXPLAIN (GENERIC_PLAN) for a statement with $n parameters.
+ * `unavailable` is set (and `error` is null) when the plan cannot be shown for a reason that is not a failure.
+ */
+export type ExplainResult = ExecuteResult & {
+  plan: JsonValue | null
+  analyzed: boolean
+  generic: boolean
+  unavailable: ExplainUnavailable | null
+}
 
 /** A SQL query saved on the server. connectionId null = shown for every connection. */
 export interface SavedQuery {

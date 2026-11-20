@@ -1,6 +1,8 @@
 // Turns the JSON plan from EXPLAIN (FORMAT JSON) into a flat list of steps the Plan view can show.
 // Pure code, no database access, so it can be tested without a server.
 
+import { firstKeyword, qualifiedName, quoteIdent } from './sql'
+
 export interface PlanNode {
   /** depth-first order, the root is 0 */
   id: number
@@ -25,9 +27,16 @@ export interface PlanNode {
   /** analyzed and never run, so the times are not real */
   neverExecuted: boolean
   /** plain English warnings about this step */
-  warnings: string[]
+  warnings: PlanWarning[]
   /** the node without its "Plans" key, for the details view */
   raw: Record<string, unknown>
+}
+
+export type PlanWarningKind = 'full-scan' | 'estimate' | 'disk-sort' | 'hash-batches'
+
+export interface PlanWarning {
+  kind: PlanWarningKind
+  text: string
 }
 
 export interface ParsedPlan {
@@ -177,9 +186,9 @@ function detailFor(node: Json): string[] {
   return lines
 }
 
-function warningsFor(m: Measured): string[] {
+function warningsFor(m: Measured): PlanWarning[] {
   const { node, estRows, actualRows, loops } = m
-  const warnings: string[] = []
+  const warnings: PlanWarning[] = []
   // a step that never ran has no real numbers to warn about
   if (loops === 0) return warnings
 
@@ -188,9 +197,10 @@ function warningsFor(m: Measured): string[] {
   const removed = perLoop === null ? null : perLoop * Math.max(loops ?? 1, 1)
   if (actualRows !== null && node['Node Type'] === 'Seq Scan' && removed !== null) {
     if (removed >= 10_000 && removed > 10 * actualRows) {
-      warnings.push(
-        `Read the whole table and threw away ${formatPlanNumber(removed)} rows. An index on the filtered columns may help.`,
-      )
+      warnings.push({
+        kind: 'full-scan',
+        text: `Read the whole table and threw away ${formatPlanNumber(removed)} rows. An index on the filtered columns may help.`,
+      })
     }
   }
 
@@ -199,22 +209,27 @@ function warningsFor(m: Measured): string[] {
     const high = Math.max(estRows, actualRows)
     const low = Math.min(estRows, actualRows)
     if (high >= 100 && high / Math.max(low, 1) >= 10) {
-      warnings.push(
-        `Postgres expected ${formatPlanNumber(estRows)} ${estRows === 1 ? 'row' : 'rows'} but got ${formatPlanNumber(actualRows)}. Running ANALYZE on the table updates its statistics.`,
-      )
+      warnings.push({
+        kind: 'estimate',
+        text: `Postgres expected ${formatPlanNumber(estRows)} ${estRows === 1 ? 'row' : 'rows'} but got ${formatPlanNumber(actualRows)}. Running ANALYZE on the table updates its statistics.`,
+      })
     }
   }
 
   const sortUsed = finiteNumber(node['Sort Space Used'])
   if (node['Sort Space Type'] === 'Disk' && sortUsed !== null) {
-    warnings.push(
-      `The sort did not fit in memory and used ${formatPlanNumber(sortUsed)} kB of disk. A higher work_mem may help.`,
-    )
+    warnings.push({
+      kind: 'disk-sort',
+      text: `The sort did not fit in memory and used ${formatPlanNumber(sortUsed)} kB of disk. A higher work_mem may help.`,
+    })
   }
 
   const batches = finiteNumber(node['Hash Batches'])
   if (batches !== null && batches > 1) {
-    warnings.push(`The hash table did not fit in memory and was split into ${formatPlanNumber(batches)} batches.`)
+    warnings.push({
+      kind: 'hash-batches',
+      text: `The hash table did not fit in memory and was split into ${formatPlanNumber(batches)} batches.`,
+    })
   }
 
   return warnings
@@ -277,4 +292,133 @@ export function parsePlan(raw: unknown, analyzed: boolean): ParsedPlan {
     totalCost: root.totalCost,
     slowestId,
   }
+}
+
+/** Statements that EXPLAIN can take. DDL, SET, SHOW and the like get no Explain button. */
+const EXPLAINABLE = new Set(['select', 'with', 'insert', 'update', 'delete', 'merge', 'values', 'table'])
+
+/** True when the statement starts with a word EXPLAIN can take (leading comments and parens are skipped). */
+export function isExplainable(sql: string): boolean {
+  const keyword = firstKeyword(sql)
+  return keyword !== null && EXPLAINABLE.has(keyword)
+}
+
+/** A table as the completion schema lists it. */
+export interface KnownTable {
+  schema: string
+  name: string
+  columns: string[]
+}
+
+/** An equality comparison (after <>, !=, <= and >= are taken out), also = ANY (...) and IS NULL. */
+const EQUALITY = /=|\bIS\s+NULL\b/i
+/** At most this many columns go into a suggested index. */
+const MAX_INDEX_COLUMNS = 3
+/** Words followed by `(` that are not function calls. */
+const NOT_FUNCTIONS = new Set(['any', 'all', 'array', 'row', 'and', 'not', 'in'])
+
+/** Replaces every string literal with '' so its text is never read as SQL. A doubled quote inside is an escape. */
+function stripStringLiterals(sql: string): string {
+  return sql.replace(/(?<![A-Za-z0-9_])[Ee]?'(?:[^']|'')*'/g, "''")
+}
+
+/** Finds the table a plan step reads. A name in several schemas only counts when one of them is public. */
+function findTable(name: string, tables: readonly KnownTable[]): KnownTable | null {
+  const matches = tables.filter((t) => t.name === name)
+  if (matches.length <= 1) return matches[0] ?? null
+  return matches.find((t) => t.schema === 'public') ?? null
+}
+
+/** A cast type after `::`. Several words are allowed, such as `character varying`, but the type stops before AND. */
+const TYPE_NAME = /"(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_]*(?: +(?!and\b)[A-Za-z_][A-Za-z0-9_]*)*/iy
+const NUMBER = /[0-9][A-Za-z0-9_.]*/y
+const QUOTED_IDENT = /"((?:[^"]|"")*)"/y
+const BARE_IDENT = /[A-Za-z_][A-Za-z0-9_$]*/y
+const CALL = /[ ]*\(/y
+
+/**
+ * The column names in a filter, in order of first appearance (duplicates included).
+ * Returns null when the filter calls a function, since a plain index on the column cannot serve it.
+ */
+function filterColumns(sql: string): string[] | null {
+  const names: string[] = []
+  let i = 0
+  while (i < sql.length) {
+    const ch = sql[i]!
+    if (sql.startsWith('::', i)) {
+      TYPE_NAME.lastIndex = i + 2
+      const type = TYPE_NAME.exec(sql)
+      i += type ? 2 + type[0].length : 2
+      continue
+    }
+    if (ch >= '0' && ch <= '9') {
+      // a number such as 1.5 or 1e5 is never a column
+      NUMBER.lastIndex = i
+      i += NUMBER.exec(sql)![0].length
+      continue
+    }
+    let name: string
+    if (ch === '"') {
+      QUOTED_IDENT.lastIndex = i
+      const match = QUOTED_IDENT.exec(sql)
+      if (!match) return null
+      name = match[1]!.replace(/""/g, '"')
+      i += match[0].length
+    } else if (/[A-Za-z_]/.test(ch)) {
+      BARE_IDENT.lastIndex = i
+      name = BARE_IDENT.exec(sql)![0]
+      i += name.length
+    } else {
+      i++
+      continue
+    }
+    // a qualifier before a dot (o.status) is a table or alias, not a column
+    if (sql[i] === '.') continue
+    CALL.lastIndex = i
+    if (CALL.test(sql) && !NOT_FUNCTIONS.has(name.toLowerCase())) return null
+    names.push(name)
+  }
+  return names
+}
+
+/**
+ * Suggests a CREATE INDEX for a plan step that read a whole table to keep a few rows, or null when no
+ * simple index would clearly help. Only plain columns in a simple filter are used.
+ */
+export function suggestIndex(node: PlanNode, tables: readonly KnownTable[]): string | null {
+  if (!node.warnings.some((w) => w.kind === 'full-scan')) return null
+
+  const relation = node.raw['Relation Name']
+  const filter = node.raw['Filter']
+  if (typeof relation !== 'string' || typeof filter !== 'string') return null
+  const table = findTable(relation, tables)
+  if (!table) return null
+
+  const sql = stripStringLiterals(filter)
+  // OR needs more than one index, so one index on these columns cannot serve it
+  if (/\bOR\b/i.test(sql)) return null
+  // an index can only search a comparison; <> and != cannot use one
+  const compared = sql.replace(/<>|!=/g, '')
+  if (!/[=<>]|~~|\bIS\s+NULL\b/i.test(compared)) return null
+
+  // A B-tree index works best with the columns compared by equality first and range columns after,
+  // so each AND part is sorted into one of the two groups.
+  const equal: string[] = []
+  const other: string[] = []
+  for (const part of sql.split(/\bAND\b/i)) {
+    const columns = filterColumns(part)
+    if (columns === null) return null
+    const isEqual = EQUALITY.test(part.replace(/<>|!=|<=|>=/g, ''))
+    for (const name of columns) (isEqual ? equal : other).push(name)
+  }
+  const known: string[] = []
+  for (const name of [...equal, ...other]) {
+    if (known.length === MAX_INDEX_COLUMNS) break
+    if (known.includes(name) || !table.columns.includes(name)) continue
+    known.push(name)
+  }
+  if (known.length === 0) return null
+
+  const list = known.map((name) => quoteIdent(name)).join(', ')
+  return `CREATE INDEX CONCURRENTLY ON ${qualifiedName(table.schema, table.name)} (${list});`
 }

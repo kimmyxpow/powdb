@@ -20,7 +20,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { isMac, modKey } from '@/hooks/use-hotkey'
 import { exportRows, toTsv } from '@/lib/export'
 import { copyWithToast } from '@/components/app/copy-feedback'
-import { PlanView, readPlan } from './plan-view'
+import { PlanUnavailable, PlanView, readPlan } from './plan-view'
+import type { KnownTable } from '@/lib/explain'
 import { countLabel, formatCount, formatDuration } from '@/lib/format'
 import type { Cell, ExecuteResult, ExplainResult, Sort, StatementResult } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -122,10 +123,16 @@ export function ResultsPanel({
   state,
   onCancel,
   tabName,
+  tables,
+  onOpenSql,
 }: {
   state: RunState | undefined
   onCancel: () => void
   tabName: string
+  /** known tables, so a plan can suggest an index */
+  tables?: readonly KnownTable[]
+  /** opens a suggested SQL in a new tab */
+  onOpenSql?: (sql: string) => void
 }) {
   const result = state?.result
   const rowResults = (result?.results ?? []).map((r, i) => ({ r, i })).filter(({ r }) => r.fields.length > 0)
@@ -139,6 +146,9 @@ export function ResultsPanel({
   )
   const parsedPlan = planState && 'plan' in planState ? planState.plan : null
   const planError = planState && 'error' in planState ? planState.error : null
+  const planGeneric = result && 'plan' in result ? result.generic : false
+  // a plan that cannot be shown for a reason (not an error): the Plan tab explains why
+  const unavailable = result && 'unavailable' in result ? result.unavailable : null
 
   // pick the tab for each new result before paint, otherwise "Messages" flashes before the result grid
   const [prevResult, setPrevResult] = useState<ExecuteResult | ExplainResult | undefined | null>(null)
@@ -146,7 +156,7 @@ export function ResultsPanel({
     setPrevResult(result)
     if (result) {
       const last = rowResults.at(-1)
-      if (parsedPlan) setView('plan')
+      if (parsedPlan || unavailable) setView('plan')
       else setView(!result.error && last ? `r${last.i}` : 'messages')
     }
   }
@@ -281,7 +291,7 @@ export function ResultsPanel({
       <div className="flex items-center gap-1 border-b px-2 py-1">
         <Tabs className="min-w-0 flex-1" onValueChange={(v) => setView(v as string)} value={view}>
           <TabsList className="scrollbar-thin max-w-full justify-start overflow-x-auto" size="sm">
-            {parsedPlan && (
+            {(parsedPlan || unavailable) && (
               <TabsTab className="grow-0 text-xs" value="plan">
                 Plan
               </TabsTab>
@@ -318,7 +328,9 @@ export function ResultsPanel({
       </div>
 
       {view === 'plan' && parsedPlan ? (
-        <PlanView plan={parsedPlan} raw={planRaw} />
+        <PlanView generic={planGeneric} onOpenSql={onOpenSql} plan={parsedPlan} raw={planRaw} tables={tables} />
+      ) : view === 'plan' && unavailable ? (
+        <PlanUnavailable context="editor" reason={unavailable} />
       ) : current ? (
         <div className="flex min-h-0 flex-1 flex-col">
           {current.truncated && (

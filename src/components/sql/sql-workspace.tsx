@@ -100,6 +100,11 @@ function SqlWorkspaceInner({
   const run = runs[active.id]
 
   const { data: completion } = useQuery(completionSchemaQuery(connectionId, database))
+  // a suggested index opens in a new tab, which becomes the active one
+  const openSuggestedSql = (sql: string) => {
+    openTab(connectionId, sql)
+    toastManager.add({ type: 'info', title: 'Opened in a new tab', timeout: 2500 })
+  }
   const schema = useMemo(() => {
     if (!completion) return undefined
     const ns: Record<string, Record<string, string[]>> = {}
@@ -445,7 +450,13 @@ function SqlWorkspaceInner({
       <SplitPane
         bottom={
           <div className="flex h-full min-h-0 flex-col">
-            <ResultsPanel onCancel={cancel} state={run} tabName={active.name} />
+            <ResultsPanel
+              onCancel={cancel}
+              onOpenSql={openSuggestedSql}
+              state={run}
+              tabName={active.name}
+              tables={completion?.tables}
+            />
           </div>
         }
         bottomLimits={{ min: 15, max: 100 }}

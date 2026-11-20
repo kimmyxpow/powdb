@@ -3,6 +3,7 @@
  * The same pool connection, session settings and statement_timeout apply
  * as for an ordinary query.
  */
+import { firstKeyword } from '@/lib/sql'
 import { classifySql } from '@/lib/sql-safety'
 import { randomBytes } from 'node:crypto'
 import type pg from 'pg'
@@ -55,26 +56,9 @@ export function closeSql(name: string): string {
   return `CLOSE ${name}`
 }
 
-const CURSOR_LEADING_KEYWORDS = new Set(['select', 'values', 'table', 'with'])
+export { firstKeyword }
 
-/**
- * The first word of a statement, in lower case, skipping whitespace, comments and opening
- * parens. Null when there is no word.
- */
-export function firstKeyword(sql: string): string | null {
-  let s = sql
-  for (;;) {
-    const before = s
-    s = s
-      .replace(/^\s+/, '')
-      .replace(/^--[^\r\n]*/, '')
-      .replace(/^\/\*[\s\S]*?\*\//, '')
-      .replace(/^\(/, '')
-    if (s === before) break
-  }
-  const m = /^([A-Za-z]+)/.exec(s)
-  return m ? m[1]!.toLowerCase() : null
-}
+const CURSOR_LEADING_KEYWORDS = new Set(['select', 'values', 'table', 'with'])
 
 /**
  * True when DECLARE can take this text: a SELECT, VALUES, TABLE or WITH statement that reads

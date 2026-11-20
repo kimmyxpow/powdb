@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { formatPlanNumber, parsePlan } from './explain'
+import { formatPlanNumber, isExplainable, parsePlan, suggestIndex } from './explain'
+import type { KnownTable } from './explain'
 
 const plainPlan = {
   Plan: {
@@ -186,7 +187,10 @@ describe('plan warnings', () => {
   test('a seq scan that threw away many rows', () => {
     const parsed = parsePlan(leaf({ 'Rows Removed by Filter': 50000, 'Actual Rows': 20 }), true)
     expect(parsed.nodes[0]!.warnings).toEqual([
-      'Read the whole table and threw away 50K rows. An index on the filtered columns may help.',
+      {
+        kind: 'full-scan',
+        text: 'Read the whole table and threw away 50K rows. An index on the filtered columns may help.',
+      },
     ])
   })
 
@@ -203,7 +207,10 @@ describe('plan warnings', () => {
   test('a bad row estimate', () => {
     const parsed = parsePlan(leaf({ 'Plan Rows': 10, 'Actual Rows': 500 }), true)
     expect(parsed.nodes[0]!.warnings).toEqual([
-      'Postgres expected 10 rows but got 500. Running ANALYZE on the table updates its statistics.',
+      {
+        kind: 'estimate',
+        text: 'Postgres expected 10 rows but got 500. Running ANALYZE on the table updates its statistics.',
+      },
     ])
   })
 
@@ -228,7 +235,10 @@ describe('plan warnings', () => {
     )
     expect(parsed.nodes[0]!.detail).toEqual(['Sort Key: a, b'])
     expect(parsed.nodes[0]!.warnings).toEqual([
-      'The sort did not fit in memory and used 500 kB of disk. A higher work_mem may help.',
+      {
+        kind: 'disk-sort',
+        text: 'The sort did not fit in memory and used 500 kB of disk. A higher work_mem may help.',
+      },
     ])
   })
 
@@ -253,7 +263,9 @@ describe('plan warnings', () => {
       { Plan: { 'Node Type': 'Hash', 'Plan Rows': 1, 'Total Cost': 1, 'Hash Batches': 4 } },
       false,
     )
-    expect(parsed.nodes[0]!.warnings).toEqual(['The hash table did not fit in memory and was split into 4 batches.'])
+    expect(parsed.nodes[0]!.warnings).toEqual([
+      { kind: 'hash-batches', text: 'The hash table did not fit in memory and was split into 4 batches.' },
+    ])
   })
 })
 
@@ -272,7 +284,10 @@ describe('steps inside a loop', () => {
       true,
     )
     expect(parsed.nodes[0]!.warnings).toEqual([
-      'Read the whole table and threw away 50K rows. An index on the filtered columns may help.',
+      {
+        kind: 'full-scan',
+        text: 'Read the whole table and threw away 50K rows. An index on the filtered columns may help.',
+      },
     ])
   })
 
@@ -376,6 +391,39 @@ describe('parsePlan rejects bad input', () => {
   })
 })
 
+describe('suggestIndex column order', () => {
+  const table = { schema: 'analytics', name: 'page_views', columns: ['id', 'duration_ms', 'country_code', 'path'] }
+  const scan = (filter: string) =>
+    parsePlan(
+      {
+        Plan: {
+          'Node Type': 'Seq Scan',
+          'Relation Name': 'page_views',
+          'Plan Rows': 1,
+          'Total Cost': 600,
+          'Actual Total Time': 20,
+          'Actual Rows': 0,
+          'Actual Loops': 1,
+          'Rows Removed by Filter': 25000,
+          Filter: filter,
+        },
+      },
+      true,
+    ).nodes[0]!
+
+  test('columns compared by equality come before range columns', () => {
+    expect(suggestIndex(scan("((duration_ms > 100) AND (country_code = 'ZZ'::bpchar))"), [table])).toBe(
+      'CREATE INDEX CONCURRENTLY ON "analytics"."page_views" ("country_code", "duration_ms");',
+    )
+  })
+
+  test('>= and <= count as range comparisons', () => {
+    expect(suggestIndex(scan("((duration_ms >= 100) AND (path = '/a'::text))"), [table])).toBe(
+      'CREATE INDEX CONCURRENTLY ON "analytics"."page_views" ("path", "duration_ms");',
+    )
+  })
+})
+
 describe('formatPlanNumber', () => {
   test.each([
     [1234567, '1.2M'],
@@ -388,5 +436,167 @@ describe('formatPlanNumber', () => {
     [-2500, '-2.5K'],
   ])('%p -> %s', (n, text) => {
     expect(formatPlanNumber(n)).toBe(text)
+  })
+})
+
+describe('isExplainable', () => {
+  test('accepts statements that EXPLAIN can take', () => {
+    for (const sql of [
+      'select 1',
+      'SELECT * FROM orders',
+      'with x as (select 1) select * from x',
+      'insert into t values (1)',
+      'update t set a = 1',
+      'delete from t',
+      'merge into t using s on true when matched then delete',
+      'values (1), (2)',
+      'table orders',
+    ]) {
+      expect(isExplainable(sql)).toBe(true)
+    }
+  })
+
+  test('skips leading spaces, comments and parens', () => {
+    expect(isExplainable('   \n select 1')).toBe(true)
+    expect(isExplainable('-- note\nselect 1')).toBe(true)
+    expect(isExplainable('/* note */ select 1')).toBe(true)
+    expect(isExplainable('(select 1) union (select 2)')).toBe(true)
+  })
+
+  test('refuses other statements and empty text', () => {
+    expect(isExplainable('')).toBe(false)
+    expect(isExplainable('   ')).toBe(false)
+    expect(isExplainable('-- only a comment')).toBe(false)
+    expect(isExplainable('create table t (a int)')).toBe(false)
+    expect(isExplainable('set search_path = public')).toBe(false)
+    expect(isExplainable('vacuum analyze orders')).toBe(false)
+    expect(isExplainable('explain select 1')).toBe(false)
+    expect(isExplainable('$1')).toBe(false)
+  })
+})
+
+describe('suggestIndex', () => {
+  const tables: KnownTable[] = [
+    {
+      schema: 'public',
+      name: 'orders',
+      columns: ['id', 'status', 'customer_id', 'country_code', 'email', 'note', 'My Col'],
+    },
+  ]
+
+  /** A seq scan on orders that read the whole table and kept few rows, with the given filter. */
+  function scan(filter: string | null, extra: Record<string, unknown> = {}) {
+    const fields: Record<string, unknown> = {
+      'Relation Name': 'orders',
+      'Rows Removed by Filter': 50000,
+      'Actual Rows': 20,
+      ...extra,
+    }
+    if (filter !== null) fields.Filter = filter
+    return parsePlan(leaf(fields), true).nodes[0]!
+  }
+
+  test('suggests an index on a simple equality', () => {
+    expect(suggestIndex(scan("(status = 'paid'::order_status)"), tables)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("status");',
+    )
+  })
+
+  test('uses the column under a cast', () => {
+    expect(suggestIndex(scan("((country_code)::text = 'ZZ'::text)"), tables)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("country_code");',
+    )
+  })
+
+  test('suggests two columns joined with AND, in order', () => {
+    expect(suggestIndex(scan("((status = 'paid'::order_status) AND (customer_id = 5))"), tables)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("status", "customer_id");',
+    )
+  })
+
+  test('quotes a column name that needs quotes', () => {
+    expect(suggestIndex(scan('("My Col" = 1)'), tables)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("My Col");',
+    )
+  })
+
+  test('reads a doubled quote inside a quoted column name', () => {
+    const quoted: KnownTable[] = [{ schema: 'public', name: 'orders', columns: ['a"b'] }]
+    expect(suggestIndex(scan('("a""b" = 1)'), quoted)).toBe('CREATE INDEX CONCURRENTLY ON "public"."orders" ("a""b");')
+  })
+
+  test('gives nothing for only <> or !=', () => {
+    expect(suggestIndex(scan("(status <> 'paid'::order_status)"), tables)).toBeNull()
+    expect(suggestIndex(scan('(id != 4)'), tables)).toBeNull()
+  })
+
+  test('gives nothing for OR', () => {
+    expect(suggestIndex(scan("((status = 'a') OR (status = 'b'))"), tables)).toBeNull()
+  })
+
+  test('gives nothing for a function call on the column', () => {
+    expect(suggestIndex(scan("(lower((email)::text) = 'x@example.com'::text)"), tables)).toBeNull()
+  })
+
+  test('allows ANY with an array literal', () => {
+    expect(suggestIndex(scan("(status = ANY ('{a,b}'::text[]))"), tables)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("status");',
+    )
+  })
+
+  test('does not read a column name inside a literal', () => {
+    expect(suggestIndex(scan("(note = 'status'::text)"), tables)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("note");',
+    )
+  })
+
+  test('uses a column for IS NULL', () => {
+    expect(suggestIndex(scan('(note IS NULL)'), tables)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("note");',
+    )
+  })
+
+  test('skips a type name made of several words, and the qualifier before a dot', () => {
+    const cast = scan("((o.email)::character varying(255) = 'x'::character varying)")
+    expect(suggestIndex(cast, tables)).toBe('CREATE INDEX CONCURRENTLY ON "public"."orders" ("email");')
+  })
+
+  test('gives nothing when the table is not known', () => {
+    expect(suggestIndex(scan("(status = 'paid')"), [])).toBeNull()
+  })
+
+  test('gives nothing when the same name is in two schemas and none is public', () => {
+    const two: KnownTable[] = [
+      { schema: 'sales', name: 'orders', columns: ['status'] },
+      { schema: 'archive', name: 'orders', columns: ['status'] },
+    ]
+    expect(suggestIndex(scan("(status = 'paid')"), two)).toBeNull()
+  })
+
+  test('prefers public when the same name is in several schemas', () => {
+    const two: KnownTable[] = [
+      { schema: 'archive', name: 'orders', columns: ['status'] },
+      { schema: 'public', name: 'orders', columns: ['status'] },
+    ]
+    expect(suggestIndex(scan("(status = 'paid')"), two)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("status");',
+    )
+  })
+
+  test('gives nothing without a full-scan warning', () => {
+    const quiet = scan("(status = 'paid')", { 'Rows Removed by Filter': 5 })
+    expect(quiet.warnings.some((w) => w.kind === 'full-scan')).toBe(false)
+    expect(suggestIndex(quiet, tables)).toBeNull()
+  })
+
+  test('gives nothing for a column the table does not have', () => {
+    expect(suggestIndex(scan("(nope = 'x')"), tables)).toBeNull()
+  })
+
+  test('suggests at most three columns', () => {
+    const four = scan("((id = 1) AND (status = 'a') AND (customer_id = 2) AND (email = 'x'))")
+    expect(suggestIndex(four, tables)).toBe(
+      'CREATE INDEX CONCURRENTLY ON "public"."orders" ("id", "status", "customer_id");',
+    )
   })
 })

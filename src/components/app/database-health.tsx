@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { CopyIcon, HeartPulseIcon, RefreshCwIcon, SquareTerminalIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { useState } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import type { DatabaseHealth as HealthReport, StatementsHealth } from '@/server/health.server'
+import type { QueryRow } from '@/components/app/explain-dialog'
 import { copyWithToast } from '@/components/app/copy-feedback'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -23,11 +24,16 @@ import { cn } from '@/lib/utils'
 
 type TabId = 'slow' | 'unused' | 'vacuum' | 'reads'
 
+// loaded on the first click, so the plan view and its code stay out of the overview
+const QueryDialog = lazy(() => import('@/components/app/explain-dialog').then((m) => ({ default: m.QueryDialog })))
+
 /** What every tab needs from the page: the connection and a way to open SQL in the editor. */
 interface Scope {
   connectionId: string
   database: string
   openInEditor: (sql: string) => void
+  /** Opens a slow query in a dialog, with its plan */
+  showQuery: (row: QueryRow) => void
 }
 
 const CREATE_EXTENSION_SQL = 'CREATE EXTENSION pg_stat_statements;'
@@ -39,6 +45,9 @@ export function DatabaseHealth({ connectionId, database }: { connectionId: strin
   // starts out of view, so nothing is read until the section scrolls into view
   const [listRef, inView] = useInView<HTMLDivElement>(false)
   const [tab, setTab] = useState<TabId>('slow')
+  // the statement stays set after the dialog closes, so it does not change while the dialog animates out
+  const [queryRow, setQueryRow] = useState<QueryRow | null>(null)
+  const [queryOpen, setQueryOpen] = useState(false)
 
   // Once fetched, the data stays on screen while the section is out of view. Coming back into view
   // refetches only when the data is older than the stale time.
@@ -58,6 +67,10 @@ export function DatabaseHealth({ connectionId, database }: { connectionId: strin
     openInEditor: (sql) => {
       openSqlTab(connectionId, sql)
       void navigate({ to: '/c/$connId/$db/sql', params: { connId: connectionId, db: database } })
+    },
+    showQuery: (row) => {
+      setQueryRow(row)
+      setQueryOpen(true)
     },
   }
 
@@ -91,7 +104,7 @@ export function DatabaseHealth({ connectionId, database }: { connectionId: strin
 
       <FramePanel className="p-0">
         {error && (
-          <Alert className="m-3" variant="error">
+          <Alert className="m-3 w-auto" variant="error">
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
         )}
@@ -134,6 +147,19 @@ export function DatabaseHealth({ connectionId, database }: { connectionId: strin
           </Tabs>
         )}
       </FramePanel>
+
+      {queryRow !== null && (
+        <Suspense fallback={null}>
+          <QueryDialog
+            connectionId={connectionId}
+            database={database}
+            onOpenChange={setQueryOpen}
+            onOpenInEditor={scope.openInEditor}
+            open={queryOpen}
+            row={queryRow}
+          />
+        </Suspense>
+      )}
     </Frame>
   )
 }
@@ -164,6 +190,29 @@ interface Column {
 interface HealthRow {
   key: string
   cells: Record<string, ReactNode>
+  /** Makes the whole row a button that runs this. Rows without it stay plain. */
+  onSelect?: () => void
+  /** The name of the row for screen readers, used with onSelect */
+  selectLabel?: string
+}
+
+/** Click, Enter and Space all run onSelect. Space does not scroll the page then. */
+function selectProps(row: HealthRow) {
+  const { onSelect } = row
+  if (!onSelect) return {}
+  return {
+    'aria-label': row.selectLabel,
+    className: 'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+    onClick: onSelect,
+    onKeyDown: (event: KeyboardEvent<HTMLTableRowElement>) => {
+      if (event.target !== event.currentTarget) return
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      event.preventDefault()
+      onSelect()
+    },
+    role: 'button',
+    tabIndex: 0,
+  }
 }
 
 /** One line of text in a table cell, as a placeholder of the same height. */
@@ -210,7 +259,7 @@ function HealthTable({ columns, rows }: { columns: Column[]; rows?: HealthRow[] 
               </TableRow>
             ))
           : rows.map((row) => (
-              <TableRow key={row.key}>
+              <TableRow {...selectProps(row)} key={row.key}>
                 {columns.map((c) => (
                   <TableCell className={c.className} key={c.id}>
                     {row.cells[c.id]}
@@ -323,7 +372,6 @@ const SLOW_COLUMNS: Column[] = [
       </span>
     ),
   },
-  ACTION_COLUMN,
 ]
 
 function SlowQueriesTab({ statements, scope }: { statements: StatementsHealth | undefined; scope: Scope }) {
@@ -331,7 +379,7 @@ function SlowQueriesTab({ statements, scope }: { statements: StatementsHealth | 
   if (statements.status === 'not-installed') return <NotInstalled />
   if (statements.status === 'not-loaded') {
     return (
-      <Alert className="m-2" variant="warning">
+      <Alert className="m-2 w-auto" variant="warning">
         <AlertDescription>
           The pg_stat_statements extension exists, but Postgres did not load it. Add it to shared_preload_libraries and
           restart Postgres.
@@ -341,7 +389,7 @@ function SlowQueriesTab({ statements, scope }: { statements: StatementsHealth | 
   }
   if (statements.status === 'error') {
     return (
-      <Alert className="m-2" variant="error">
+      <Alert className="m-2 w-auto" variant="error">
         <AlertDescription>{statements.message}</AlertDescription>
       </Alert>
     )
@@ -350,38 +398,46 @@ function SlowQueriesTab({ statements, scope }: { statements: StatementsHealth | 
   return (
     <HealthTable
       columns={SLOW_COLUMNS}
-      rows={statements.rows.map((r, i) => ({
-        key: String(i),
-        cells: {
-          query:
-            r.query === null ? (
-              <span className="italic text-muted-foreground text-xs">Hidden. Another user ran it.</span>
-            ) : (
-              <span className="block truncate font-mono text-xs" title={r.query}>
-                {oneLine(r.query)}
+      rows={statements.rows.map((r, i) => {
+        // a hidden query has no text to show, so its row stays plain
+        const query = r.query
+        return {
+          key: String(i),
+          cells: {
+            query:
+              query === null ? (
+                <span className="italic text-muted-foreground text-xs">Hidden. Another user ran it.</span>
+              ) : (
+                <span className="block truncate font-mono text-xs" title={query}>
+                  {oneLine(query)}
+                </span>
+              ),
+            calls: formatCount(r.calls, { compact: true }),
+            avg: formatDuration(r.meanMs),
+            total: formatDuration(r.totalMs),
+            share: (
+              <span className="flex items-center justify-end gap-2 text-xs tabular-nums">
+                <Meter
+                  aria-label={`${percent(r.share)} of total time`}
+                  className="w-20 max-sm:hidden"
+                  max={1}
+                  value={r.share}
+                >
+                  <MeterTrack className="h-1 rounded-full">
+                    <MeterIndicator className="rounded-full bg-primary/70" />
+                  </MeterTrack>
+                </Meter>
+                <span className="w-10 text-right">{percent(r.share)}</span>
               </span>
             ),
-          calls: formatCount(r.calls, { compact: true }),
-          avg: formatDuration(r.meanMs),
-          total: formatDuration(r.totalMs),
-          share: (
-            <span className="flex items-center justify-end gap-2 text-xs tabular-nums">
-              <Meter
-                aria-label={`${percent(r.share)} of total time`}
-                className="w-20 max-sm:hidden"
-                max={1}
-                value={r.share}
-              >
-                <MeterTrack className="h-1 rounded-full">
-                  <MeterIndicator className="rounded-full bg-primary/70" />
-                </MeterTrack>
-              </Meter>
-              <span className="w-10 text-right">{percent(r.share)}</span>
-            </span>
-          ),
-          action: r.query === null ? null : <OpenInEditorButton scope={scope} sql={r.query} />,
-        },
-      }))}
+          },
+          onSelect:
+            query === null
+              ? undefined
+              : () => scope.showQuery({ query, calls: r.calls, meanMs: r.meanMs, totalMs: r.totalMs }),
+          selectLabel: 'Show query and plan',
+        }
+      })}
     />
   )
 }

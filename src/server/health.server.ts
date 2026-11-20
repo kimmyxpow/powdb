@@ -130,6 +130,8 @@ const STATEMENTS_SQL = `SELECT query, calls, total_exec_time AS total_ms, mean_e
        total_exec_time / nullif(sum(total_exec_time) OVER (), 0) AS share
   FROM pg_stat_statements
  WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
+   -- EXPLAIN only plans a query, it never runs it, so it is not a slow query (pow/view runs it too)
+   AND query !~* '^\\s*explain\\M'
  ORDER BY total_exec_time DESC
  LIMIT 20`
 

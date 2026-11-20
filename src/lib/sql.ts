@@ -176,3 +176,22 @@ export function statementAt(sql: string, cursor: number): StatementRange | null 
   }
   return best ?? statements[0]!
 }
+
+/**
+ * The first word of a statement, in lower case, skipping whitespace, comments and opening
+ * parens. Null when there is no word.
+ */
+export function firstKeyword(sql: string): string | null {
+  let s = sql
+  for (;;) {
+    const before = s
+    s = s
+      .replace(/^\s+/, '')
+      .replace(/^--[^\r\n]*/, '')
+      .replace(/^\/\*[\s\S]*?\*\//, '')
+      .replace(/^\(/, '')
+    if (s === before) break
+  }
+  const m = /^([A-Za-z]+)/.exec(s)
+  return m ? m[1]!.toLowerCase() : null
+}

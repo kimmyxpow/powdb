@@ -59,7 +59,7 @@ Click **Add connection**, then paste a connection URL, such as `postgresql://use
 
 - Highlighting and autocomplete for tables, columns, and aliases. Many tabs, query history, and saved queries.
 - Run a selection, the whole script, or the statement under the cursor. See results, NOTICE messages, and error positions. A Cancel button stops a slow query.
-- Explain a query to see its plan as a tree, with the slowest step marked and tips such as a missing index or stale statistics. Explain Analyze measures real times and rolls back any changes.
+- Explain a query to see its plan as a tree, with the slowest step marked, tips such as stale statistics, and a suggested index when a step reads a whole table to keep only a few rows. Explain Analyze measures real times and rolls back any changes.
 
 **Import, export, and backup**
 
