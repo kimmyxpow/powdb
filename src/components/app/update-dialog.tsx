@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { CircleArrowUpIcon, ExternalLinkIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { CopyButton } from '@/components/app/copy-button'
 import { Button } from '@/components/ui/button'
 import {
@@ -158,11 +158,14 @@ export function UpdateDialog({
   update: AvailableUpdate
 }) {
   const setDismissed = useAppStore((s) => s.setDismissedUpdate)
+  // focus starts on Close: the dialog's first focusable element is often a link at the end of the
+  // release notes, and focusing it would scroll the notes to the bottom
+  const closeRef = useRef<HTMLButtonElement>(null)
   const { latest, current, install } = update
   const date = releaseDate(latest.publishedAt)
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogPopup className="sm:max-w-lg">
+      <DialogPopup className="sm:max-w-lg" initialFocus={closeRef}>
         <DialogHeader>
           <DialogTitle>pow/view {latest.version} is available</DialogTitle>
           <DialogDescription>
@@ -201,7 +204,9 @@ export function UpdateDialog({
           >
             Dismiss
           </Button>
-          <DialogClose render={<Button variant="outline" />}>Close</DialogClose>
+          <DialogClose ref={closeRef} render={<Button variant="outline" />}>
+            Close
+          </DialogClose>
         </DialogFooter>
       </DialogPopup>
     </Dialog>
